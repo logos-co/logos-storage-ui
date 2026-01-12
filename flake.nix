@@ -1,5 +1,5 @@
 {
-  description = "Logos Storage UI - A Qt UI app for Logos Storage";
+  description = "Logos Storage UI - A Qt UI plugin for Logos Storage";
 
   inputs = {
     # Follow the same nixpkgs as logos-liblogos to ensure compatibility
@@ -30,6 +30,11 @@
           };
           src = ./.;
           
+          # Library package
+          lib = import ./nix/lib.nix { 
+            inherit pkgs common src logosStorageModule logosSdk; 
+          };
+          
           # App package
           app = import ./nix/app.nix { 
             inherit pkgs common src logosLiblogos logosSdk logosStorageModule logosCapabilityModule;
@@ -38,6 +43,7 @@
         in
         {
           # Individual outputs
+          logos-storage-ui-lib = lib;
           app = app;
           
           # Default package
