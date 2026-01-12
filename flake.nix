@@ -40,10 +40,11 @@
             inherit pkgs common src logosLiblogos logosSdk logosStorageModule logosCapabilityModule;
             logosStorageUI = lib;
           };
+
         in
         {
           # Individual outputs
-          logos-storage-ui-lib = lib;
+          # logos-storage-ui-lib = lib;
           app = app;
           
           # Default package

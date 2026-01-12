@@ -2,7 +2,7 @@
 { pkgs, common, src, logosLiblogos, logosSdk, logosStorageModule, logosCapabilityModule, logosStorageUI }:
 
 pkgs.stdenv.mkDerivation rec {
-  pname = "logos-storage-ui-app";
+  pname = "${common.pname}-app";
   version = common.version;
   
   inherit src;
