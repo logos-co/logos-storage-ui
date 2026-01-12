@@ -1,0 +1,28 @@
+{
+    "name": "storage_ui",
+    "version": "1.0.0",
+    "description": "Storage interface for the Logos application",
+    "author": "Logos Core Team",
+    "type": "ui",
+    "main": "storage_ui",
+    "dependencies": [
+        "storage_module"
+    ],
+    "category": "storage",
+    "build": {
+        "type": "cmake",
+        "files": [
+            "src/storage_ui_plugin.cpp",
+            "src/storage_ui_plugin.h",
+            "src/storagewindow.cpp",
+            "src/storagewindow.h",
+            "src/storagewidget.cpp",
+            "src/storagewidget.h",
+            "src/storage_ui_resources.qrc"
+        ]
+    },
+    "capabilities": [
+        "ui_components",
+        "storage"
+    ]
+}
