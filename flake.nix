@@ -44,7 +44,7 @@
         in
         {
           # Individual outputs
-          # logos-storage-ui-lib = lib;
+          lib = lib;
           app = app;
           
           # Default package
