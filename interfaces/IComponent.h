@@ -7,11 +7,11 @@
 class LogosAPI;
 
 class IComponent {
-public:
+  public:
     virtual ~IComponent() = default;
     virtual QWidget* createWidget(LogosAPI* logosAPI = nullptr) = 0;
     virtual void destroyWidget(QWidget* widget) = 0;
 };
 
 #define IComponent_iid "com.logos.component.IComponent"
-Q_DECLARE_INTERFACE(IComponent, IComponent_iid) 
+Q_DECLARE_INTERFACE(IComponent, IComponent_iid)
