@@ -1,27 +1,25 @@
 #pragma once
 
+#include "StorageWidget.h"
 #include <QMainWindow>
-#include <QVBoxLayout>
 #include <QMenuBar>
 #include <QStatusBar>
-#include "StorageWidget.h"
+#include <QVBoxLayout>
 
 class StorageWindow : public QMainWindow {
     Q_OBJECT
 
-public:
+  public:
     explicit StorageWindow(QWidget* parent = nullptr);
     ~StorageWindow();
 
-private slots:
+  private slots:
     void onAboutAction();
     void onInitStorage();
-    void onStopStorage();
 
-private:
-    void setupMenu();
+  private:
     void setupStatusBar();
-    
+
     StorageWidget* storageWidget;
     QStatusBar* statusBar;
-}; 
+};

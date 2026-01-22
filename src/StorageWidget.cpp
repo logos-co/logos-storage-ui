@@ -1,23 +1,18 @@
 #include "StorageWidget.h"
-#include <QDebug>
-#include <QDateTime>
-#include <QMessageBox>
-#include <iostream>
-#include <csignal>
-#include <QTimer>
 #include "logos_api_client.h"
+#include <QDateTime>
+#include <QDebug>
+#include <QMessageBox>
+// #include <QQmlContext>
+#include <QTimer>
 
 int RET_OK = 0;
 
 // Static pointer to the active StorageWidget for callbacks
-static StorageWidget *activeWidget = nullptr;
+static StorageWidget* activeWidget = nullptr;
 
-StorageWidget::StorageWidget(QWidget *parent)
-    : QWidget(parent),
-      isStorageInitialized(false),
-      m_isStorageRunning(false),
-      m_logosAPI(nullptr)
-{
+StorageWidget::StorageWidget(QWidget* parent)
+    : QWidget(parent), isStorageInitialized(false), m_isStorageRunning(false), m_logosAPI(nullptr) {
 
     // Set as the active widget
     activeWidget = this;
@@ -25,7 +20,13 @@ StorageWidget::StorageWidget(QWidget *parent)
     m_logosAPI = new LogosAPI("core", this);
     logos = new LogosModules(m_logosAPI);
 
-    // Main vertical layout
+    // mainLayout = new QVBoxLayout(this);
+    // quickWidget = new QQuickWidget(this);
+    // quickWidget->rootContext()->setContextProperty("storage", this);
+    // quickWidget->setSource(QUrl("qrc:StorageWidget.qml"));
+    // mainLayout->addWidget(quickWidget);
+
+    // // Main vertical layout
     mainLayout = new QVBoxLayout(this);
 
     // Create status label
@@ -35,12 +36,13 @@ StorageWidget::StorageWidget(QWidget *parent)
     statusLabel->setLineWidth(1);
     statusLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
     statusLabel->setMinimumHeight(30);
-    
-    startButton = new QPushButton("Start", this);
-
     statusLayout->addWidget(statusLabel, 4);
+
+    startButton = new QPushButton("Start", this);
     statusLayout->addWidget(startButton, 1);
 
+    debugButton = new QPushButton("Debug", this);
+    statusLayout->addWidget(debugButton, 1);
     // Create display
     // storageDisplay = new QTextEdit(this);
     // storageDisplay->setReadOnly(true);
@@ -66,75 +68,75 @@ StorageWidget::StorageWidget(QWidget *parent)
 
     // Connect signals to slots
     connect(startButton, &QPushButton::clicked, this, &StorageWidget::onStartButtonClicked);
+    connect(debugButton, &QPushButton::clicked, this, &StorageWidget::onDebugButtonClicked);
+
     // connect(messageInput, &QLineEdit::returnPressed, this, &StorageWidget::onStartButtonClicked);
 
     // Disable UI components until Storage is initialized
     // messageInput->setEnabled(false);
     // sendButton->setEnabled(false);
     startButton->setEnabled(false);
+    debugButton->setEnabled(false);
 
     // Auto-initialize Storage
     initStorage();
 }
 
-StorageWidget::~StorageWidget()
-{
+StorageWidget::~StorageWidget() {
     // Reset the active widget if it's this instance
-    if (activeWidget == this)
-    {
+    if (activeWidget == this) {
         activeWidget = nullptr;
     }
 }
 
-void StorageWidget::initStorage()
-{
+void StorageWidget::initStorage() {
     updateStatus("Initializing Storage...");
-
+    emit storageRunningChanged();
     response = logos->storage_module.init("{}");
-    
+
     qDebug() << "StorageWidget: Storage module init response:" << response;
 
     isStorageInitialized = true;
     m_isStorageRunning = false;
-    
+
     updateStatus("Storage initialized.");
 
     if (!logos->storage_module.on("storageStart", [this](const QVariantList& data) {
-        int code = data[0].toInt();
+            int code = data[0].toInt();
 
-        if (code != RET_OK) {
-            updateStatus("Error starting Storage.");
-        } else {
-            updateStatus("Storage started successfully.");
-            m_isStorageRunning = true;
-            startButton->setText("Stop");
+            if (code != RET_OK) {
+                updateStatus("Error starting Storage.");
+            } else {
+                updateStatus("Storage started successfully.");
+                m_isStorageRunning = true;
+                startButton->setText("Stop");
+                // messageInput->setEnabled(true);
+                // sendButton->setEnabled(true);
+            }
 
-            // messageInput->setEnabled(true);
-            // sendButton->setEnabled(true);
-        }
-
-        startButton->setEnabled(true);
-    })) {
+            startButton->setEnabled(true);
+            debugButton->setEnabled(true);
+        })) {
         qWarning() << "StorageWidget: failed to subscribe to storageStart events";
     }
 
     if (!logos->storage_module.on("storageStop", [this](const QVariantList& data) {
-        int code = data[0].toInt();
+            int code = data[0].toInt();
 
-        if (code != RET_OK) {
-            updateStatus("Error stopping Storage.");
-        } else {
-            updateStatus("Storage stopped successfully.");
-            m_isStorageRunning = false;
-            startButton->setText("Start");
-            // messageInput->setEnabled(false);
-            // sendButton->setEnabled(false);
-        }
+            if (code != RET_OK) {
+                updateStatus("Error stopping Storage.");
+            } else {
+                updateStatus("Storage stopped successfully.");
+                m_isStorageRunning = false;
+                startButton->setText("Start");
+                // messageInput->setEnabled(false);
+                // sendButton->setEnabled(false);
+            }
 
-        startButton->setEnabled(true);
+            startButton->setEnabled(true);
 
-        emit storageStop();
-    })) {
+            emit storageStop();
+        })) {
         qWarning() << "StorageWidget: failed to subscribe to storageStop events";
     }
 
@@ -144,35 +146,45 @@ void StorageWidget::initStorage()
     //     qDebug() << "Storage Version:" << QString::fromStdString(version);
     //   })) {
     //      qWarning() << "ChatWidget: failed to subscribe to historyMessage events";
-    //   }   
+    //   }
     //   if (!storageModule.on("storageVersion", [this]
     //     std::string version = data[1].toString().toStdString();(const QVariantList& data) {
     //     qDebug() << "Storage Version:" << QString::fromStdString(version);
     //   })) {
     //      qWarning() << "ChatWidget: failed to subscribe to historyMessage events";
-    //   }   
+    //   }
 }
 
-bool StorageWidget::isStorageRunning() const
-{
-    return m_isStorageRunning;
+QString StorageWidget::storageVersion() const {
+    if (!isStorageInitialized) {
+        qDebug() << "StorageWidget: Storage not initialized, cannot get version.";
+        return "";
+    }
+
+    return logos->storage_module.version();
 }
 
-void StorageWidget::startStorage()
-{
+QString StorageWidget::storageDebug() const {
+    if (!isStorageInitialized) {
+        qDebug() << "StorageWidget: Storage not initialized, cannot get debug info.";
+        return "";
+    }
+
+    return logos->storage_module.debug();
+}
+
+void StorageWidget::startStorage() {
     updateStatus("Starting Storage...");
 
-    if (!isStorageInitialized)
-    {
+    if (!isStorageInitialized) {
         qDebug() << "StorageWidget: Storage not initialized, nothing to start.";
         return;
     }
 
-    if (m_isStorageRunning)
-    {
+    if (m_isStorageRunning) {
         qDebug() << "StorageWidget: Storage already started.";
         return;
-    } 
+    }
 
     if (!logos->storage_module.start()) {
         qWarning() << "StorageWidget: Failed to send start command to Storage.";
@@ -181,23 +193,20 @@ void StorageWidget::startStorage()
     }
 }
 
-void StorageWidget::stopStorage()
-{
-    updateStatus("Stopping Storage...");
-
-    if (!isStorageInitialized)
-    {
+void StorageWidget::stopStorage() {
+    if (!isStorageInitialized) {
         qDebug() << "StorageWidget: Storage not initialized, nothing to stop.";
         emit storageStop();
         return;
     }
 
-    if (!m_isStorageRunning)
-    {
+    if (!m_isStorageRunning) {
         qDebug() << "StorageWidget: Storage already stopped.";
         emit storageStop();
         return;
-    } 
+    }
+
+    updateStatus("Stopping Storage...");
 
     if (!logos->storage_module.stop()) {
         qWarning() << "StorageWidget: Failed to send stop command to Storage.";
@@ -206,12 +215,10 @@ void StorageWidget::stopStorage()
     }
 }
 
-void StorageWidget::destroy()
-{
+void StorageWidget::destroy() {
     qDebug() << "StorageWidget: destroy function called...";
 
-    if (!isStorageInitialized)
-    {
+    if (!isStorageInitialized) {
         qDebug() << "StorageWidget: Storage not initialized, nothing to stop.";
         return;
     }
@@ -227,39 +234,43 @@ void StorageWidget::destroy()
     emit storageCleanup();
 }
 
-void StorageWidget::onStartButtonClicked()
-{
+void StorageWidget::onStartButtonClicked() {
     qDebug() << "Starting Storage from button";
 
     startButton->setEnabled(false);
 
-    if (m_isStorageRunning)
-    {
+    if (m_isStorageRunning) {
         stopStorage();
-    }
-    else
-    {
+    } else {
         startStorage();
     }
 }
 
-void StorageWidget::onSendButtonClicked()
-{
+void StorageWidget::onDebugButtonClicked() {
+    qDebug() << "version" << logos->storage_module.version();
+    qDebug() << "spr" << logos->storage_module.spr();
+    qDebug() << "peerId" << logos->storage_module.peerId();
+
+    logos->storage_module.updateLogLevel("TRACE");
+
+    qDebug() << "Debug button clicked";
+    emit debug();
+}
+
+void StorageWidget::onSendButtonClicked() {
     QString message = messageInput->text().trimmed();
-    if (message.isEmpty())
-    {
+    if (message.isEmpty()) {
         QMessageBox::warning(this, "Storage Error", "Message is empty.");
 
         return;
     }
 
     // Check if Storage is running
-    if (!m_isStorageRunning)
-    {
+    if (!m_isStorageRunning) {
         QMessageBox::warning(this, "Storage Error", "Storage is not running. Please initialize Storage first.");
         return;
     }
-    logos->storage_module.version();
+
     // if (m_logosAPI && m_logosAPI->getClient("storage")->isConnected())
     // {
 
@@ -276,15 +287,18 @@ void StorageWidget::onSendButtonClicked()
     messageInput->clear();
 }
 
-void StorageWidget::updateStatus(const QString &message)
-{
+void StorageWidget::updateStatus(const QString& message) {
     statusLabel->setText(message);
     qDebug() << "StorageWidget Status:" << message;
 }
 
-void StorageWidget::displayMessage(const QString &sender, const QString &message)
-{
+void StorageWidget::displayMessage(const QString& sender, const QString& message) {
     QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
     QString formattedMessage = QString("[%1] %2: %3").arg(timestamp, sender, message);
     storageDisplay->append(formattedMessage);
 }
+
+QString StorageWidget::statusText() const { return m_statusText; }
+bool StorageWidget::storageRunning() const { return m_isStorageRunning; }
+
+void StorageWidget::requestDebug() { emit debug(); }
