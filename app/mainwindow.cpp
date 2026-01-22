@@ -1,43 +1,30 @@
 #include "mainwindow.h"
 #include <QApplication>
 #include <QCoreApplication>
-#include <QPluginLoader>
 #include <QDebug>
 #include <QLabel>
+#include <QPluginLoader>
 #include <QVBoxLayout>
-#include <QDir>
-#include <QCloseEvent>
 
 extern "C" {
-    void logos_core_cleanup();
+void logos_core_cleanup();
 }
 
-void MainWindow::cleanup()
-{
+void MainWindow::cleanup() {
     qDebug() << "MainWindow: Cleaning up before exit...";
 
-    if (storageWidget) { 
-        bool running = false;
-        if (storageWidget) {
-            QMetaObject::invokeMethod(storageWidget, "isStorageRunning",
-                                    Qt::DirectConnection,
-                                    Q_RETURN_ARG(bool, running));
-        }
+    if (storageWidget) {
+        qDebug() << "MainWindow: Stopping Storage before destroying...";
 
-        if (running) {
-            qDebug() << "MainWindow: Stopping Storage before destroying...";
+        QEventLoop loop;
+        QObject::connect(storageWidget, SIGNAL(storageStop()), &loop, SLOT(quit()));
+        QMetaObject::invokeMethod(storageWidget, "stopStorage", Qt::QueuedConnection);
+        loop.exec();
 
-            QEventLoop loop;
-            QObject::connect(storageWidget, SIGNAL(storageStop()), &loop, SLOT(quit()));
-            QMetaObject::invokeMethod(storageWidget, "stopStorage", Qt::QueuedConnection);
-            loop.exec();
-    
-            qDebug() << "MainWindow: Storage stopped.";
-        }
+        qDebug() << "MainWindow: Storage stopped.";
 
         qDebug() << "MainWindow: Destroying Storage...";
 
-        QEventLoop loop;
         QObject::connect(storageWidget, SIGNAL(storageCleanup()), &loop, SLOT(quit()));
         QMetaObject::invokeMethod(storageWidget, "destroy", Qt::QueuedConnection);
         loop.exec();
@@ -46,27 +33,20 @@ void MainWindow::cleanup()
     }
 }
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-{
-    setupUi();
-}
+MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) { setupUi(); }
 
-MainWindow::~MainWindow()
-{
-}
+MainWindow::~MainWindow() {}
 
-void MainWindow::setupUi()
-{
+void MainWindow::setupUi() {
     // Determine the appropriate plugin extension based on the platform
     QString pluginExtension;
-    #if defined(Q_OS_WIN)
-        pluginExtension = ".dll";
-    #elif defined(Q_OS_MAC)
-        pluginExtension = ".dylib";
-    #else // Linux and other Unix-like systems
-        pluginExtension = ".so";
-    #endif
+#if defined(Q_OS_WIN)
+    pluginExtension = ".dll";
+#elif defined(Q_OS_MAC)
+    pluginExtension = ".dylib";
+#else // Linux and other Unix-like systems
+    pluginExtension = ".so";
+#endif
 
     // Load the storage_ui plugin with the appropriate extension
     QString pluginPath = QCoreApplication::applicationDirPath() + "/../storage_ui" + pluginExtension;
@@ -78,9 +58,7 @@ void MainWindow::setupUi()
         QObject* plugin = loader.instance();
         if (plugin) {
             // Try to create the storage widget using the plugin's createWidget method
-            QMetaObject::invokeMethod(plugin, "createWidget",
-                                    Qt::DirectConnection,
-                                    Q_RETURN_ARG(QWidget*, widget));
+            QMetaObject::invokeMethod(plugin, "createWidget", Qt::DirectConnection, Q_RETURN_ARG(QWidget*, widget));
         }
     }
 
@@ -92,7 +70,7 @@ void MainWindow::setupUi()
         qWarning() << "Failed to load storage UI plugin from:" << pluginPath;
         qWarning() << "Error:" << loader.errorString();
         qWarning() << "================================================";
-        
+
         // Fallback: show a message when plugin is not found
         QWidget* fallbackWidget = new QWidget(this);
         QVBoxLayout* layout = new QVBoxLayout(fallbackWidget);
@@ -108,6 +86,6 @@ void MainWindow::setupUi()
     }
 
     // Set window title and size
-    setWindowTitle("Logos Storage UI App");
-    // resize(800, 600);
+    setWindowTitle("Logos Storage UI App !");
+    resize(800, 600);
 }

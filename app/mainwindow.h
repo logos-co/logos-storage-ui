@@ -5,20 +5,19 @@
 
 class QCloseEvent;
 
-class MainWindow : public QMainWindow
-{
+class MainWindow : public QMainWindow {
     Q_OBJECT
 
-public:
-    MainWindow(QWidget *parent = nullptr);
+  public:
+    MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
     void cleanup();
 
-private:
+  private:
     void setupUi();
+    void setupMenu();
 
-private:
-    QWidget *storageWidget = nullptr;
+    QWidget* storageWidget = nullptr;
 };
 
 #endif // MAINWINDOW_H
