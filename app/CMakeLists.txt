@@ -12,12 +12,12 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Widgets)
 
 # Find logos-liblogos
 if(NOT DEFINED LOGOS_LIBLOGOS_ROOT)
-    message(FATAL_ERROR "LOGOS_LIBLOGOS_ROOT must be defined")
+    message(WARNING "LOGOS_LIBLOGOS_ROOT must be defined")
 endif()
 
 # Find logos-cpp-sdk
 if(NOT DEFINED LOGOS_CPP_SDK_ROOT)
-    message(FATAL_ERROR "LOGOS_CPP_SDK_ROOT must be defined")
+    message(WARNING "LOGOS_CPP_SDK_ROOT must be defined")
 endif()
 
 message(STATUS "Using logos-liblogos at: ${LOGOS_LIBLOGOS_ROOT}")
