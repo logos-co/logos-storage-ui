@@ -1,5 +1,9 @@
 # logos-storage-ui
 
+## Setup your environment
+
+See [SETUP.md](./SETUP.md)
+
 ## How to Build
 
 ### Using Nix (Recommended)
