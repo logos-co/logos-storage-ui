@@ -1,0 +1,6 @@
+.DS_Store
+result
+data/
+build
+libs
+app/build
