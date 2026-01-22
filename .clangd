@@ -1,6 +1,4 @@
 CompileFlags:
   Add:
-    - -I/nix/store/047dmhc4gi7yib02i1fbwidxpksqvcc2-logos-cpp-sdk/include
-    - -I/nix/store/047dmhc4gi7yib02i1fbwidxpksqvcc2-logos-cpp-sdk/include/cpp
-    - -I/nix/store/047dmhc4gi7yib02i1fbwidxpksqvcc2-logos-cpp-sdk/include/core
-    - -I/nix/store/j6pjsrs2xkj0d5gaanayhcgqqcpbz5lz-logos-liblogos/include
+    - -I/home/arnaud/Work/logos/logos-storage-ui/libs/include
+    - -I/home/arnaud/Work/logos/logos-storage-ui/result/include
