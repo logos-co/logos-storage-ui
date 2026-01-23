@@ -1,4 +1,4 @@
 CompileFlags:
   Add:
-    - -I/home/arnaud/Work/logos/logos-storage-ui/libs/include
-    - -I/home/arnaud/Work/logos/logos-storage-ui/result/include
+    - -I./libs/include
+    - -I./result/include
