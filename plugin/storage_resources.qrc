@@ -1,5 +1,5 @@
   <RCC>
     <qresource prefix="/">
-      <file>../qml/Main.qml</file>
+      <file>StorageView.qml</file>
     </qresource>
   </RCC>
