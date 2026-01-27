@@ -7,3 +7,6 @@
 [submodule "vendor/logos-storage-module"]
 	path = vendor/logos-storage-module
 	url = https://github.com/logos-co/logos-storage-module
+[submodule "vendor/logos-storage-nim"]
+	path = vendor/logos-storage-nim
+	url = https://github.com/logos-storage/logos-storage-nim
