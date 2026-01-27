@@ -1,0 +1,9 @@
+[submodule "vendor/logos-cpp-sdk"]
+	path = vendor/logos-cpp-sdk
+	url = https://github.com/logos-co/logos-cpp-sdk
+[submodule "vendor/logos-liblogos"]
+	path = vendor/logos-liblogos
+	url = https://github.com/logos-co/logos-liblogos
+[submodule "vendor/logos-storage-module"]
+	path = vendor/logos-storage-module
+	url = https://github.com/logos-co/logos-storage-module
