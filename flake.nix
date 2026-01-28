@@ -26,7 +26,7 @@
         let
           # Common configuration
           common = import ./nix/default.nix { 
-            inherit pkgs logosSdk logosLiblogos; 
+            inherit pkgs logosSdk logosLiblogos logosStorageModule;
           };
           src = ./.;
           
@@ -70,9 +70,11 @@
           shellHook = ''
             export LOGOS_CPP_SDK_ROOT="${logosSdk}"
             export LOGOS_LIBLOGOS_ROOT="${logosLiblogos}"
+            export LOGOS_STORAGE_ROOT="${logosStorageModule}"
             echo "Logos Storage UI development environment"
             echo "LOGOS_CPP_SDK_ROOT: $LOGOS_CPP_SDK_ROOT"
             echo "LOGOS_LIBLOGOS_ROOT: $LOGOS_LIBLOGOS_ROOT"
+            echo "LOGOS_STORAGE_ROOT: $LOGOS_STORAGE_ROOT"
           '';
         };
       });
