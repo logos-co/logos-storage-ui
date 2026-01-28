@@ -4,15 +4,23 @@ project(StorageUIPlugin VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
 
-# Allow override from environment or command line
+########### DEPENDENCIES SECTION ###########
+
+# This section locates the required dependencies in 3 different ways:
+# 1- With NIX, the root folders (LOGOS_LIBLOGOS_ROOT, LOGOS_CPP_SDK_ROOT,
+#    and LOGOS_STORAGE_ROOT) are defined and point to the correct locations in
+#    the Nix store.
+# 2- If the root folders are fetched from source (basically using git) in the
+#    parent folder, this is detected and used.
+# 3- If none of the above apply, the vendor folders inside this project are used,
+#    meaning the dependencies need to be fetched using git submodules.
+
 if(NOT DEFINED LOGOS_LIBLOGOS_ROOT)
     set(_parent_liblogos "${CMAKE_SOURCE_DIR}/../logos-liblogos")
     set(_use_vendor ${LOGOS_STORAGE_UI_USE_VENDOR})
     if(NOT _use_vendor)
-        if(NOT EXISTS "${_parent_liblogos}/interface.h")
+        if(NOT EXISTS "${_parent_liblogos}/src/common/interface.h")
             set(_use_vendor ON)
         endif()
     endif()
@@ -38,15 +46,31 @@ if(NOT DEFINED LOGOS_CPP_SDK_ROOT)
     endif()
 endif()
 
-# Check if dependencies are available (support both source and installed layouts)
+if(NOT DEFINED LOGOS_STORAGE_ROOT)
+    set(_parent_storage_module "${CMAKE_SOURCE_DIR}/../logos-storage-module")
+    set(_use_vendor ${LOGOS_STORAGE_UI_USE_VENDOR})
+    if(NOT _use_vendor)
+        if(NOT EXISTS "${_parent_storage_module}/storage_module_plugin.h")
+            set(_use_vendor ON)
+        endif()
+    endif()
+    if(_use_vendor)
+        set(LOGOS_STORAGE_ROOT "${CMAKE_SOURCE_DIR}/vendor/logos-storage-module")
+    else()
+        set(LOGOS_STORAGE_ROOT "${_parent_storage_module}")
+    endif()
+endif()
+
 set(_liblogos_found FALSE)
-if(EXISTS "${LOGOS_LIBLOGOS_ROOT}/interface.h")
+if(EXISTS "${LOGOS_LIBLOGOS_ROOT}/src/common/interface.h")
     set(_liblogos_found TRUE)
     set(_liblogos_is_source TRUE)
 elseif(EXISTS "${LOGOS_LIBLOGOS_ROOT}/include/interface.h")
     set(_liblogos_found TRUE)
     set(_liblogos_is_source FALSE)
 endif()
+
+message(DEBUG "_liblogos_found ${_liblogos_found}")
 
 set(_cpp_sdk_found FALSE)
 if(EXISTS "${LOGOS_CPP_SDK_ROOT}/cpp/logos_api.h")
@@ -55,6 +79,15 @@ if(EXISTS "${LOGOS_CPP_SDK_ROOT}/cpp/logos_api.h")
 elseif(EXISTS "${LOGOS_CPP_SDK_ROOT}/include/cpp/logos_api.h")
     set(_cpp_sdk_found TRUE)
     set(_cpp_sdk_is_source FALSE)
+endif()
+
+set(_storage_module_found FALSE)
+if(EXISTS "${LOGOS_STORAGE_ROOT}/storage_module_plugin.h")
+    set(_storage_module_found TRUE)
+    set(_storage_module_is_source TRUE)
+elseif(EXISTS "${LOGOS_STORAGE_ROOT}/include/storage_module_api.h")
+    set(_storage_module_found TRUE)
+    set(_storage_module_is_source FALSE)
 endif()
 
 if(NOT _liblogos_found)
@@ -67,11 +100,22 @@ if(NOT _cpp_sdk_found)
                         "Set LOGOS_CPP_SDK_ROOT or run git submodule update --init --recursive.")
 endif()
 
-# Find Qt packages
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets RemoteObjects)
+if(NOT _storage_module_found)
+    message(FATAL_ERROR "logos-storage-module not found at ${LOGOS_STORAGE_ROOT}. "
+                        "Set LOGOS_STORAGE_ROOT or run git submodule update --init --recursive.")
+endif()
+
+########### DEPENDENCIES END ###########
+
+########### QT SECTION ###########
+
+# Discover the required dependencies.
+# Without this discovery part, the dependencies cannot be found.
+# COMPONENTS is kind of generic for Qt modules.
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets RemoteObjects Quick QuickWidgets)
 
 # Get the real path to handle symlinks correctly
-get_filename_component(REAL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" REALPATH)
+#get_filename_component(REAL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" REALPATH)
 
 # Try to find the component-interfaces package first
 find_package(component-interfaces QUIET)
@@ -86,15 +130,17 @@ if(NOT component-interfaces_FOUND)
     target_include_directories(component-interfaces INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/interfaces)
 endif()
 
+########### QT SECTION END ###########
+
+########### SOURCES ###########
+
 # Source files
 set(SOURCES
-    StorageUIComponent.cpp
-    StorageUIComponent.h
-    src/StorageWidget.cpp
-    src/StorageWidget.h
-    src/StorageWindow.cpp
-    src/StorageWindow.h
-    src/main.cpp
+    plugin/StorageUIPlugin.cpp
+    plugin/StorageUIPlugin.h
+    plugin/src/StorageBackend.cpp
+    plugin/src/StorageBackend.h
+    plugin/storage_resources.qrc
 )
 
 # Add SDK sources (only if source layout, installed layout uses the library)
@@ -115,17 +161,27 @@ if(_cpp_sdk_is_source)
     )
 endif()
 
-# Run Logos C++ generator on metadata before compilation (only for source layout)
+########### SOURCES END ###########
+
+########### CPP GENERATOR ###########
+
+# Define metadata json path
 set(METADATA_JSON "${CMAKE_CURRENT_SOURCE_DIR}/metadata.json")
 
-# Only run generator for source layout - nix builds already have generated files
-if(_cpp_sdk_is_source)
-    # Source layout: build and run the generator
-    # Generate into build directory
+# If the storage module is from source,
+# run the cpp generator to generate storage_module_api.cpp.
+# Only run generator for source layout - nix builds already have generated files.
+if(_storage_module_is_source)
+    # Define the output directory for generated code
     set(PLUGINS_OUTPUT_DIR "${CMAKE_BINARY_DIR}/generated_code")
+
+    # Ensure output directory exists
     set(CPP_GENERATOR_BUILD_DIR "${LOGOS_CPP_SDK_ROOT}/../build/cpp-generator")
+
+    # Define path to cpp generator executable
     set(CPP_GENERATOR "${CPP_GENERATOR_BUILD_DIR}/bin/logos-cpp-generator")
-    
+
+    # Build the cpp generator if not already built
     if(NOT TARGET cpp_generator_build)
         add_custom_target(cpp_generator_build
             COMMAND bash "${LOGOS_CPP_SDK_ROOT}/cpp-generator/compile.sh"
@@ -134,32 +190,104 @@ if(_cpp_sdk_is_source)
             VERBATIM
         )
     endif()
-    
+
+    # Add a custom target to build the storage module first and produce
+    # the so file or the dylib file
+    add_custom_target(run_build_storage_module
+        COMMAND "${CMAKE_COMMAND}" -S "${LOGOS_STORAGE_ROOT}" -B "${LOGOS_STORAGE_ROOT}/build"
+        COMMAND "${CMAKE_COMMAND}" --build "${LOGOS_STORAGE_ROOT}/build" --target all
+        WORKING_DIRECTORY "${LOGOS_STORAGE_ROOT}/.."
+        COMMENT "Building storage module in ${LOGOS_STORAGE_ROOT}/build"
+        VERBATIM
+    )
+
+    # Ensure storage module is built before running cpp generator
+    if(APPLE)
+      set(PLUGIN_FILE "${LOGOS_STORAGE_ROOT}/build/modules/storage_module_plugin.dylib")
+    elseif(UNIX)
+      set(PLUGIN_FILE "${LOGOS_STORAGE_ROOT}/build/modules/storage_module_plugin.so")
+    else()
+        message(FATAL_ERROR "storage_module_plugin is not found.")
+    endif()
+
+    # Add custom target to run the cpp generator for the storage module
+    add_custom_target(run_cpp_generator_storage_module
+        COMMAND "${CPP_GENERATOR}" "${PLUGIN_FILE}" --module-only --output-dir "${PLUGINS_OUTPUT_DIR}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        COMMENT "Running logos-cpp-generator on ${PLUGIN_FILE} with output-dir ${PLUGINS_OUTPUT_DIR}"
+        VERBATIM
+    )
+
+    # Make sure that we build the storage module after running the cpp generator
+    add_dependencies(run_cpp_generator_storage_module cpp_generator_build)
+    add_dependencies(run_cpp_generator_storage_module run_build_storage_module)
+endif()
+
+# Only run generator for source layout - nix builds already have generated files
+if(_cpp_sdk_is_source)
+    if(NOT DEFINED PLUGINS_OUTPUT_DIR)
+        # Define the output directory for generated code
+        set(PLUGINS_OUTPUT_DIR "${CMAKE_BINARY_DIR}/generated_code")
+    endif()
+
+    if(NOT DEFINED CPP_GENERATOR_BUILD_DIR)
+        # Ensure output directory exists
+        set(CPP_GENERATOR_BUILD_DIR "${LOGOS_CPP_SDK_ROOT}/../build/cpp-generator")
+    endif()
+
+    if(NOT DEFINED CPP_GENERATOR)
+        # Define path to cpp generator executable
+        set(CPP_GENERATOR "${CPP_GENERATOR_BUILD_DIR}/bin/logos-cpp-generator")
+    endif()
+
+    # Build the cpp generator if not already built
+    if(NOT TARGET cpp_generator_build)
+        add_custom_target(cpp_generator_build
+            COMMAND bash "${LOGOS_CPP_SDK_ROOT}/cpp-generator/compile.sh"
+            WORKING_DIRECTORY "${LOGOS_CPP_SDK_ROOT}/.."
+            COMMENT "Building logos-cpp-generator via ${LOGOS_CPP_SDK_ROOT}/cpp-generator/compile.sh"
+            VERBATIM
+        )
+    endif()
+
+    # Add custom target to run the cpp generator
     add_custom_target(run_cpp_generator_storage_ui
         COMMAND "${CPP_GENERATOR}" --metadata "${METADATA_JSON}" --general-only --output-dir "${PLUGINS_OUTPUT_DIR}"
         WORKING_DIRECTORY "${LOGOS_CPP_SDK_ROOT}/.."
         COMMENT "Running logos-cpp-generator on ${METADATA_JSON} with output-dir ${PLUGINS_OUTPUT_DIR}"
         VERBATIM
     )
+
+    # Add dependency to ensure cpp generator is built first
     add_dependencies(run_cpp_generator_storage_ui cpp_generator_build)
-    
+    add_dependencies(run_cpp_generator_storage_ui run_cpp_generator_storage_module)
+
     # Add generated logos_sdk.cpp - will be generated by run_cpp_generator_storage_ui
-    list(APPEND SOURCES ${PLUGINS_OUTPUT_DIR}/logos_sdk.cpp)
+    list(APPEND SOURCES
+            ${PLUGINS_OUTPUT_DIR}/logos_sdk.cpp
+    )
+
     # Mark as generated so CMake knows to wait for it
     set_source_files_properties(
         ${PLUGINS_OUTPUT_DIR}/logos_sdk.cpp
         PROPERTIES GENERATED TRUE
     )
 else()
-    # Installed/nix layout: files are already in source tree from lib.nix preConfigure
-    # lib.nix creates ./generated_code in source directory before CMake runs
-    set(PLUGINS_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/generated_code")
+    # Define the output directory for generated code
+    set(PLUGINS_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/generated_code")
+
     # For installed/nix layout, logos_sdk.cpp is already in ${PLUGINS_OUTPUT_DIR}
     # (generated by nix build preConfigure phase in lib.nix before CMake runs)
     list(APPEND SOURCES ${PLUGINS_OUTPUT_DIR}/logos_sdk.cpp)
 endif()
 
-# Create the plugin library
+########### CPP GENERATOR END ###########
+
+########### LIBRARY DEFINITION ###########
+
+# Create the plugin library.
+# This lib is the lib to be shared in order to
+# be integrated in a standalone application.
 add_library(storage_ui SHARED ${SOURCES})
 
 # Set output name without lib prefix and with correct name for generator
@@ -170,46 +298,19 @@ set_target_properties(storage_ui PROPERTIES
 
 # Ensure generator runs before building the plugin (only for source layout)
 if(_cpp_sdk_is_source)
-    add_dependencies(storage_ui run_cpp_generator_storage_ui)
+   add_dependencies(storage_ui run_cpp_generator_storage_ui)
 endif()
 
-# Include directories
-target_include_directories(storage_ui PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${PLUGINS_OUTPUT_DIR}
-)
-
-# Add include directories based on layout type
-if(_liblogos_is_source)
-    target_include_directories(storage_ui PRIVATE ${LOGOS_LIBLOGOS_ROOT})
-else()
-    target_include_directories(storage_ui PRIVATE ${LOGOS_LIBLOGOS_ROOT}/include)
+if(_storage_module_is_source)
+   add_dependencies(storage_ui run_cpp_generator_storage_module)
 endif()
 
-if(_cpp_sdk_is_source)
-    target_include_directories(storage_ui PRIVATE 
-        ${LOGOS_CPP_SDK_ROOT}/cpp
-        ${LOGOS_CPP_SDK_ROOT}/cpp/generated
-    )
-else()
-    # For nix builds, also include the include subdirectory
-    # (lib.nix moves header files to ./generated_code/include/)
-    target_include_directories(storage_ui PRIVATE 
-        ${LOGOS_CPP_SDK_ROOT}/include
-        ${LOGOS_CPP_SDK_ROOT}/include/cpp
-        ${LOGOS_CPP_SDK_ROOT}/include/core
-        ${PLUGINS_OUTPUT_DIR}/include
-    )
-endif()
-
-# Link against libraries
-target_link_libraries(storage_ui PRIVATE 
-    Qt6::Core
-    Qt6::Widgets
-    Qt6::RemoteObjects
-    component-interfaces
-)
+# Set common properties for both platforms
+set_target_properties(storage_ui PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/modules"
+    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/modules"  # For Windows .dll
+    BUILD_WITH_INSTALL_RPATH TRUE
+    SKIP_BUILD_RPATH FALSE)
 
 # Link SDK library if using installed layout
 if(NOT _cpp_sdk_is_source)
@@ -228,12 +329,55 @@ if(absl_FOUND)
     )
 endif()
 
-# Set common properties for both platforms
-set_target_properties(storage_ui PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/modules"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/modules"  # For Windows .dll
-    BUILD_WITH_INSTALL_RPATH TRUE
-    SKIP_BUILD_RPATH FALSE)
+########### LIBRARY DEFINITION END ###########
+
+########### HEADERS ###########
+
+# Include directories
+target_include_directories(storage_ui PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${PLUGINS_OUTPUT_DIR}
+)
+
+# Add include directories based on layout type
+if(_liblogos_is_source)
+    target_include_directories(storage_ui PRIVATE ${LOGOS_LIBLOGOS_ROOT})
+else()
+    target_include_directories(storage_ui PRIVATE ${LOGOS_LIBLOGOS_ROOT}/include)
+endif()
+
+if(_cpp_sdk_is_source)
+    target_include_directories(storage_ui PRIVATE
+        ${LOGOS_CPP_SDK_ROOT}/cpp
+        ${LOGOS_CPP_SDK_ROOT}/cpp/generated
+    )
+else()
+    # For nix builds, also include the include subdirectory
+    # (lib.nix moves header files to ./generated_code/include/)
+    target_include_directories(storage_ui PRIVATE
+        ${LOGOS_CPP_SDK_ROOT}/include
+        ${LOGOS_CPP_SDK_ROOT}/include/cpp
+        ${LOGOS_CPP_SDK_ROOT}/include/core
+        ${PLUGINS_OUTPUT_DIR}/include
+    )
+endif()
+
+########### HEADERS END ###########
+
+########### LINKS ###########
+
+# Link against libraries
+target_link_libraries(storage_ui PRIVATE 
+    Qt6::Core
+    Qt6::Widgets
+    Qt6::RemoteObjects
+    Qt6::Quick
+    Qt6::QuickWidgets
+    component-interfaces
+)
+
+########### RUNTIME LINK ###########
 
 if(APPLE)
     # macOS specific settings
@@ -253,6 +397,10 @@ else()
         INSTALL_RPATH_USE_LINK_PATH FALSE)
 endif()
 
+########### RUNTIME LINK END ###########
+
+########### INSTALL ###########
+
 install(TARGETS storage_ui
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/logos/modules
     RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}/logos/modules
@@ -267,6 +415,8 @@ install(DIRECTORY "${PLUGINS_OUTPUT_DIR}/"
     DESTINATION ${CMAKE_INSTALL_DATADIR}/logos-storage-ui/generated
     OPTIONAL
 )
+
+########### INSTALL END ###########
 
 # Print status messages
 message(STATUS "Storage UI Plugin configured successfully") 
