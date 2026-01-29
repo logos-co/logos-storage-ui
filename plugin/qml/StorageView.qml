@@ -1,8 +1,10 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
+import StorageBackend
 
 Item {
-    anchors.fill: parent
+    id: root
 
     Rectangle {
         anchors.fill: parent
@@ -12,15 +14,12 @@ Item {
         anchors.bottomMargin: 0
         color: "#202428"
     }
-    
+
     Text {
         text: qsTr("Storage UI")
-        anchors.verticalCenterOffset: 214
-        anchors.horizontalCenterOffset: -269
-        color: "white"
+        color: "black"
         anchors.centerIn: parent
         font.pointSize: 20
-
     }
 
     Text {
@@ -29,15 +28,11 @@ Item {
         color: "white"
         font.pointSize: 20
         anchors.topMargin: 32
-
     }
 
     Button {
         objectName: "startButton"
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.top
-        anchors.topMargin: 395
-        anchors.horizontalCenterOffset: -270
+        anchors.leftMargin: 50
         text: "Stop"
     }
 }
