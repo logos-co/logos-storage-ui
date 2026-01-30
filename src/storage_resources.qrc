@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="StorageView.qml">qml/StorageView.qml</file>
+    </qresource>
+</RCC>

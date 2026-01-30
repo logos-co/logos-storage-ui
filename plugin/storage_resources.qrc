@@ -1,5 +1,0 @@
-  <RCC>
-    <qresource prefix="/">
-      <file>StorageView.qml</file>
-    </qresource>
-  </RCC>

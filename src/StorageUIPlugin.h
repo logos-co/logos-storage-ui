@@ -10,5 +10,5 @@ class StorageUIPlugin : public QObject, public IComponent {
 
 public:
     Q_INVOKABLE QWidget* createWidget(LogosAPI* logosAPI = nullptr) override;
-    void destroyWidget(QWidget* widget) override;
+    Q_INVOKABLE void destroyWidget(QWidget* widget) override;
 };
