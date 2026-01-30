@@ -12,13 +12,11 @@
     "build": {
         "type": "cmake",
         "files": [
-            "src/storage_ui_plugin.cpp",
-            "src/storage_ui_plugin.h",
-            "src/storagewindow.cpp",
-            "src/storagewindow.h",
-            "src/storagewidget.cpp",
-            "src/storagewidget.h",
-            "src/storage_ui_resources.qrc"
+            "src/StorageUIPlugin.cpp",
+            "src/StorageUIPlugin.h",
+            "src/StorageBackend.cpp",
+            "src/StorageBackend.h",
+            "src/storage_resources.qrc"
         ]
     },
     "capabilities": [

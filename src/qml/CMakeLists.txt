@@ -1,0 +1,147 @@
+cmake_minimum_required(VERSION 3.16)
+
+project(qml VERSION 0.1 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_AUTOMOC ON)
+
+########### DEPENDENCIES ###########
+
+# This section locates the required dependencies in 3 different ways:
+# 1- With NIX, the root folders (LOGOS_LIBLOGOS_ROOT, LOGOS_CPP_SDK_ROO)
+#    are defined and point to the correct locations in
+#    the Nix store.
+# 2- If the root folders are fetched from source (basically using git) in the
+#    parent folder, this is detected and used.
+# 3- If none of the above apply, the vendor folders inside this project are used,
+#    meaning the dependencies need to be fetched using git submodules.
+
+# Locate logos-cpp-sdk
+if(NOT DEFINED LOGOS_CPP_SDK_ROOT)
+    set(_parent_cpp_sdk "${CMAKE_SOURCE_DIR}/../../../logos-cpp-sdk")
+    set(_use_vendor ${LOGOS_STORAGE_UI_USE_VENDOR})
+
+    if(NOT _use_vendor)
+        if(NOT EXISTS "${_parent_cpp_sdk}/cpp/logos_api.h")
+            set(_use_vendor ON)
+        endif()
+    endif()
+
+    if(_use_vendor)
+        set(LOGOS_CPP_SDK_ROOT "${CMAKE_SOURCE_DIR}/../../vendor/logos-cpp-sdk")
+    else()
+        set(LOGOS_CPP_SDK_ROOT "${_parent_cpp_sdk}")
+    endif()
+endif()
+
+# Locate the logos_api header file.
+# If the file is found, the sdk is considered found.
+set(_cpp_sdk_found FALSE)
+if(EXISTS "${LOGOS_CPP_SDK_ROOT}/cpp/logos_api.h")
+    set(_cpp_sdk_found TRUE)
+    set(_cpp_sdk_is_source TRUE)
+elseif(EXISTS "${LOGOS_CPP_SDK_ROOT}/include/cpp/logos_api.h")
+    set(_cpp_sdk_found TRUE)
+    set(_cpp_sdk_is_source FALSE)
+endif()
+
+# Fails if the SDK is not found.
+if(NOT _cpp_sdk_found)
+    message(FATAL_ERROR
+        "logos-cpp-sdk not found at ${LOGOS_CPP_SDK_ROOT}. "
+        "Set LOGOS_CPP_SDK_ROOT or run git submodule update --init --recursive."
+    )
+endif()
+
+########### DEPENDENCIES END ###########
+
+########### QML DEFINITION ###########
+
+set(PLUGIN_UI_BUILD_DIR "../../build/generated_code")
+
+list(APPEND SOURCES
+    ${PLUGIN_UI_BUILD_DIR}/logos_sdk.cpp
+)
+
+# Create a library with the Logos SDK and generated sources to keep them separate
+add_library(storage_generated STATIC
+    ${PLUGIN_UI_BUILD_DIR}/logos_sdk.cpp
+    ${PLUGIN_UI_BUILD_DIR}/storage_module_api.cpp
+    ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api.cpp
+    ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api_client.cpp
+    ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api_provider.cpp
+    ${LOGOS_CPP_SDK_ROOT}/cpp/module_proxy.cpp
+    ${LOGOS_CPP_SDK_ROOT}/cpp/token_manager.cpp
+    ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api_consumer.cpp
+    ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api_provider.cpp
+)
+
+# Define the dependencies needed for storage_generated
+target_link_libraries(storage_generated PUBLIC
+    Qt6::Core
+    Qt6::RemoteObjects
+)
+
+# Discover the required dependencies
+find_package(Qt6 REQUIRED COMPONENTS Quick RemoteObjects)
+
+# Standard project setup for Qt applications
+qt_standard_project_setup(REQUIRES 6.8)
+
+# Add the Qt Quick application executable
+qt_add_executable(appqml
+    main.cpp
+)
+
+# Use these required dependencies.
+target_link_libraries(appqml PRIVATE
+    Qt6::Quick
+    Qt6::Qml
+    storage_generated
+)
+
+# Define the qml module and the StorageBackend sources.
+qt_add_qml_module(appqml
+    URI StorageBackend
+    VERSION 1.0
+    SOURCES
+        ../StorageBackend.cpp
+        ../StorageBackend.h
+    QML_FILES
+        StorageView.qml
+)
+
+########### QML DEFINITION END ###########
+
+########### HEADERS ###########
+
+target_include_directories(storage_generated PUBLIC
+    "${PLUGIN_UI_BUILD_DIR}"
+    "${PLUGIN_UI_BUILD_DIR}/include"
+)
+
+# Include directories
+if(_cpp_sdk_is_source)
+    target_include_directories(storage_generated PUBLIC
+        ${LOGOS_CPP_SDK_ROOT}/cpp
+        ${LOGOS_CPP_SDK_ROOT}/cpp/generated
+    )
+else()
+    target_include_directories(storage_generated PUBLIC
+        ${LOGOS_CPP_SDK_ROOT}/include
+        ${LOGOS_CPP_SDK_ROOT}/include/cpp
+        ${LOGOS_CPP_SDK_ROOT}/include/core
+        ${PLUGIN_UI_BUILD_DIR}/include
+    )
+endif()
+
+# Import the application headers.
+target_include_directories(appqml PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${PLUGINS_OUTPUT_DIR}
+)
+
+########### HEADERS END ###########
+
+message(STATUS "Qt Quick app configured successfully")

@@ -5,3 +5,4 @@ build
 libs
 app/build
 CMakeLists.txt.user
+generated_code
