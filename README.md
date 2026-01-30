@@ -158,6 +158,14 @@ That’s it. The configuration defined in `CMakeLists.txt` should allow the proj
 
 If you encounter any configuration issues, close Qt Creator, remove the `CMakeLists.txt.user` file, and restart Qt Creator to reconfigure the project.
 
+### Tips
+
+Here are some tips that may help during development:
+
+1. If you use the `Ctrl+B` shortcut to build, make sure the correct project is selected. Right-click on it and choose `Set as Active Project`.
+2. If you encounter build errors, a possible fix is to nuke the build folder and rebuild from scratch.
+3. Do not call storage module functions from within a callback.
+
 ## Requirements
 
 ### Build Tools
