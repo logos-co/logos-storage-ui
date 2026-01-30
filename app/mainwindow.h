@@ -11,13 +11,14 @@ class MainWindow : public QMainWindow {
   public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
-    void cleanup();
+    void destroy();
 
   private:
     void setupUi();
     void setupMenu();
 
     QWidget* storageWidget = nullptr;
+    QObject* plugin = nullptr;
 };
 
 #endif // MAINWINDOW_H

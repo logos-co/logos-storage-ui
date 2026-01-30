@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
 
     qDebug() << "Application cleanup...";
 
-    window.cleanup();
+    window.destroy();
 
     // Cleanup core before exit
     logos_core_cleanup();
