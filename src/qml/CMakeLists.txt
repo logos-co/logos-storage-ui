@@ -105,8 +105,8 @@ qt_add_qml_module(appqml
     URI StorageBackend
     VERSION 1.0
     SOURCES
-        ../src/StorageBackend.cpp
-        ../src/StorageBackend.h
+        ../StorageBackend.cpp
+        ../StorageBackend.h
     QML_FILES
         StorageView.qml
 )
@@ -138,7 +138,7 @@ endif()
 # Import the application headers.
 target_include_directories(appqml PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${PLUGINS_OUTPUT_DIR}
 )
 
