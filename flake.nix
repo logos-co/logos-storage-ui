@@ -4,10 +4,16 @@
   inputs = {
     # Follow the same nixpkgs as logos-liblogos to ensure compatibility
     nixpkgs.follows = "logos-liblogos/nixpkgs";
-    logos-cpp-sdk.url = "github:logos-co/logos-cpp-sdk";
+    logos-cpp-sdk.url = "github:logos-co/logos-cpp-sdk?ref=feat/add-qstringlist-as-argument";
+    #logos-cpp-sdk.url = "path:/home/arnaud/Work/logos/logos-cpp-sdk";
     logos-liblogos.url = "github:logos-co/logos-liblogos?ref=fix/logos-cleanup-on-terminate";
-    logos-storage-module.url = "github:logos-co/logos-storage-module";
+    logos-storage-module.url = "github:logos-co/logos-storage-module?ref=feat/upload";
+    #logos-storage-module.url = "path:/home/arnaud/Work/logos/logos-storage-module";
     logos-capability-module.url = "github:logos-co/logos-capability-module";
+
+    logos-liblogos.inputs.logos-cpp-sdk.follows = "logos-cpp-sdk";
+    logos-capability-module.inputs.logos-cpp-sdk.follows = "logos-cpp-sdk";
+    logos-storage-module.inputs.logos-cpp-sdk.follows = "logos-cpp-sdk";
   };
 
   outputs = { self, nixpkgs, logos-cpp-sdk, logos-liblogos, logos-storage-module, logos-capability-module }:
