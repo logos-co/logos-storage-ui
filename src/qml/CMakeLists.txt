@@ -59,17 +59,12 @@ endif()
 
 set(PLUGIN_UI_BUILD_DIR "../../build/generated_code")
 
-list(APPEND SOURCES
-    ${PLUGIN_UI_BUILD_DIR}/logos_sdk.cpp
-)
-
 # Create a library with the Logos SDK and generated sources to keep them separate
 add_library(storage_generated STATIC
-    ${PLUGIN_UI_BUILD_DIR}/logos_sdk.cpp
+    ${PLUGIN_UI_BUILD_DIR}/core_manager_api.cpp
     ${PLUGIN_UI_BUILD_DIR}/storage_module_api.cpp
     ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api.cpp
     ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api_client.cpp
-    ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api_provider.cpp
     ${LOGOS_CPP_SDK_ROOT}/cpp/module_proxy.cpp
     ${LOGOS_CPP_SDK_ROOT}/cpp/token_manager.cpp
     ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api_consumer.cpp

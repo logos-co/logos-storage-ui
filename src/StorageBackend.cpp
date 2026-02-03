@@ -1,6 +1,9 @@
 #include "StorageBackend.h"
 #include <QDateTime>
 #include <QDebug>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -30,7 +33,24 @@ StorageBackend::~StorageBackend()
 void StorageBackend::initStorage() {
     qDebug() << "StorageBackend::initStorage called";
 
-    bool result = m_logos->storage_module.init("{}");
+    // Check if file config.json exists
+    qDebug() << QDir::currentPath();
+
+    QString jsonConfig = "{}";
+
+    QFileInfo info("config.json");
+    if (info.exists() && info.isFile()) {
+        qDebug() << "StorageBackend::initStorage found config.json";
+
+        QFile file("config.json");
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            jsonConfig = QString::fromUtf8(file.readAll());
+
+            qDebug() << "StorageBackend::initStorage found config=" << jsonConfig;
+        }
+    }
+
+    bool result = m_logos->storage_module.init(jsonConfig);
 
     qDebug() << "StorageBackend::initStorage: init result =" << result;
 
@@ -69,6 +89,49 @@ void StorageBackend::initStorage() {
             }
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageStop events";
+    }
+
+    if (!m_logos->storage_module.on("storageConnect", [this](const QVariantList& data) {
+            int code = data[0].toInt();
+
+            if (code != RET_OK) {
+                qDebug() << "StorageBackend: storageConnect event failure with code" << code;
+            } else {
+                qDebug() << "StorageBackend: storageConnect event success";
+            }
+        })) {
+        qWarning() << "StorageWidget: failed to subscribe to storageConnect events";
+    }
+
+    if (!m_logos->storage_module.on("storageUploadProgress", [this](const QVariantList& data) {
+            int code = data[0].toInt();
+
+            if (code != RET_OK) {
+                qDebug() << "StorageBackend: storageUploadProgress event failure with code" << code;
+            } else {
+                QString sessionId = data[1].toString();
+                int len = data[2].toInt();
+                qDebug() << "StorageBackend: storageUploadProgress event success with sessionId =" << sessionId
+                         << "len =" << len;
+            }
+        })) {
+        qWarning() << "StorageWidget: failed to subscribe to storageUploadProgress events";
+    }
+
+    if (!m_logos->storage_module.on("storageUploadDone", [this](const QVariantList& data) {
+            int code = data[0].toInt();
+
+            if (code != RET_OK) {
+                qDebug() << "StorageBackend: storageUploadDone event failure with code" << code;
+            } else {
+                QString sessionId = data[1].toString();
+                m_cid = data[2].toString();
+                qDebug() << "StorageBackend: storageUploadDone event success with sessionId =" << sessionId
+                         << "cid =" << m_cid;
+                emit cidChanged();
+            }
+        })) {
+        qWarning() << "StorageWidget: failed to subscribe to storageUploadProgress events";
     }
 
     startStop();
@@ -151,6 +214,86 @@ QString StorageBackend::startStopText() const {
 
 bool StorageBackend::canStartStop() const { return m_status == Running || m_status == Stopped; }
 
-bool StorageBackend::isRunning() { return m_status == Running; }
+bool StorageBackend::isRunning() const { return m_status == Running; }
 
-bool StorageBackend::isInitialised() { return m_status != Destroyed; }
+QString StorageBackend::peerId() const { return m_peerId; };
+
+void StorageBackend::setPeerId(QString peerId) { m_peerId = peerId; }
+
+bool StorageBackend::isInitialised() const { return m_status != Destroyed; }
+
+void StorageBackend::tryPeerConnect() {
+    qDebug() << "StorageBackend: tryPeerConnect called with peerId=" << m_peerId;
+
+    // QString peerId = m_logos->storage_module.peerId();
+
+    // if (peerId.isEmpty()) {
+    //     qDebug() << "StorageBackend: Peer ID is empty.";
+    //     return;
+    // }
+    bool result = m_logos->storage_module.connect(m_peerId, QStringList());
+
+    qDebug() << "StorageBackend: peerConnect result =" << result;
+    // QString filename = "test.txt";
+    // QString sessionId = m_logos->storage_module.uploadInit(filename);
+
+    // qDebug() << "StorageBackend: uploadInit sessionId =" << sessionId;
+
+    // bool result = m_logos->storage_module.uploadCancel(sessionId);
+
+    // qDebug() << "StorageBackend: uploadCancel result =" << result;
+}
+
+void StorageBackend::tryUpload() {
+    qDebug() << "StorageBackend: tryUpload called";
+
+    QString filename = "test.txt";
+    m_sessionId = m_logos->storage_module.uploadInit(filename);
+
+    qDebug() << "StorageBackend: uploadInit sessionId =" << m_sessionId;
+
+    QByteArray chunk = "Sample data chunk for upload.";
+    bool result = m_logos->storage_module.uploadChunk(m_sessionId, chunk);
+
+    qDebug() << "StorageBackend: uploadChunk result =" << result;
+}
+
+void StorageBackend::tryUploadFinalize() {
+    qDebug() << "StorageBackend: tryFinalize called";
+
+    m_cid = m_logos->storage_module.uploadFinalize(m_sessionId);
+
+    qDebug() << "StorageBackend: uploadFinalize result =" << m_cid;
+
+    emit cidChanged();
+}
+
+void StorageBackend::tryUploadFile(const QUrl& url) {
+    qDebug() << "StorageBackend: tryUploadFile called";
+
+    if (!url.isLocalFile()) {
+        qWarning() << "Not a local file";
+        m_statusText = "The provided URL is not a local file.";
+        emit statusChanged();
+        return;
+    }
+
+    // QString filename = url.toLocalFile();
+
+    // // QString filename = "/home/arnaud/Work/logos/logos-storage-ui/README.md";
+    // QString sessionId = m_logos->storage_module.uploadInit(filename);
+
+    // qDebug() << "StorageBackend: uploadInit sessionId =" << sessionId;
+
+    QString sessionId = m_logos->storage_module.uploadFromPath(url);
+
+    qDebug() << "StorageBackend: uploadFromPath result =" << sessionId;
+}
+
+QString StorageBackend::cidText() const {
+    if (m_cid.isEmpty()) {
+        return "No CID available.";
+    } else {
+        return m_cid;
+    }
+}
