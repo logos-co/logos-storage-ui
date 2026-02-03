@@ -59,6 +59,8 @@ After building the app with `nix build`, you can run it:
 
 The app will automatically load the required modules (capability_module, storage_module) and the storage_ui Qt plugin. All dependencies are bundled in the Nix store layout.
 
+If a file named `config.json` is present in the current directory, it will be loaded automatically.
+
 #### Nix Organization
 
 The nix build system is organized into modular files in the `/nix` directory:
@@ -162,9 +164,15 @@ If you encounter any configuration issues, close Qt Creator, remove the `CMakeLi
 
 Here are some tips that may help during development:
 
-1. If you use the `Ctrl+B` shortcut to build, make sure the correct project is selected. Right-click on it and choose `Set as Active Project`.
-2. If you encounter build errors, a possible fix is to nuke the build folder and rebuild from scratch.
-3. Do not call storage module functions from within a callback.
+1. When you start the preview of the `qml` project, ensure that the project is the active project. Right-click on it and choose **Set as Active Project**. Note that `Ctrl+B` builds the active project.
+2. Do not call storage module functions from within a callback.
+3. If you want to update a Nix dependency, use a command like:  
+   `nix flake lock --update-input logos-storage-module`
+4. If you encounter the following error:
+
+   > The source "/build/rb8wjl9iabzg0rd147g742m0867a0zll-source/CMakeLists.txt" does not match the source "/home/arnaud/Work/logos/logos-storage-module/CMakeLists.txt" used to generate the cache. Re-run CMake with a different source directory.
+
+Remove the build folder from the corresponding project and retry.
 
 ## Requirements
 
