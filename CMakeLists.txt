@@ -213,7 +213,7 @@ if(_storage_module_is_source)
 
     # Add custom target to run the cpp generator for the storage module
     add_custom_target(run_cpp_generator_storage_module
-        COMMAND "${CPP_GENERATOR}" "${PLUGIN_FILE}" --module-only --output-dir "${PLUGINS_OUTPUT_DIR}"
+        COMMAND "${CPP_GENERATOR}" "${PLUGIN_FILE}" --interface "${LOGOS_STORAGE_ROOT}/storage_module_interface.h" --module-only --output-dir "${PLUGINS_OUTPUT_DIR}"
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         COMMENT "Running logos-cpp-generator on ${PLUGIN_FILE} with output-dir ${PLUGINS_OUTPUT_DIR}"
         VERBATIM
@@ -349,6 +349,8 @@ endif()
 
 if(_cpp_sdk_is_source)
     target_include_directories(storage_ui PRIVATE
+
+        #${PLUGINS_OUTPUT_DIR}
         ${LOGOS_CPP_SDK_ROOT}/cpp
         ${LOGOS_CPP_SDK_ROOT}/cpp/generated
     )
