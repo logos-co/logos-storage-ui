@@ -13,41 +13,28 @@ static const int RET_PROGRESS = 3;
 class StorageBackend : public QObject {
     Q_OBJECT
     QML_ELEMENT
-    Q_PROPERTY(bool canStartStop READ canStartStop NOTIFY statusChanged)
-    Q_PROPERTY(bool isRunning READ isRunning NOTIFY statusChanged)
-    Q_PROPERTY(bool showDebug READ showDebug WRITE setShowDebug NOTIFY showDebugChanged)
-    Q_PROPERTY(QString startStopText READ startStopText NOTIFY statusChanged)
-    Q_PROPERTY(QString statusText READ statusText NOTIFY statusChanged)
-    Q_PROPERTY(QString cidText READ cidText NOTIFY cidChanged)
-    Q_PROPERTY(QString peerId READ peerId WRITE setPeerId NOTIFY peerIdChanged)
     Q_PROPERTY(QString debugLogs READ debugLogs NOTIFY debugLogsChanged)
+    Q_PROPERTY(StorageStatus status READ status NOTIFY statusChanged)
+    Q_PROPERTY(QString cid READ cid NOTIFY cidChanged)
+    Q_PROPERTY(QString configJson READ configJson NOTIFY configJsonChanged)
 
   public:
     enum StorageStatus { Stopped = 0, Starting, Running, Stopping, Destroyed };
     Q_ENUM(StorageStatus)
 
-    QString startStopText() const;
-    QString statusText() const;
-    QString cidText() const;
-    QString peerId() const;
+    QString cid() const;
     QString debugLogs() const;
-
-    bool showDebug() const;
-    bool canStartStop() const;
-    bool isRunning() const;
-
-    void setPeerId(const QString& peerId);
-    void setShowDebug(const bool showDebug);
+    StorageStatus status() const;
+    QString configJson() const;
 
     explicit StorageBackend(LogosAPI* logosAPI = nullptr, QObject* parent = nullptr);
     ~StorageBackend();
 
   public slots:
-    void startStop();
+    LogosResult start(const QString& configJson = "");
     void destroy();
-    bool isRunning();
     void stop();
-    void tryPeerConnect();
+    void tryPeerConnect(const QString& peerId);
     void tryDebug();
     void tryUpload();
     void tryUploadFinalize();
@@ -63,36 +50,28 @@ class StorageBackend : public QObject {
     void downloadManifest(const QString& cid);
     void downloadManifests();
     void space();
+    LogosResult init(const QString& configJson);
     void updateLogLevel(const QString& logLevel);
-
-    bool isInitialised() const;
 
   signals:
     void statusChanged();
-    void peerIdChanged();
-    void showDebugChanged();
     void debugLogsChanged();
-    void cidChanged();
     void stopped();
-    void test(int code, const QString& msg);
+    void cidChanged();
+    void configJsonChanged();
 
   private slots:
 
   private:
-    void setStatus(StorageStatus newStatus, const QString& statusText);
+    void setStatus(StorageStatus newStatus);
     void peerConnect(const QString& peerId);
     void debug(const QString& log);
-    void initStorage();
+    void reloadIfChanged(const QString& configJson);
 
-    StorageStatus m_status;
     LogosAPI* m_logosAPI;
     LogosModules* m_logos;
-
-    QString m_statusText;
-    QString m_cid;
-    QString m_sessionId;
-    QString m_peerId;
+    StorageStatus m_status;
     QString m_debugLogs;
-
-    bool m_showDebug;
+    QString m_cid;
+    QString m_configJson;
 };

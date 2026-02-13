@@ -27,9 +27,6 @@ StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
     }
     
     m_logos = new LogosModules(m_logosAPI);
-    m_showDebug = false;
-
-    initStorage();
 }
 
 StorageBackend::~StorageBackend()
@@ -38,44 +35,31 @@ StorageBackend::~StorageBackend()
     m_logos = nullptr;
 }
 
-void StorageBackend::initStorage() {
+LogosResult StorageBackend::init(const QString& configJson = "{}") {
     qDebug() << "StorageBackend::initStorage called";
 
-    QString jsonConfig = "{}";
-
-    QFileInfo info("config.json");
-    if (info.exists() && info.isFile()) {
-        debug("config.json is found, let's try to load it...");
-
-        QFile file("config.json");
-        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            jsonConfig = QString::fromUtf8(file.readAll());
-
-            debug("config.json content is: " + jsonConfig);
-        } else {
-            debug("Failed to load config.json");
-        }
-    }
-
-    LogosResult result = m_logos->storage_module.init(jsonConfig);
+    LogosResult result = m_logos->storage_module.init(m_configJson);
 
     qDebug() << "StorageBackend::initStorage: init result =" << result.success;
 
     if (!result.success) {
-        setStatus(Destroyed, result.getValue<QString>());
-        return;
+        setStatus(Destroyed);
+        debug(result.getError());
+        return result;
     }
 
-    setStatus(Stopped, "Storage module ready.");
+    setStatus(Stopped);
 
     if (!m_logos->storage_module.on("storageStart", [this](const QVariantList& data) {
             bool success = data[0].toBool();
 
             if (!success) {
                 QString message = data[1].toString();
-                setStatus(Stopped, "Failed to start Storage module:" + message);
+                setStatus(Stopped);
+                debug("Failed to start Storage module:" + message);
             } else {
-                setStatus(Running, "Storage module started.");
+                setStatus(Running);
+                debug("Storage module started.");
             }
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageStart events";
@@ -86,9 +70,11 @@ void StorageBackend::initStorage() {
 
             if (!success) {
                 QString message = data[1].toString();
-                setStatus(Running, "Failed to stop Storage module:" + message);
+                setStatus(Running);
+                debug("Failed to stop Storage module:" + message);
             } else {
-                setStatus(Stopped, "Storage module stopped.");
+                setStatus(Stopped);
+                debug("Storage module stopped.");
                 emit stopped();
             }
         })) {
@@ -171,53 +157,75 @@ void StorageBackend::initStorage() {
         qWarning() << "StorageWidget: failed to subscribe to storageDownloadProgress events";
     }
 
-    startStop();
+    m_configJson = configJson;
+    emit configJsonChanged();
+
+    debug("config.json content is: " + m_configJson);
+
+    return result;
 }
 
-void StorageBackend::setStatus(StorageStatus newStatus, const QString& statusText) {
-    if (m_status != newStatus || m_statusText != statusText) {
+void StorageBackend::setStatus(StorageStatus newStatus) {
+    if (m_status != newStatus) {
         m_status = newStatus;
-        m_statusText = statusText;
         emit statusChanged();
-
-        debug(statusText);
     }
 }
 
-void StorageBackend::startStop() {
-    qDebug() << "StorageBackend: startStop method called";
+LogosResult StorageBackend::start(const QString& newConfigJson) {
+    qDebug() << "StorageBackend: start method called";
 
-    // QString s = "hello";
-    // emit test(0, s);
-    if (m_status == Destroyed || m_status == Starting || m_status == Stopping) {
-        // TODO display the m_status properly
-        debug("StorageBackend: Cannot start/stop Storage in current state:" + m_status);
-        return;
+    if (newConfigJson != "") {
+        reloadIfChanged(newConfigJson);
     }
 
-    if (m_status != Running) {
-        setStatus(Starting, "Starting Storage module...");
-
-        auto result = m_logos->storage_module.start();
-
-        if (!result.success) {
-            setStatus(Stopped, result.getValue<QString>());
-            return;
-        }
-
-        qDebug() << "StorageBackend: start command sent, waiting for events.";
-    } else {
-        stop();
+    if (m_status != Stopped) {
+        debug("The Storage Module is not initialised properly.");
+        return {false, "The Storage Module is not initialised properly."};
     }
+
+    if (m_status == Running) {
+        debug("The Storage Module is already started.");
+        return {false, "The Storage Module is already started."};
+    }
+
+    setStatus(Starting);
+    debug("Starting Storage module...");
+
+    auto result = m_logos->storage_module.start();
+
+    if (!result.success) {
+        setStatus(Stopped);
+        debug(result.getError());
+        return result;
+    }
+
+    qDebug() << "StorageBackend: start command sent, waiting for events.";
+
+    return result;
 }
 
 void StorageBackend::stop() {
-    setStatus(Stopping, "Stopping Storage module...");
+    qDebug() << "StorageBackend: stop method called";
+
+    if (m_status == StorageStatus::Stopping) {
+        debug("The Storage Module is already stopping.");
+        return;
+    }
+
+    if (m_status != StorageStatus::Running) {
+        debug("The Storage Module is not started.");
+        return;
+    }
+
+    setStatus(Stopping);
+    debug("Stopping Storage module...");
 
     auto result = m_logos->storage_module.stop();
 
     if (!result.success) {
-        setStatus(Running, result.getValue<QString>());
+        setStatus(Running);
+        debug(result.getError());
         return;
     }
 
@@ -231,36 +239,11 @@ void StorageBackend::destroy() {
     auto result = m_logos->storage_module.destroy();
 
     if (!result.success) {
-        setStatus(status, result.getValue<QString>());
+        debug(result.getError());
         return;
     }
 
     qDebug() << "StorageBackend: Storage module destroyed.";
-}
-
-QString StorageBackend::statusText() const { return m_statusText; }
-
-QString StorageBackend::startStopText() const {
-    if (m_status != Running) {
-        return "Start";
-    } else {
-        return "Stop";
-    }
-}
-
-bool StorageBackend::canStartStop() const { return m_status == Running || m_status == Stopped; }
-
-bool StorageBackend::isRunning() { return m_status == Running; }
-
-QString StorageBackend::peerId() const { return m_peerId; };
-
-void StorageBackend::setPeerId(const QString& peerId) { m_peerId = peerId; }
-
-bool StorageBackend::showDebug() const { return m_showDebug; };
-
-void StorageBackend::setShowDebug(const bool showDebug) {
-    m_showDebug = showDebug;
-    emit showDebugChanged();
 }
 
 QString StorageBackend::debugLogs() const { return m_debugLogs; };
@@ -277,15 +260,13 @@ void StorageBackend::debug(const QString& log) {
     qDebug() << "StorageBackend: " << log;
 }
 
-bool StorageBackend::isInitialised() const { return m_status != Destroyed; }
-
 void StorageBackend::tryDebug() {
     auto result = m_logos->storage_module.debug();
 
-    debug("Debug " + result.getValue<QString>());
+    debug("Debug " + result.getString());
 }
-void StorageBackend::tryPeerConnect() {
-    qDebug().noquote() << "StorageBackend: tryPeerConnect called with peerId=" << m_peerId;
+void StorageBackend::tryPeerConnect(const QString& peerId) {
+    qDebug().noquote() << "StorageBackend: tryPeerConnect called with peerId=" << peerId;
 
     // LogosResult result2 = m_logos->storage_module.space();
     // QVariantMap space = result2.getValue<QVariantMap>();
@@ -301,7 +282,7 @@ void StorageBackend::tryPeerConnect() {
     // debug("quotaReservedBytes " + QString::number(quotaReservedBytes));
 
     // LogosResult result = m_logos->storage_module.dataDir();
-    // QString myDataDir = result.getValue<QString>();
+    // QString myDataDir = result.getString();
     // qDebug() << "StorageBackend: tryPeerConnect dataDir=" << myDataDir;
 
     // QString peerId = m_logos->storage_module.peerId();
@@ -310,12 +291,12 @@ void StorageBackend::tryPeerConnect() {
     //     qDebug() << "StorageBackend: Peer ID is empty.";
     //     return;
     // }
-    auto result = m_logos->storage_module.connect(m_peerId, QStringList());
+    auto result = m_logos->storage_module.connect(peerId, QStringList());
 
     qDebug() << "StorageBackend: peerConnect result =" << result.value;
     // auto result = m_logos->storage_module.debug();
 
-    // debug("Debug " + result.getValue<QString>());
+    // debug("Debug " + result.getString());
     // QString filename = "test.txt";
     // QString sessionId = m_logos->storage_module.uploadInit(filename);
 
@@ -358,8 +339,7 @@ void StorageBackend::tryUploadFile(const QUrl& url) {
 
     if (!url.isLocalFile()) {
         qWarning() << "Not a local file";
-        m_statusText = "The provided URL is not a local file.";
-        emit statusChanged();
+        debug("The provided URL is not a local file.");
         return;
     }
 
@@ -379,7 +359,7 @@ void StorageBackend::tryUploadFile(const QUrl& url) {
     //         this,
     //         [this, result]() {
     //             if (!result.success) {
-    //                 setStatus(m_status, result.getValue<QString>());
+    //                 setStatus(m_status, result.getString());
     //                 return;
     //             }
 
@@ -393,7 +373,7 @@ void StorageBackend::tryUploadFile(const QUrl& url) {
     LogosResult result = m_logos->storage_module.uploadUrl(url);
 
     if (!result.success) {
-        setStatus(m_status, result.getValue<QString>());
+        debug(result.getError());
         return;
     }
 
@@ -433,12 +413,12 @@ void StorageBackend::tryUploadFile(const QUrl& url) {
 //     LogosResult result = m_logos->storage_module.uploadInit("test.txt", chunkSize);
 
 //     if (!result.success) {
-//         debug(result.getValue<QString>());
+//         debug(result.getString());
 //         file.close();
 //         return;
 //     }
 
-//     QString sessionId = result.getValue<QString>();
+//     QString sessionId = result.getString();
 
 //     while (!file.atEnd()) {
 //         QByteArray chunk = file.read(chunkSize);
@@ -470,7 +450,7 @@ void StorageBackend::tryUploadFile(const QUrl& url) {
 //         return;
 //     }
 
-//     qDebug() << "Upload complete, CID:" << result.getValue<QString>();
+//     qDebug() << "Upload complete, CID:" << result.getString();
 
 //     file.close();
 // }
@@ -480,8 +460,7 @@ void StorageBackend::tryDownloadFile(const QString& cid, const QUrl& url) {
 
     if (!url.isLocalFile()) {
         qWarning() << "Not a local file";
-        m_statusText = "The provided URL is not a local file.";
-        emit statusChanged();
+        debug("The provided URL is not a local file.");
         return;
     }
 
@@ -495,7 +474,7 @@ void StorageBackend::tryDownloadFile(const QString& cid, const QUrl& url) {
     LogosResult result = m_logos->storage_module.downloadToUrl(cid, url, false);
 
     if (!result.success) {
-        setStatus(m_status, result.getValue<QString>());
+        debug(result.getError());
         return;
     }
 
@@ -510,7 +489,7 @@ void StorageBackend::exists(const QString& cid) {
     LogosResult result = m_logos->storage_module.exists(cid);
 
     if (!result.success) {
-        debug("StorageBackend::exists failed with error=" + result.getValue<QString>());
+        debug("StorageBackend::exists failed with error=" + result.getError());
         return;
     }
 
@@ -523,7 +502,7 @@ void StorageBackend::remove(const QString& cid) {
     LogosResult result = m_logos->storage_module.remove(cid);
 
     if (!result.success) {
-        debug("StorageBackend::remove failed with error=" + result.getValue<QString>());
+        debug("StorageBackend::remove failed with error=" + result.getError());
         return;
     }
 
@@ -536,7 +515,7 @@ void StorageBackend::fetch(const QString& cid) {
     LogosResult result = m_logos->storage_module.fetch(cid);
 
     if (!result.success) {
-        debug("StorageBackend::fetch failed with error=" + result.getValue<QString>());
+        debug("StorageBackend::fetch failed with error=" + result.getError());
         return;
     }
 
@@ -549,11 +528,11 @@ void StorageBackend::version() {
     LogosResult result = m_logos->storage_module.version();
 
     if (!result.success) {
-        debug("StorageBackend::version failed with error=" + result.getValue<QString>());
+        debug("StorageBackend::version failed with error=" + result.getError());
         return;
     }
 
-    debug("Version: " + result.getValue<QString>());
+    debug("Version: " + result.getString());
 }
 
 void StorageBackend::showPeerId() {
@@ -562,11 +541,11 @@ void StorageBackend::showPeerId() {
     LogosResult result = m_logos->storage_module.peerId();
 
     if (!result.success) {
-        debug("StorageBackend::peerId failed with error=" + result.getValue<QString>());
+        debug("StorageBackend::peerId failed with error=" + result.getError());
         return;
     }
 
-    debug("Peer ID: " + result.getValue<QString>());
+    debug("Peer ID: " + result.getString());
 }
 
 void StorageBackend::spr() {
@@ -575,11 +554,11 @@ void StorageBackend::spr() {
     LogosResult result = m_logos->storage_module.spr();
 
     if (!result.success) {
-        debug("StorageBackend::spr failed with error=" + result.getValue<QString>());
+        debug("StorageBackend::spr failed with error=" + result.getError());
         return;
     }
 
-    debug("SPR: " + result.getValue<QString>());
+    debug("SPR: " + result.getString());
 }
 
 void StorageBackend::dataDir() {
@@ -588,11 +567,11 @@ void StorageBackend::dataDir() {
     LogosResult result = m_logos->storage_module.dataDir();
 
     if (!result.success) {
-        debug("StorageBackend::dataDir failed with error=" + result.getValue<QString>());
+        debug("StorageBackend::dataDir failed with error=" + result.getError());
         return;
     }
 
-    debug("Data dir: " + result.getValue<QString>());
+    debug("Data dir: " + result.getString());
 }
 
 void StorageBackend::downloadManifest(const QString& cid) {
@@ -601,28 +580,28 @@ void StorageBackend::downloadManifest(const QString& cid) {
     LogosResult result = m_logos->storage_module.downloadManifest(cid);
 
     if (!result.success) {
-        debug("StorageBackend::downloadManifest failed with error=" + result.getValue<QString>());
+        debug("StorageBackend::downloadManifest failed with error=" + result.getError());
         return;
     }
 
-    debug("Manifest tree cid: " + result.getValue<QString>("treeCid"));
-    debug(QString("Manifest datasetSize %1").arg(result.getValue<int>("datasetSize")));
-    debug(QString("Manifest blockSize %1").arg(result.getValue<int>("blockSize")));
-    debug("Manifest filename: " + result.getValue<QString>("filename"));
-    debug("Manifest mimetype: " + result.getValue<QString>("mimetype"));
+    debug("Manifest tree cid: " + result.getString("treeCid"));
+    debug(QString("Manifest datasetSize %1").arg(result.getInt("datasetSize")));
+    debug(QString("Manifest blockSize %1").arg(result.getInt("blockSize")));
+    debug("Manifest filename: " + result.getString("filename"));
+    debug("Manifest mimetype: " + result.getString("mimetype"));
 }
 
 void StorageBackend::downloadManifests() {
     qDebug() << "StorageBackend::downloadManifests called";
 
     LogosResult result = m_logos->storage_module.manifests();
-
+    QString error = result.getError();
     if (!result.success) {
-        debug("StorageBackend::downloadManifests failed with error=" + result.getValue<QString>());
+        debug("StorageBackend::downloadManifests failed with error=" + result.getError());
         return;
     }
 
-    QVariantList manifestsList = result.getValue<QVariantList>();
+    QVariantList manifestsList = result.getList();
     int count = manifestsList.size();
 
     debug(QString("Found %1 manifests").arg(count));
@@ -648,14 +627,14 @@ void StorageBackend::space() {
     LogosResult result = m_logos->storage_module.space();
 
     if (!result.success) {
-        debug("StorageBackend::space failed with error=" + result.getValue<QString>());
+        debug("StorageBackend::space failed with error=" + result.getError());
         return;
     }
 
-    debug(QString("Space datasetSize %1").arg(result.getValue<int>("totalBlocks")));
-    debug(QString("Space quotaMaxBytes %1").arg(result.getValue<int>("quotaMaxBytes")));
-    debug(QString("Space quotaUsedBytes %1").arg(result.getValue<int>("quotaUsedBytes")));
-    debug(QString("Space quotaReservedBytes %1").arg(result.getValue<int>("quotaReservedBytes")));
+    debug(QString("Space datasetSize %1").arg(result.getInt("totalBlocks")));
+    debug(QString("Space quotaMaxBytes %1").arg(result.getInt("quotaMaxBytes")));
+    debug(QString("Space quotaUsedBytes %1").arg(result.getInt("quotaUsedBytes")));
+    debug(QString("Space quotaReservedBytes %1").arg(result.getInt("quotaReservedBytes")));
 }
 
 void StorageBackend::updateLogLevel(const QString& logLevel) {
@@ -664,17 +643,74 @@ void StorageBackend::updateLogLevel(const QString& logLevel) {
     LogosResult result = m_logos->storage_module.updateLogLevel(logLevel);
 
     if (!result.success) {
-        debug("StorageBackend::updateLogLevel failed with error=" + result.getValue<QString>());
+        debug("StorageBackend::updateLogLevel failed with error=" + result.getError());
         return;
     }
 
     debug("Log level updated to " + logLevel);
 }
 
-QString StorageBackend::cidText() const {
-    if (m_cid.isEmpty()) {
-        return "No CID available.";
-    } else {
-        return m_cid;
+StorageBackend::StorageStatus StorageBackend::status() const { return m_status; }
+
+QString StorageBackend::cid() const { return m_cid; }
+
+QString StorageBackend::configJson() const { return m_configJson; }
+
+void StorageBackend::reloadIfChanged(const QString& configJson) {
+    if (configJson == m_configJson) {
+        return;
     }
+
+    debug("New config detected");
+
+    QJsonDocument doc = QJsonDocument::fromJson(configJson.toUtf8());
+    if (doc.isNull()) {
+        debug("Invalid json detected !");
+
+        m_configJson = configJson;
+        emit configJsonChanged();
+
+        return;
+    }
+
+    if (m_status == StorageStatus::Running || m_status == StorageStatus::Stopping ||
+        m_status == StorageStatus::Starting) {
+        debug("Cannot reload the config while running, stopping or starting...");
+        return;
+    }
+
+    if (m_status == StorageStatus::Stopped) {
+        LogosResult result = m_logos->storage_module.destroy();
+
+        if (!result.success) {
+            debug("Failed to destroy the context error=" + result.getError());
+            return;
+        } else {
+            setStatus(StorageStatus::Destroyed);
+        }
+    }
+
+    LogosResult result = m_logos->storage_module.init(configJson);
+
+    if (!result.success) {
+        debug("Failed to init context with new config, will rollback, error=" + result.getError());
+
+        LogosResult result = m_logos->storage_module.init(m_configJson);
+
+        if (!result.success) {
+            debug("Failed to init context with old config, that's a serious issue, error=" + result.getError());
+        } else {
+            debug("Old config restored");
+            setStatus(StorageStatus::Stopped);
+
+            m_configJson = configJson;
+            emit configJsonChanged();
+        }
+        return;
+    }
+
+    debug("New config loaded successfully");
+
+    m_configJson = configJson;
+    setStatus(StorageStatus::Stopped);
 }

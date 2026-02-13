@@ -1,9 +1,14 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
+import QtQuick.Layouts
 
-//import QtQuick.Layouts
 Rectangle {
+    id: root
+    width: 400
+    height: 700
+    color: "#000000"
+
     property var backend: mockBackend
     readonly property int stopped: 0
     readonly property int starting: 1
@@ -14,38 +19,56 @@ Rectangle {
     property string downloadDestination: ""
     property url downloadCid: ""
     property string logLevel: ""
+    property bool showDebug: false
+    property url uploadCid: root.backend.cid
+    property url configJson: root.backend.configJson
 
-    id: root
-    width: 400
-    height: 700
-    color: "#000000"
+    function getStatusLabel() {
+        switch (backend.status) {
+        case stopped:
+            return "Logos Storage stopped."
+        case starting:
+            return "Logos Storage is starting..."
+        case running:
+            return "Logos Storage started."
+        case stopping:
+            return "Logos Storage is stopping..."
+        case destroyed:
+            return "Logos Storage is not initialised."
+        }
+    }
+
+    function startStopText() {
+        if (backend.status == running) {
+            return "Stop"
+        }
+        return "Start"
+    }
+
+    function canStartStop() {
+        return backend.status == running || backend.status == stopped
+    }
+
+    function isRunning() {
+        return backend.status == running
+    }
 
     QtObject {
         id: mockBackend
 
-        signal test(int code, string msg)
-
         property var status: root.stopped
-        property var statusText: "Destroyed"
-        property var startStopText: "Start"
-        property var canStartStop: true
-        property bool showDebug: false
-        property var debugLogs: ""
+        property var debugLogs: "Hello !"
+        property var configJson: "{}"
 
-        function startStop() {
-            console.log("Start")
-            if (status === root.running) {
-                status = root.stopped
-                statusText = "Stopped"
-                startStopText = "Start"
-            } else {
-                status = root.running
-                statusText = "Started"
-                startStopText = "Stop"
-            }
+        function start(newConfigJson) {
+            status = root.running
         }
 
-        function tryPeerConnect() {
+        function stop() {
+            status = root.stopped
+        }
+
+        function tryPeerConnect(peerId) {
             console.log("Attempting peer connection...")
         }
 
@@ -101,7 +124,7 @@ Rectangle {
     Text {
         id: statusTextElement
         objectName: "status"
-        text: root.backend.statusText
+        text: root.getStatusLabel()
         color: "white"
         font.pointSize: 20
         anchors.top: parent.top
@@ -113,9 +136,10 @@ Rectangle {
         id: startStopButton
         objectName: "startStopButton"
         anchors.leftMargin: 50
-        text: root.backend.startStopText
-        enabled: root.backend.canStartStop
-        onClicked: root.backend.startStop()
+        text: root.startStopText()
+        enabled: root.canStartStop()
+        onClicked: root.backend.status == root.stopped ? root.backend.start(
+                                                             jsonEditor.text) : root.backend.stop()
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: statusTextElement.bottom
         anchors.topMargin: 10
@@ -124,13 +148,13 @@ Rectangle {
     TextEdit {
         id: cidTextEdit
         objectName: "cid"
-        text: root.backend.cidText
         color: "white"
         font.pointSize: 14
         readOnly: true
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: startStopButton.bottom
         anchors.topMargin: 10
+        text: root.uploadCid
     }
 
     Button {
@@ -140,7 +164,7 @@ Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: cidTextEdit.bottom
         anchors.topMargin: 15
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
     }
 
     TextField {
@@ -160,10 +184,10 @@ Rectangle {
         id: peerConnectButton
         objectName: "peerConnectButton"
         text: "Peer connect"
-        onClicked: root.backend.tryPeerConnect()
+        onClicked: root.backend.tryPeerConnect(root.peerId)
         anchors.top: peerIdField.bottom
         anchors.horizontalCenter: parent.horizontalCenter
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
         anchors.topMargin: 10
     }
 
@@ -174,7 +198,7 @@ Rectangle {
         onClicked: root.backend.tryDebug()
         anchors.top: peerConnectButton.bottom
         anchors.horizontalCenter: parent.horizontalCenter
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
         anchors.topMargin: 50
     }
 
@@ -185,7 +209,7 @@ Rectangle {
         onClicked: root.backend.showPeerId()
         anchors.top: peerConnectButton.bottom
         anchors.right: debugButton.left
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
         anchors.topMargin: 50
     }
 
@@ -196,7 +220,7 @@ Rectangle {
         onClicked: root.backend.dataDir()
         anchors.top: peerConnectButton.bottom
         anchors.right: peerIdButton.left
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
         anchors.topMargin: 50
     }
 
@@ -207,7 +231,7 @@ Rectangle {
         onClicked: root.backend.spr()
         anchors.top: peerConnectButton.bottom
         anchors.left: debugButton.right
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
         anchors.topMargin: 50
     }
 
@@ -218,7 +242,7 @@ Rectangle {
         onClicked: root.backend.version()
         anchors.top: peerConnectButton.bottom
         anchors.left: sprButton.right
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
         anchors.topMargin: 50
     }
 
@@ -241,7 +265,7 @@ Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: cidDownloadField.bottom
         anchors.topMargin: 15
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
     }
 
     Button {
@@ -252,7 +276,7 @@ Rectangle {
                                                 root.downloadDestination)
         anchors.top: openFile2.bottom
         anchors.horizontalCenter: parent.horizontalCenter
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
         anchors.topMargin: 10
     }
 
@@ -263,7 +287,7 @@ Rectangle {
         onClicked: root.backend.exists(root.downloadCid)
         anchors.top: openFile2.bottom
         anchors.left: cidDownloadButton.right
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
         anchors.topMargin: 10
     }
 
@@ -274,7 +298,7 @@ Rectangle {
         onClicked: root.backend.fetch(root.downloadCid)
         anchors.top: openFile2.bottom
         anchors.left: existsButton.right
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
         anchors.topMargin: 10
     }
 
@@ -285,7 +309,7 @@ Rectangle {
         onClicked: root.backend.remove(root.downloadCid)
         anchors.top: openFile2.bottom
         anchors.right: cidDownloadButton.left
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
         anchors.topMargin: 10
     }
 
@@ -296,7 +320,7 @@ Rectangle {
         onClicked: root.backend.downloadManifest(root.downloadCid)
         anchors.top: openFile2.bottom
         anchors.right: removeButton.left
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
         anchors.topMargin: 10
     }
 
@@ -307,7 +331,7 @@ Rectangle {
         onClicked: root.backend.downloadManifests()
         anchors.top: cidDownloadButton.bottom
         anchors.horizontalCenter: parent.horizontalCenter
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
         anchors.topMargin: 10
     }
 
@@ -318,7 +342,7 @@ Rectangle {
         onClicked: root.backend.space()
         anchors.top: cidDownloadButton.bottom
         anchors.right: downloadManifestsButton.left
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
         anchors.topMargin: 10
     }
 
@@ -341,7 +365,7 @@ Rectangle {
         onClicked: root.backend.updateLogLevel(root.logLevel)
         anchors.top: logLevelField.bottom
         anchors.horizontalCenter: parent.horizontalCenter
-        enabled: root.backend.isRunning
+        enabled: root.isRunning
         anchors.topMargin: 10
     }
 
@@ -406,38 +430,119 @@ Rectangle {
         anchors.bottom: parent.bottom
         height: 150
         color: "#111111"
-        visible: root.backend.showDebug // or: visible: showDebug
+        visible: root.showDebug // or: visible: showDebug
 
-        Flickable {
-            id: flick
-            anchors.fill: parent
-            clip: true
+        TabBar {
+            id: bar
+            width: parent.width
 
-            contentWidth: width
-            contentHeight: debugText.paintedHeight
+            TabButton {
+                text: qsTr("Logs")
+            }
 
-            TextEdit {
-                id: debugText
-                width: flick.width
-                text: root.backend.debugLogs
-                color: "#dddddd"
-                font.family: "monospace"
-                font.pixelSize: 12
-                wrapMode: Text.WrapAnywhere
-                readOnly: true
-
-                // ✅ auto-scroll to bottom on update
-                onTextChanged: Qt.callLater(function () {
-                    flick.contentY = Math.max(
-                                0, flick.contentHeight - flick.height)
-                })
+            TabButton {
+                text: qsTr("Config")
             }
         }
 
+        StackLayout {
+            id: stackLayout
+            currentIndex: bar.currentIndex
+            anchors.top: bar.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+
+            Item {
+                id: homeTab
+
+                Flickable {
+                    id: flick
+                    anchors.fill: parent
+                    clip: true
+
+                    contentWidth: width
+                    contentHeight: debugText.paintedHeight
+
+                    TextEdit {
+                        id: debugText
+                        width: flick.width
+                        text: root.backend.debugLogs
+                        color: "#dddddd"
+                        font.family: "monospace"
+                        font.pixelSize: 12
+                        wrapMode: Text.WrapAnywhere
+                        readOnly: true
+
+                        onTextChanged: Qt.callLater(function () {
+                            flick.contentY = Math.max(
+                                        0, flick.contentHeight - flick.height)
+                        })
+                    }
+                }
+            }
+            Rectangle {
+                id: discoverTab
+
+                ScrollView {
+                    anchors.fill: parent
+
+                    TextArea {
+                        id: jsonEditor
+                        font.family: "monospace"
+                        font.pixelSize: 12
+                        color: "#d4d4d4"
+                        width: parent.width
+                        height: parent.height
+
+                        background: Rectangle {
+                            color: "#1e1e1e"
+                            border.color: jsonEditor.isValid ? "#3a3a3a" : "#ff0000"
+                            border.width: 1
+                        }
+
+                        property bool isValid: true
+
+                        Connections {
+                            target: root.backend
+
+                            function onConfigJsonChanged() {
+                                jsonEditor.text = root.backend.configJson
+                                try {
+                                    const jsonData = JSON.parse(jsonEditor.text)
+                                    jsonEditor.isValid = true
+                                } catch (e) {
+                                    jsonEditor.isValid = false
+                                }
+                            }
+                        }
+
+                        Component.onCompleted: {
+                            text = root.backend.configJson
+
+                            try {
+                                const jsonData = JSON.parse(text)
+                                isValid = true
+                            } catch (e) {
+                                isValid = false
+                            }
+                        }
+
+                        onTextChanged: {
+                            try {
+                                const jsonData = JSON.parse(text)
+                                isValid = true
+                            } catch (e) {
+                                isValid = false
+                            }
+                        }
+                    }
+                }
+            }
+        }
         Shortcut {
             sequence: "Ctrl+D"
-            onActivated: root.backend.showDebug = !root.backend.showDebug
-            // if using local var: onActivated: showDebug = !showDebug
+            onActivated: root.showDebug = !root.showDebug
         }
     }
 }
