@@ -17,6 +17,8 @@ class StorageBackend : public QObject {
     Q_PROPERTY(StorageStatus status READ status NOTIFY statusChanged)
     Q_PROPERTY(QString cid READ cid NOTIFY cidChanged)
     Q_PROPERTY(QString configJson READ configJson NOTIFY configJsonChanged)
+    Q_PROPERTY(int uploadProgress READ uploadProgress NOTIFY uploadProgressChanged)
+    Q_PROPERTY(QString uploadStatus READ uploadStatus NOTIFY uploadStatusChanged)
 
   public:
     enum StorageStatus { Stopped = 0, Starting, Running, Stopping, Destroyed };
@@ -26,6 +28,8 @@ class StorageBackend : public QObject {
     QString debugLogs() const;
     StorageStatus status() const;
     QString configJson() const;
+    int uploadProgress() const;
+    QString uploadStatus() const;
 
     explicit StorageBackend(LogosAPI* logosAPI = nullptr, QObject* parent = nullptr);
     ~StorageBackend();
@@ -59,6 +63,8 @@ class StorageBackend : public QObject {
     void stopped();
     void cidChanged();
     void configJsonChanged();
+    void uploadProgressChanged();
+    void uploadStatusChanged();
 
   private slots:
 
@@ -74,4 +80,8 @@ class StorageBackend : public QObject {
     QString m_debugLogs;
     QString m_cid;
     QString m_configJson;
+    int m_uploadProgress = 0;
+    QString m_uploadStatus = "";
+    qint64 m_uploadTotalBytes = 0;
+    qint64 m_uploadedBytes = 0;
 };

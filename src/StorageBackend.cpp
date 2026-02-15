@@ -38,14 +38,14 @@ StorageBackend::~StorageBackend()
 LogosResult StorageBackend::init(const QString& configJson = "{}") {
     qDebug() << "StorageBackend::initStorage called";
 
-    LogosResult result = m_logos->storage_module.init(m_configJson);
+    bool result = m_logos->storage_module.init(m_configJson);
 
-    qDebug() << "StorageBackend::initStorage: init result =" << result.success;
+    qDebug() << "StorageBackend::initStorage: init";
 
-    if (!result.success) {
+    if (!result) {
         setStatus(Destroyed);
-        debug(result.getError());
-        return result;
+        debug("Failed to init storage");
+        return {false, "", "Filed to init storage"};
     }
 
     setStatus(Stopped);
@@ -101,10 +101,26 @@ LogosResult StorageBackend::init(const QString& configJson = "{}") {
             if (!success) {
                 QString message = data[1].toString();
                 debug("Failure during upload progress: " + message);
+                m_uploadStatus = "Error: " + message;
+                emit uploadStatusChanged();
             } else {
                 QString sessionId = data[1].toString();
-                int len = data[2].toInt();
-                // debug("Uploaded " + QString::number(len) + " bytes for session " + sessionId);
+                qint64 len = data[2].toLongLong();
+
+                m_uploadedBytes += len;
+
+                // Calcule le pourcentage
+                if (m_uploadTotalBytes > 0) {
+                    m_uploadProgress = (m_uploadedBytes * 100) / m_uploadTotalBytes;
+                }
+
+                m_uploadStatus = QString("Uploading: %1 / %2 bytes (%3%)")
+                    .arg(m_uploadedBytes)
+                    .arg(m_uploadTotalBytes)
+                    .arg(m_uploadProgress);
+
+                emit uploadProgressChanged();
+                emit uploadStatusChanged();
             }
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageUploadProgress events";
@@ -116,11 +132,21 @@ LogosResult StorageBackend::init(const QString& configJson = "{}") {
             if (!success) {
                 QString message = data[1].toString();
                 debug("Failed to upload: " + message);
+                m_uploadProgress = 0;
+                m_uploadStatus = "Upload failed";
+                emit uploadProgressChanged();
+                emit uploadStatusChanged();
             } else {
                 QString sessionId = data[1].toString();
                 m_cid = data[2].toString();
                 emit cidChanged();
                 debug("Upload completed for session " + sessionId + " with CID " + m_cid);
+
+                // Complète la progress bar
+                m_uploadProgress = 100;
+                m_uploadStatus = "Upload completed!";
+                emit uploadProgressChanged();
+                emit uploadStatusChanged();
             }
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageUploadProgress events";
@@ -162,7 +188,7 @@ LogosResult StorageBackend::init(const QString& configJson = "{}") {
 
     debug("config.json content is: " + m_configJson);
 
-    return result;
+    return {true, ""};
 }
 
 void StorageBackend::setStatus(StorageStatus newStatus) {
@@ -181,12 +207,12 @@ LogosResult StorageBackend::start(const QString& newConfigJson) {
 
     if (m_status != Stopped) {
         debug("The Storage Module is not initialised properly.");
-        return {false, "The Storage Module is not initialised properly."};
+        return {false, "", "The Storage Module is not initialised properly."};
     }
 
     if (m_status == Running) {
         debug("The Storage Module is already started.");
-        return {false, "The Storage Module is already started."};
+        return {false, "", "The Storage Module is already started."};
     }
 
     setStatus(Starting);
@@ -194,15 +220,15 @@ LogosResult StorageBackend::start(const QString& newConfigJson) {
 
     auto result = m_logos->storage_module.start();
 
-    if (!result.success) {
+    if (!result) {
         setStatus(Stopped);
-        debug(result.getError());
-        return result;
+        debug("Failed to start storage");
+        return {false, "", "Failed to start storage"};
     }
 
     qDebug() << "StorageBackend: start command sent, waiting for events.";
 
-    return result;
+    return {true, ""};
 }
 
 void StorageBackend::stop() {
@@ -342,6 +368,16 @@ void StorageBackend::tryUploadFile(const QUrl& url) {
         debug("The provided URL is not a local file.");
         return;
     }
+
+    // Reset and initialize progress tracking
+    m_uploadProgress = 0;
+    m_uploadedBytes = 0;
+    m_uploadTotalBytes = QFileInfo(url.toLocalFile()).size();
+    m_uploadStatus = "Starting upload...";
+    emit uploadProgressChanged();
+    emit uploadStatusChanged();
+
+    debug(QString("Starting upload of file: %1 bytes").arg(m_uploadTotalBytes));
 
     // QString filename = url.toLocalFile();
 
@@ -656,6 +692,10 @@ QString StorageBackend::cid() const { return m_cid; }
 
 QString StorageBackend::configJson() const { return m_configJson; }
 
+int StorageBackend::uploadProgress() const { return m_uploadProgress; }
+
+QString StorageBackend::uploadStatus() const { return m_uploadStatus; }
+
 void StorageBackend::reloadIfChanged(const QString& configJson) {
     if (configJson == m_configJson) {
         return;
@@ -690,15 +730,15 @@ void StorageBackend::reloadIfChanged(const QString& configJson) {
         }
     }
 
-    LogosResult result = m_logos->storage_module.init(configJson);
+    bool result = m_logos->storage_module.init(configJson);
 
-    if (!result.success) {
-        debug("Failed to init context with new config, will rollback, error=" + result.getError());
+    if (!result) {
+        debug("Failed to init context with new config, will rollback.");
 
-        LogosResult result = m_logos->storage_module.init(m_configJson);
+        bool result = m_logos->storage_module.init(m_configJson);
 
-        if (!result.success) {
-            debug("Failed to init context with old config, that's a serious issue, error=" + result.getError());
+        if (!result) {
+            debug("Failed to init context with old config, that's a serious issue.");
         } else {
             debug("Old config restored");
             setStatus(StorageStatus::Stopped);
