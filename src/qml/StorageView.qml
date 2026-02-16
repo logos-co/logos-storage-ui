@@ -59,6 +59,9 @@ Rectangle {
         property var status: root.stopped
         property var debugLogs: "Hello !"
         property var configJson: "{}"
+        property url cid: ""
+        property string uploadStatus: ""
+        property int uploadProgress: 0
 
         function start(newConfigJson) {
             status = root.running
@@ -167,6 +170,47 @@ Rectangle {
         enabled: root.isRunning
     }
 
+    Column {
+        id: uploadProgressColumn
+        anchors.top: openFile.bottom
+        anchors.topMargin: 10
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: 300
+        spacing: 5
+        visible: root.backend.uploadProgress > 0
+
+        ProgressBar {
+            width: parent.width
+            value: root.backend.uploadProgress / 100.0
+
+            background: Rectangle {
+                color: "#333333"
+                radius: 3
+                implicitWidth: 300
+                implicitHeight: 6
+            }
+
+            contentItem: Item {
+                implicitWidth: 300
+                implicitHeight: 6
+
+                Rectangle {
+                    width: parent.width * parent.parent.visualPosition
+                    height: parent.height
+                    radius: 3
+                    color: "#4CAF50"
+                }
+            }
+        }
+
+        Text {
+            text: root.backend.uploadStatus
+            color: "#888888"
+            font.pixelSize: 10
+            anchors.horizontalCenter: parent.horizontalCenter
+        }
+    }
+
     TextField {
         id: peerIdField
         placeholderText: "Enter the peer Id"
@@ -175,7 +219,7 @@ Rectangle {
         selectByMouse: true
         text: root.peerId
         onTextChanged: root.peerId = text
-        anchors.top: openFile.bottom
+        anchors.top: uploadProgressColumn.bottom
         anchors.topMargin: 50
         anchors.horizontalCenter: parent.horizontalCenter
     }
