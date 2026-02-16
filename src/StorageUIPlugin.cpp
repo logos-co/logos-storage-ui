@@ -31,6 +31,35 @@ QWidget* StorageUIPlugin::createWidget(LogosAPI* logosAPI) {
 
     root->setProperty("backend", QVariant::fromValue(static_cast<QObject*>(backend)));
 
+    QFileInfo info("config.json");
+    QString configJson = "{}";
+
+    if (info.exists() && info.isFile()) {
+        qDebug() << "StorageUIPlugin: config.json is found, let's try to load it...";
+
+        QFile file("config.json");
+        if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            configJson = QString::fromUtf8(file.readAll());
+
+            qDebug() << "StorageUIPlugin: config.json is found, let's try to load it... configJson=" << configJson;
+        } else {
+            qDebug() << "StorageUIPlugin: Failed to load config.json";
+        }
+    }
+
+    LogosResult result = backend->init(configJson);
+
+    if (!result.success) {
+        QString error = result.getError();
+        qWarning() << "StorageUIPlugin: Failed to init backend, will use mock version:" << error;
+    } else {
+        result = backend->start();
+
+        if (!result.success) {
+            qWarning() << "StorageUIPlugin: Failed to init backend, will use mock version:" << result.getError();
+        }
+    }
+
     return quickWidget;
 }
 
@@ -66,13 +95,13 @@ void StorageUIPlugin::destroyWidget(QWidget* widget) {
         return;
     }
 
-    if (!backend->isInitialised()) {
+    if (backend->status() != StorageBackend::StorageStatus::Destroyed) {
         qDebug() << "StorageUIPlugin::destroyWidget: backend is not initialised so let's detroy it.";
         quickWidget->deleteLater();
         return;
     }
 
-    if (!backend->isRunning()) {
+    if (backend->status() == StorageBackend::StorageStatus::Running) {
         qDebug() << "StorageUIPlugin::destroyWidget: backend is not running so let's detroy it.";
 
         backend->destroy();

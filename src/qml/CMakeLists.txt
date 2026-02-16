@@ -74,6 +74,7 @@ add_library(storage_generated STATIC
     ${LOGOS_CPP_SDK_ROOT}/cpp/token_manager.cpp
     ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api_consumer.cpp
     ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api_provider.cpp
+    ${LOGOS_CPP_SDK_ROOT}/cpp/logos_types.cpp
 )
 
 # Define the dependencies needed for storage_generated
