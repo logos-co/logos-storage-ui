@@ -59,7 +59,7 @@
         }
       );
 
-      devShells = forAllSystems ({ pkgs, logosSdk, logosLiblogos, logosStorageModule, logosCapabilityModule }: {
+      devShells = forAllSystems ({ pkgs, logosSdk, logosLiblogos, logosStorageModule, logosCapabilityModule, logosDesignSystem }: {
         default = pkgs.mkShell {
           nativeBuildInputs = [
             pkgs.cmake
@@ -78,6 +78,7 @@
             export LOGOS_CPP_SDK_ROOT="${logosSdk}"
             export LOGOS_LIBLOGOS_ROOT="${logosLiblogos}"
             export LOGOS_STORAGE_ROOT="${logosStorageModule}"
+            export LOGOS_DESIGN_SYSTEM_ROOT="${logosDesignSystem}"
             echo "Logos Storage UI development environment"
             echo "LOGOS_CPP_SDK_ROOT: $LOGOS_CPP_SDK_ROOT"
             echo "LOGOS_LIBLOGOS_ROOT: $LOGOS_LIBLOGOS_ROOT"
