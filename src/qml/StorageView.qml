@@ -128,6 +128,17 @@ Rectangle {
         function updateLogLevel(logLevel) {}
 
         property var manifests: []
+        property var quotaMaxBytes: 20 * 1024 * 1024 * 1024  // 20 GB default
+        property var quotaUsedBytes: 0
+        property var quotaReservedBytes: 0
+    }
+
+    function formatBytes(bytes) {
+        if (bytes <= 0)   return "0 B"
+        if (bytes < 1024) return bytes + " B"
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB"
+        if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + " MB"
+        return (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB"
     }
 
     Text {
@@ -397,11 +408,96 @@ Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
     }
 
+    // ── Disk space bar ────────────────────────────────────────────────────
+    Item {
+        id: spaceBarSection
+        anchors.top: manifestsTitle.bottom
+        anchors.topMargin: 10
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: parent.width - 40
+        height: root.backend.quotaMaxBytes > 0 ? 36 : 20
+
+        readonly property real total:    root.backend.quotaMaxBytes
+        readonly property real used:     root.backend.quotaUsedBytes
+        readonly property real reserved: root.backend.quotaReservedBytes
+
+        // No quota configured
+        Text {
+            anchors.centerIn: parent
+            text: "No quota configured"
+            color: "#555555"
+            font.pixelSize: 11
+            visible: spaceBarSection.total <= 0
+        }
+
+        // Background track
+        Rectangle {
+            id: spaceBarTrack
+            visible: spaceBarSection.total > 0
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            height: 14
+            radius: 7
+            color: "#2a2a2a"
+            border.color: "#3a3a3a"
+            border.width: 1
+            clip: true
+
+            // Used (green)
+            Rectangle {
+                width: Math.min(parent.width * (spaceBarSection.used / spaceBarSection.total), parent.width)
+                height: parent.height
+                radius: parent.radius
+                color: "#4CAF50"
+            }
+
+            // Reserved (orange), stacked after used
+            Rectangle {
+                x: parent.width * (spaceBarSection.used / spaceBarSection.total)
+                width: Math.min(parent.width * (spaceBarSection.reserved / spaceBarSection.total),
+                                parent.width - x)
+                height: parent.height
+                color: "#FF9800"
+            }
+        }
+
+        // Labels
+        Row {
+            visible: spaceBarSection.total > 0
+            anchors.top: spaceBarTrack.bottom
+            anchors.topMargin: 4
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: 16
+
+            Text {
+                text: "Used: " + root.formatBytes(spaceBarSection.used)
+                color: "#4CAF50"
+                font.pixelSize: 10
+            }
+            Text {
+                text: "Reserved: " + root.formatBytes(spaceBarSection.reserved)
+                color: "#FF9800"
+                font.pixelSize: 10
+            }
+            Text {
+                text: "Free: " + root.formatBytes(spaceBarSection.total - spaceBarSection.used - spaceBarSection.reserved)
+                color: "#888888"
+                font.pixelSize: 10
+            }
+            Text {
+                text: "Total: " + root.formatBytes(spaceBarSection.total)
+                color: "#555555"
+                font.pixelSize: 10
+            }
+        }
+    }
+
     Row {
         id: manifestInputRow
         spacing: 8
-        anchors.top: manifestsTitle.bottom
-        anchors.topMargin: 8
+        anchors.top: spaceBarSection.bottom
+        anchors.topMargin: 16
         anchors.horizontalCenter: parent.horizontalCenter
 
         TextField {

@@ -67,6 +67,7 @@ LogosResult StorageBackend::init(const QString& configJson = "{}") {
                 setStatus(Running);
                 debug("Storage module started.");
                 QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
+                QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
                 emit startCompleted();
             }
         })) {
@@ -156,6 +157,8 @@ LogosResult StorageBackend::init(const QString& configJson = "{}") {
                 m_uploadStatus = "Upload completed!";
                 emit uploadProgressChanged();
                 emit uploadStatusChanged();
+
+                QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
             }
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageUploadProgress events";
@@ -550,13 +553,13 @@ void StorageBackend::remove(const QString& cid) {
     LogosResult result = m_logos->storage_module.remove(cid);
 
     if (!result.success) {
-        debug("StorageBackend::remove failed with error=" + result.getError());
-        return;
+        // Log but continue — manifest might not have local data, remove it from the list anyway
+        debug("StorageBackend::remove: storage returned error=" + result.getError() + " (removing from list regardless)");
+    } else {
+        debug("Cid " + cid + " removed from storage.");
     }
 
-    debug("Cid " + cid + " removed.");
-
-    // Remove from manifests list
+    // Always remove from manifests list
     for (int i = 0; i < m_manifests.size(); ++i) {
         if (m_manifests[i].toMap().value("cid").toString() == cid) {
             m_manifests.removeAt(i);
@@ -564,6 +567,8 @@ void StorageBackend::remove(const QString& cid) {
             break;
         }
     }
+
+    QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
 }
 
 void StorageBackend::fetch(const QString& cid) {
@@ -711,11 +716,32 @@ void StorageBackend::space() {
         return;
     }
 
-    debug(QString("Space datasetSize %1").arg(result.getInt("totalBlocks")));
-    debug(QString("Space quotaMaxBytes %1").arg(result.getInt("quotaMaxBytes")));
-    debug(QString("Space quotaUsedBytes %1").arg(result.getInt("quotaUsedBytes")));
-    debug(QString("Space quotaReservedBytes %1").arg(result.getInt("quotaReservedBytes")));
+    qDebug() << "StorageBackend::space raw value:" << result.value;
+
+    static constexpr qint64 DEFAULT_QUOTA = 20LL * 1024 * 1024 * 1024; // 20 GB
+
+    // Check config for a quota-max-bytes override
+    qint64 configQuota = 0;
+    QJsonDocument doc = QJsonDocument::fromJson(m_configJson.toUtf8());
+    if (!doc.isNull()) {
+        configQuota = doc.object().value("quota-max-bytes").toVariant().toLongLong();
+    }
+
+    qint64 apiQuota = result.getInt("quotaMaxBytes");
+    m_quotaMaxBytes      = apiQuota > 0 ? apiQuota : (configQuota > 0 ? configQuota : DEFAULT_QUOTA);
+    m_quotaUsedBytes     = result.getInt("quotaUsedBytes");
+    m_quotaReservedBytes = result.getInt("quotaReservedBytes");
+    emit quotaChanged();
+
+    debug(QString("Space totalBlocks %1").arg(result.getInt("totalBlocks")));
+    debug(QString("Space quotaMaxBytes %1").arg(m_quotaMaxBytes));
+    debug(QString("Space quotaUsedBytes %1").arg(m_quotaUsedBytes));
+    debug(QString("Space quotaReservedBytes %1").arg(m_quotaReservedBytes));
 }
+
+qint64 StorageBackend::quotaMaxBytes()      const { return m_quotaMaxBytes; }
+qint64 StorageBackend::quotaUsedBytes()     const { return m_quotaUsedBytes; }
+qint64 StorageBackend::quotaReservedBytes() const { return m_quotaReservedBytes; }
 
 void StorageBackend::updateLogLevel(const QString& logLevel) {
     qDebug() << "StorageBackend::updateLogLevel called with logLevel=" << logLevel;
