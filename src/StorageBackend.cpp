@@ -201,6 +201,8 @@ LogosResult StorageBackend::init(const QString& configJson = "{}") {
         debug("new config is: " + m_configJson);
     }
 
+    emit initCompleted();
+
     return {true, ""};
 }
 
@@ -827,9 +829,20 @@ void StorageBackend::reloadIfChanged(const QString& configJson) {
     emit configJsonChanged();
 }
 
-bool StorageBackend::validateDataDir(const QString& path) {
-    QFileInfo info(path);
-    return info.exists() && info.isDir() && info.isReadable() && info.isWritable();
+void StorageBackend::saveUserConfig(const QString& configJson) {
+    qDebug() << "StorageBackend::saveUserConfig";
+
+    QString configPath = getUserConfigPath();
+    QString folderPath = QFileInfo(configPath).absolutePath();
+    QDir().mkpath(folderPath);
+    QFile file(configPath);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        file.write(configJson.toUtf8());
+        file.close();
+        debug("Config saved to " + configPath);
+    } else {
+        debug("Failed to save config to " + configPath);
+    }
 }
 
 QString StorageBackend::buildConfig(const QString& dataDir, int discPort, int tcpPort) {
@@ -870,6 +883,17 @@ QString StorageBackend::buildConfigFromFile(const QString& path) {
 }
 
 void StorageBackend::status(StorageStatus status) { m_status = status; }
+
+QString StorageBackend::getUserConfigPath() { return QDir::homePath() + "/.logos_storage/config.json"; }
+
+QString StorageBackend::getUserConfig() {
+    QFile file(getUserConfigPath());
+    if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return QString::fromUtf8(file.readAll());
+    }
+
+    return "{}";
+}
 
 QString StorageBackend::defaultDataDir() {
     QString home = QDir::homePath();

@@ -72,11 +72,9 @@ After onboarding, settings are saved to a file whose location depends on the OS:
 | macOS   | `~/Library/Preferences/Logos.LogosStorage.plist` |
 | Windows | `HKCU\Software\Logos\LogosStorage` (Registry)    |
 
-## Configuration Management
+The settings are saved to the preferences file to preserve the onboarding defaults, but the active configuration is stored in `${HOME}/.logos_storage/config.json`. You can tweak the values there directly. Note that running the onboarding again will override any onboarding-related values.
 
-To restart the onboarding process, simply delete the configuration file and relaunch the application.
-
-You can override the configuration by placing a `config.json` file in the app's startup folder. This file takes precedence over any existing configuration.
+To restart the onboarding process, simply delete the prefences file and relaunch the application.
 
 The application also provides a JSON editor in the debug panel for runtime configuration tweaks. To apply changes, restart the Storage Module.
 

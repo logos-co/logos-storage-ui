@@ -128,16 +128,20 @@ Rectangle {
         function updateLogLevel(logLevel) {}
 
         property var manifests: []
-        property var quotaMaxBytes: 20 * 1024 * 1024 * 1024  // 20 GB default
+        property var quotaMaxBytes: 20 * 1024 * 1024 * 1024 // 20 GB default
         property var quotaUsedBytes: 0
         property var quotaReservedBytes: 0
     }
 
     function formatBytes(bytes) {
-        if (bytes <= 0)   return "0 B"
-        if (bytes < 1024) return bytes + " B"
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB"
-        if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + " MB"
+        if (bytes <= 0)
+            return "0 B"
+        if (bytes < 1024)
+            return bytes + " B"
+        if (bytes < 1024 * 1024)
+            return (bytes / 1024).toFixed(1) + " KB"
+        if (bytes < 1024 * 1024 * 1024)
+            return (bytes / (1024 * 1024)).toFixed(1) + " MB"
         return (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB"
     }
 
@@ -417,8 +421,8 @@ Rectangle {
         width: parent.width - 40
         height: root.backend.quotaMaxBytes > 0 ? 36 : 20
 
-        readonly property real total:    root.backend.quotaMaxBytes
-        readonly property real used:     root.backend.quotaUsedBytes
+        readonly property real total: root.backend.quotaMaxBytes
+        readonly property real used: root.backend.quotaUsedBytes
         readonly property real reserved: root.backend.quotaReservedBytes
 
         // No quota configured
@@ -446,7 +450,9 @@ Rectangle {
 
             // Used (green)
             Rectangle {
-                width: Math.min(parent.width * (spaceBarSection.used / spaceBarSection.total), parent.width)
+                width: Math.min(
+                           parent.width * (spaceBarSection.used / spaceBarSection.total),
+                           parent.width)
                 height: parent.height
                 radius: parent.radius
                 color: "#4CAF50"
@@ -455,8 +461,9 @@ Rectangle {
             // Reserved (orange), stacked after used
             Rectangle {
                 x: parent.width * (spaceBarSection.used / spaceBarSection.total)
-                width: Math.min(parent.width * (spaceBarSection.reserved / spaceBarSection.total),
-                                parent.width - x)
+                width: Math.min(
+                           parent.width * (spaceBarSection.reserved / spaceBarSection.total),
+                           parent.width - x)
                 height: parent.height
                 color: "#FF9800"
             }
@@ -481,7 +488,8 @@ Rectangle {
                 font.pixelSize: 10
             }
             Text {
-                text: "Free: " + root.formatBytes(spaceBarSection.total - spaceBarSection.used - spaceBarSection.reserved)
+                text: "Free: " + root.formatBytes(
+                          spaceBarSection.total - spaceBarSection.used - spaceBarSection.reserved)
                 color: "#888888"
                 font.pixelSize: 10
             }
@@ -618,7 +626,7 @@ Rectangle {
                         font.family: "monospace"
                         elide: Text.ElideMiddle
                         anchors.verticalCenter: parent.verticalCenter
-                        ToolTip.visible: hovered
+                        // ToolTip.visible: hovered
                         ToolTip.text: modelData["cid"] ?? ""
                         HoverHandler {}
                     }
@@ -899,8 +907,19 @@ Rectangle {
                         }
 
                         onTextChanged: {
+
+                            // try {
+                            //     const jsonData = JSON.parse(text)
+                            //     isValid = true
+                            // } catch (e) {
+                            //     isValid = false
+                            // }
+                        }
+
+                        onEditingFinished: {
                             try {
                                 const jsonData = JSON.parse(text)
+                                root.backend.saveUserConfig(text)
                                 isValid = true
                             } catch (e) {
                                 isValid = false
