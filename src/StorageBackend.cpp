@@ -66,6 +66,8 @@ LogosResult StorageBackend::init(const QString& configJson = "{}") {
             } else {
                 setStatus(Running);
                 debug("Storage module started.");
+                QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
+                QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
                 emit startCompleted();
             }
         })) {
@@ -155,6 +157,8 @@ LogosResult StorageBackend::init(const QString& configJson = "{}") {
                 m_uploadStatus = "Upload completed!";
                 emit uploadProgressChanged();
                 emit uploadStatusChanged();
+
+                QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
             }
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageUploadProgress events";
@@ -549,11 +553,22 @@ void StorageBackend::remove(const QString& cid) {
     LogosResult result = m_logos->storage_module.remove(cid);
 
     if (!result.success) {
-        debug("StorageBackend::remove failed with error=" + result.getError());
-        return;
+        // Log but continue — manifest might not have local data, remove it from the list anyway
+        debug("StorageBackend::remove: storage returned error=" + result.getError() + " (removing from list regardless)");
+    } else {
+        debug("Cid " + cid + " removed from storage.");
     }
 
-    debug("Cid " + cid + " removed.");
+    // Always remove from manifests list
+    for (int i = 0; i < m_manifests.size(); ++i) {
+        if (m_manifests[i].toMap().value("cid").toString() == cid) {
+            m_manifests.removeAt(i);
+            emit manifestsChanged();
+            break;
+        }
+    }
+
+    QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
 }
 
 void StorageBackend::fetch(const QString& cid) {
@@ -631,18 +646,38 @@ void StorageBackend::downloadManifest(const QString& cid) {
         return;
     }
 
-    debug("Manifest tree cid: " + result.getString("treeCid"));
-    debug(QString("Manifest datasetSize %1").arg(result.getInt("datasetSize")));
-    debug(QString("Manifest blockSize %1").arg(result.getInt("blockSize")));
-    debug("Manifest filename: " + result.getString("filename"));
-    debug("Manifest mimetype: " + result.getString("mimetype"));
+    QString treeCid = result.getString("treeCid");
+    qint64 datasetSize = result.getInt("datasetSize");
+    qint64 blockSize = result.getInt("blockSize");
+    QString filename = result.getString("filename");
+    QString mimetype = result.getString("mimetype");
+
+    debug("Manifest tree cid: " + treeCid);
+    debug(QString("Manifest datasetSize %1").arg(datasetSize));
+    debug(QString("Manifest blockSize %1").arg(blockSize));
+    debug("Manifest filename: " + filename);
+    debug("Manifest mimetype: " + mimetype);
+
+    // Add to manifests list
+    QVariantMap manifest;
+    manifest["cid"] = cid;
+    manifest["treeCid"] = treeCid;
+    manifest["filename"] = filename;
+    manifest["mimetype"] = mimetype;
+    manifest["datasetSize"] = datasetSize;
+    manifest["blockSize"] = blockSize;
+
+    m_manifests.append(manifest);
+    emit manifestsChanged();
 }
+
+QVariantList StorageBackend::manifests() const { return m_manifests; }
 
 void StorageBackend::downloadManifests() {
     qDebug() << "StorageBackend::downloadManifests called";
 
     LogosResult result = m_logos->storage_module.manifests();
-    QString error = result.getError();
+
     if (!result.success) {
         debug("StorageBackend::downloadManifests failed with error=" + result.getError());
         return;
@@ -650,22 +685,25 @@ void StorageBackend::downloadManifests() {
 
     QVariantList manifestsList = result.getList();
     int count = manifestsList.size();
-
     debug(QString("Found %1 manifests").arg(count));
 
-    // for (const QVariant& manifestVariant : manifestsList) {
-    //     QVariantMap manifest = manifestVariant.toMap();
+    m_manifests.clear();
 
-    //     QString cid = manifest["cid"].toString();
-    //     QString treeCid = manifest["treeCid"].toString();
-    //     QString filename = manifest["filename"].toString();
-    //     qint64 datasetSize = manifest["datasetSize"].toLongLong();
+    for (const QVariant& manifestVariant : manifestsList) {
+        QVariantMap src = manifestVariant.toMap();
 
-    //     debug(QString("Manifest: %1, treeCid: %2, size: %3")
-    //               .arg(filename)
-    //               .arg(treeCid.isEmpty() ? "EMPTY" : treeCid)
-    //               .arg(datasetSize));
-    // }
+        QVariantMap manifest;
+        manifest["cid"]         = src.value("cid").toString();
+        manifest["treeCid"]     = src.value("treeCid").toString();
+        manifest["filename"]    = src.value("filename").toString();
+        manifest["mimetype"]    = src.value("mimetype").toString();
+        manifest["datasetSize"] = src.value("datasetSize").toLongLong();
+        manifest["blockSize"]   = src.value("blockSize").toLongLong();
+
+        m_manifests.append(manifest);
+    }
+
+    emit manifestsChanged();
 }
 
 void StorageBackend::space() {
@@ -678,11 +716,32 @@ void StorageBackend::space() {
         return;
     }
 
-    debug(QString("Space datasetSize %1").arg(result.getInt("totalBlocks")));
-    debug(QString("Space quotaMaxBytes %1").arg(result.getInt("quotaMaxBytes")));
-    debug(QString("Space quotaUsedBytes %1").arg(result.getInt("quotaUsedBytes")));
-    debug(QString("Space quotaReservedBytes %1").arg(result.getInt("quotaReservedBytes")));
+    qDebug() << "StorageBackend::space raw value:" << result.value;
+
+    static constexpr qint64 DEFAULT_QUOTA = 20LL * 1024 * 1024 * 1024; // 20 GB
+
+    // Check config for a quota-max-bytes override
+    qint64 configQuota = 0;
+    QJsonDocument doc = QJsonDocument::fromJson(m_configJson.toUtf8());
+    if (!doc.isNull()) {
+        configQuota = doc.object().value("quota-max-bytes").toVariant().toLongLong();
+    }
+
+    qint64 apiQuota = result.getInt("quotaMaxBytes");
+    m_quotaMaxBytes      = apiQuota > 0 ? apiQuota : (configQuota > 0 ? configQuota : DEFAULT_QUOTA);
+    m_quotaUsedBytes     = result.getInt("quotaUsedBytes");
+    m_quotaReservedBytes = result.getInt("quotaReservedBytes");
+    emit quotaChanged();
+
+    debug(QString("Space totalBlocks %1").arg(result.getInt("totalBlocks")));
+    debug(QString("Space quotaMaxBytes %1").arg(m_quotaMaxBytes));
+    debug(QString("Space quotaUsedBytes %1").arg(m_quotaUsedBytes));
+    debug(QString("Space quotaReservedBytes %1").arg(m_quotaReservedBytes));
 }
+
+qint64 StorageBackend::quotaMaxBytes()      const { return m_quotaMaxBytes; }
+qint64 StorageBackend::quotaUsedBytes()     const { return m_quotaUsedBytes; }
+qint64 StorageBackend::quotaReservedBytes() const { return m_quotaReservedBytes; }
 
 void StorageBackend::updateLogLevel(const QString& logLevel) {
     qDebug() << "StorageBackend::updateLogLevel called with logLevel=" << logLevel;

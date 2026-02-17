@@ -33,6 +33,10 @@ class StorageBackend : public QObject {
     Q_PROPERTY(QString configJson READ configJson NOTIFY configJsonChanged)
     Q_PROPERTY(int uploadProgress READ uploadProgress NOTIFY uploadProgressChanged)
     Q_PROPERTY(QString uploadStatus READ uploadStatus NOTIFY uploadStatusChanged)
+    Q_PROPERTY(QVariantList manifests READ manifests NOTIFY manifestsChanged)
+    Q_PROPERTY(qint64 quotaMaxBytes READ quotaMaxBytes NOTIFY quotaChanged)
+    Q_PROPERTY(qint64 quotaUsedBytes READ quotaUsedBytes NOTIFY quotaChanged)
+    Q_PROPERTY(qint64 quotaReservedBytes READ quotaReservedBytes NOTIFY quotaChanged)
 
   public:
     enum StorageStatus { Stopped = 0, Starting, Running, Stopping, Destroyed };
@@ -44,6 +48,10 @@ class StorageBackend : public QObject {
     QString configJson() const;
     int uploadProgress() const;
     QString uploadStatus() const;
+    QVariantList manifests() const;
+    qint64 quotaMaxBytes() const;
+    qint64 quotaUsedBytes() const;
+    qint64 quotaReservedBytes() const;
 
     Q_INVOKABLE static QString defaultDataDir();
 
@@ -88,6 +96,8 @@ class StorageBackend : public QObject {
     void configJsonChanged();
     void uploadProgressChanged();
     void uploadStatusChanged();
+    void manifestsChanged();
+    void quotaChanged();
 
   private slots:
 
@@ -106,4 +116,8 @@ class StorageBackend : public QObject {
     QString m_uploadStatus = "";
     qint64 m_uploadTotalBytes = 0;
     qint64 m_uploadedBytes = 0;
+    QVariantList m_manifests;
+    qint64 m_quotaMaxBytes = 0;
+    qint64 m_quotaUsedBytes = 0;
+    qint64 m_quotaReservedBytes = 0;
 };
