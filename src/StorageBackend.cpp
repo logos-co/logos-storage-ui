@@ -66,6 +66,7 @@ LogosResult StorageBackend::init(const QString& configJson = "{}") {
             } else {
                 setStatus(Running);
                 debug("Storage module started.");
+                QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
                 emit startCompleted();
             }
         })) {
@@ -631,18 +632,38 @@ void StorageBackend::downloadManifest(const QString& cid) {
         return;
     }
 
-    debug("Manifest tree cid: " + result.getString("treeCid"));
-    debug(QString("Manifest datasetSize %1").arg(result.getInt("datasetSize")));
-    debug(QString("Manifest blockSize %1").arg(result.getInt("blockSize")));
-    debug("Manifest filename: " + result.getString("filename"));
-    debug("Manifest mimetype: " + result.getString("mimetype"));
+    QString treeCid = result.getString("treeCid");
+    qint64 datasetSize = result.getInt("datasetSize");
+    qint64 blockSize = result.getInt("blockSize");
+    QString filename = result.getString("filename");
+    QString mimetype = result.getString("mimetype");
+
+    debug("Manifest tree cid: " + treeCid);
+    debug(QString("Manifest datasetSize %1").arg(datasetSize));
+    debug(QString("Manifest blockSize %1").arg(blockSize));
+    debug("Manifest filename: " + filename);
+    debug("Manifest mimetype: " + mimetype);
+
+    // Add to manifests list
+    QVariantMap manifest;
+    manifest["cid"] = cid;
+    manifest["treeCid"] = treeCid;
+    manifest["filename"] = filename;
+    manifest["mimetype"] = mimetype;
+    manifest["datasetSize"] = datasetSize;
+    manifest["blockSize"] = blockSize;
+
+    m_manifests.append(manifest);
+    emit manifestsChanged();
 }
+
+QVariantList StorageBackend::manifests() const { return m_manifests; }
 
 void StorageBackend::downloadManifests() {
     qDebug() << "StorageBackend::downloadManifests called";
 
     LogosResult result = m_logos->storage_module.manifests();
-    QString error = result.getError();
+
     if (!result.success) {
         debug("StorageBackend::downloadManifests failed with error=" + result.getError());
         return;
@@ -650,22 +671,25 @@ void StorageBackend::downloadManifests() {
 
     QVariantList manifestsList = result.getList();
     int count = manifestsList.size();
-
     debug(QString("Found %1 manifests").arg(count));
 
-    // for (const QVariant& manifestVariant : manifestsList) {
-    //     QVariantMap manifest = manifestVariant.toMap();
+    m_manifests.clear();
 
-    //     QString cid = manifest["cid"].toString();
-    //     QString treeCid = manifest["treeCid"].toString();
-    //     QString filename = manifest["filename"].toString();
-    //     qint64 datasetSize = manifest["datasetSize"].toLongLong();
+    for (const QVariant& manifestVariant : manifestsList) {
+        QVariantMap src = manifestVariant.toMap();
 
-    //     debug(QString("Manifest: %1, treeCid: %2, size: %3")
-    //               .arg(filename)
-    //               .arg(treeCid.isEmpty() ? "EMPTY" : treeCid)
-    //               .arg(datasetSize));
-    // }
+        QVariantMap manifest;
+        manifest["cid"]         = src.value("cid").toString();
+        manifest["treeCid"]     = src.value("treeCid").toString();
+        manifest["filename"]    = src.value("filename").toString();
+        manifest["mimetype"]    = src.value("mimetype").toString();
+        manifest["datasetSize"] = src.value("datasetSize").toLongLong();
+        manifest["blockSize"]   = src.value("blockSize").toLongLong();
+
+        m_manifests.append(manifest);
+    }
+
+    emit manifestsChanged();
 }
 
 void StorageBackend::space() {

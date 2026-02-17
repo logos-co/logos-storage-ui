@@ -124,6 +124,8 @@ Rectangle {
         function space() {}
 
         function updateLogLevel(logLevel) {}
+
+        property var manifests: []
     }
 
     Text {
@@ -392,6 +394,144 @@ Rectangle {
         anchors.topMargin: 10
     }
 
+    // ── Manifests section ──────────────────────────────────────────────────
+    Text {
+        id: manifestsTitle
+        text: "Manifests"
+        color: "white"
+        font.pixelSize: 14
+        font.bold: true
+        anchors.top: downloadManifestsButton.bottom
+        anchors.topMargin: 30
+        anchors.horizontalCenter: parent.horizontalCenter
+    }
+
+    Row {
+        id: manifestInputRow
+        spacing: 8
+        anchors.top: manifestsTitle.bottom
+        anchors.topMargin: 8
+        anchors.horizontalCenter: parent.horizontalCenter
+
+        TextField {
+            id: manifestCidField
+            width: 380
+            placeholderText: "Enter CID to download manifest"
+            placeholderTextColor: "#999999"
+            color: "#000000"
+            selectByMouse: true
+        }
+
+        Button {
+            id: addManifestButton
+            text: "Download Manifest"
+            enabled: root.isRunning() && manifestCidField.text.length > 0
+            onClicked: {
+                root.backend.downloadManifest(manifestCidField.text)
+                manifestCidField.clear()
+            }
+        }
+    }
+
+    // Table header
+    Rectangle {
+        id: manifestTableHeader
+        anchors.top: manifestInputRow.bottom
+        anchors.topMargin: 8
+        anchors.left: manifestInputRow.left
+        anchors.right: manifestInputRow.right
+        height: 28
+        color: "#222222"
+        radius: 2
+
+        Row {
+            anchors.fill: parent
+            anchors.leftMargin: 6
+
+            Text { width: 200; text: "CID";          color: "#aaaaaa"; font.pixelSize: 11; font.bold: true; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
+            Text { width: 140; text: "Filename";     color: "#aaaaaa"; font.pixelSize: 11; font.bold: true; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
+            Text { width: 100; text: "MIME type";    color: "#aaaaaa"; font.pixelSize: 11; font.bold: true; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
+            Text { width: 90;  text: "Size (bytes)"; color: "#aaaaaa"; font.pixelSize: 11; font.bold: true; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
+        }
+    }
+
+    Rectangle {
+        id: manifestTableContainer
+        anchors.top: manifestTableHeader.bottom
+        anchors.left: manifestTableHeader.left
+        anchors.right: manifestTableHeader.right
+        height: 180
+        color: "#111111"
+        border.color: "#333333"
+        border.width: 1
+        clip: true
+
+        ListView {
+            id: manifestListView
+            anchors.fill: parent
+            model: root.backend.manifests
+            clip: true
+
+            delegate: Rectangle {
+                width: manifestListView.width
+                height: 28
+                color: index % 2 === 0 ? "#181818" : "#1e1e1e"
+
+                Row {
+                    anchors.fill: parent
+                    anchors.leftMargin: 6
+                    spacing: 0
+
+                    Text {
+                        width: 200
+                        text: modelData["cid"] ?? ""
+                        color: "#dddddd"
+                        font.pixelSize: 11
+                        font.family: "monospace"
+                        elide: Text.ElideMiddle
+                        anchors.verticalCenter: parent.verticalCenter
+                        ToolTip.visible: hovered
+                        ToolTip.text: modelData["cid"] ?? ""
+                        HoverHandler {}
+                    }
+                    Text {
+                        width: 140
+                        text: modelData["filename"] ?? ""
+                        color: "#dddddd"
+                        font.pixelSize: 11
+                        elide: Text.ElideRight
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Text {
+                        width: 100
+                        text: modelData["mimetype"] ?? ""
+                        color: "#dddddd"
+                        font.pixelSize: 11
+                        elide: Text.ElideRight
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Text {
+                        width: 90
+                        text: modelData["datasetSize"] ?? ""
+                        color: "#dddddd"
+                        font.pixelSize: 11
+                        elide: Text.ElideRight
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                }
+            }
+
+            Text {
+                anchors.centerIn: parent
+                text: "No manifests yet"
+                color: "#555555"
+                font.pixelSize: 12
+                visible: manifestListView.count === 0
+            }
+        }
+    }
+
+    // ── Log level section ──────────────────────────────────────────────────
     TextField {
         id: logLevelField
         placeholderTextColor: "#999999"
@@ -399,8 +539,8 @@ Rectangle {
         color: "black"
         //  text: root.downloadCid
         onTextChanged: root.logLevel = text
-        anchors.top: downloadManifestsButton.bottom
-        anchors.topMargin: 50
+        anchors.top: manifestTableContainer.bottom
+        anchors.topMargin: 30
         anchors.horizontalCenter: parent.horizontalCenter
     }
 
