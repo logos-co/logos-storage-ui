@@ -555,6 +555,15 @@ void StorageBackend::remove(const QString& cid) {
     }
 
     debug("Cid " + cid + " removed.");
+
+    // Remove from manifests list
+    for (int i = 0; i < m_manifests.size(); ++i) {
+        if (m_manifests[i].toMap().value("cid").toString() == cid) {
+            m_manifests.removeAt(i);
+            emit manifestsChanged();
+            break;
+        }
+    }
 }
 
 void StorageBackend::fetch(const QString& cid) {

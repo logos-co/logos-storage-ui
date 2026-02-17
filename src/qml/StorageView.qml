@@ -2,13 +2,14 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
 import QtQuick.Layouts
+import QtCore
 
 Rectangle {
     id: root
     Layout.fillWidth: true
     Layout.fillHeight: true
     implicitWidth: 600
-    implicitHeight: 400
+    implicitHeight: 600
     color: "#000000"
 
     property var backend: mockBackend
@@ -22,6 +23,7 @@ Rectangle {
     property url downloadCid: ""
     property string logLevel: ""
     property bool showDebug: false
+    property var pendingDownloadManifest: null
     property url uploadCid: root.backend.cid
     property url configJson: root.backend.configJson
 
@@ -215,36 +217,35 @@ Rectangle {
         }
     }
 
-    TextField {
-        id: peerIdField
-        placeholderText: "Enter the peer Id"
-        placeholderTextColor: "#999999"
-        color: "#000000"
-        selectByMouse: true
-        text: root.peerId
-        onTextChanged: root.peerId = text
-        anchors.top: uploadProgressColumn.bottom
-        anchors.topMargin: 50
-        anchors.horizontalCenter: parent.horizontalCenter
-    }
+    // TextField {
+    //     id: peerIdField
+    //     placeholderText: "Enter the peer Id"
+    //     placeholderTextColor: "#999999"
+    //     color: "#000000"
+    //     selectByMouse: true
+    //     text: root.peerId
+    //     onTextChanged: root.peerId = text
+    //     anchors.top: uploadProgressColumn.bottom
+    //     anchors.topMargin: 50
+    //     anchors.horizontalCenter: parent.horizontalCenter
+    // }
 
-    Button {
-        id: peerConnectButton
-        objectName: "peerConnectButton"
-        text: "Peer connect"
-        onClicked: root.backend.tryPeerConnect(root.peerId)
-        anchors.top: peerIdField.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        enabled: root.isRunning
-        anchors.topMargin: 10
-    }
-
+    // Button {
+    //     id: peerConnectButton
+    //     objectName: "peerConnectButton"
+    //     text: "Peer connect"
+    //     onClicked: root.backend.tryPeerConnect(root.peerId)
+    //     anchors.top: peerIdField.bottom
+    //     anchors.horizontalCenter: parent.horizontalCenter
+    //     enabled: root.isRunning
+    //     anchors.topMargin: 10
+    // }
     Button {
         id: debugButton
         objectName: "debugButton"
         text: "Debug"
         onClicked: root.backend.tryDebug()
-        anchors.top: peerConnectButton.bottom
+        anchors.top: uploadProgressColumn.bottom
         anchors.horizontalCenter: parent.horizontalCenter
         enabled: root.isRunning
         anchors.topMargin: 50
@@ -255,7 +256,7 @@ Rectangle {
         objectName: "peerIdButton"
         text: "Peer Id"
         onClicked: root.backend.showPeerId()
-        anchors.top: peerConnectButton.bottom
+        anchors.top: uploadProgressColumn.bottom
         anchors.right: debugButton.left
         enabled: root.isRunning
         anchors.topMargin: 50
@@ -266,7 +267,7 @@ Rectangle {
         objectName: "dataDirButton"
         text: "Data dir"
         onClicked: root.backend.dataDir()
-        anchors.top: peerConnectButton.bottom
+        anchors.top: uploadProgressColumn.bottom
         anchors.right: peerIdButton.left
         enabled: root.isRunning
         anchors.topMargin: 50
@@ -277,7 +278,7 @@ Rectangle {
         objectName: "sprButton"
         text: "SPR"
         onClicked: root.backend.spr()
-        anchors.top: peerConnectButton.bottom
+        anchors.top: uploadProgressColumn.bottom
         anchors.left: debugButton.right
         enabled: root.isRunning
         anchors.topMargin: 50
@@ -288,91 +289,92 @@ Rectangle {
         objectName: "versionButton"
         text: "Version"
         onClicked: root.backend.version()
-        anchors.top: peerConnectButton.bottom
+        anchors.top: uploadProgressColumn.bottom
         anchors.left: sprButton.right
         enabled: root.isRunning
         anchors.topMargin: 50
     }
 
-    TextField {
-        id: cidDownloadField
-        placeholderTextColor: "#999999"
-        placeholderText: "Enter the cid to download"
-        color: "black"
-        //  text: root.downloadCid
-        onTextChanged: root.downloadCid = text
-        anchors.top: debugButton.bottom
-        anchors.topMargin: 50
-        anchors.horizontalCenter: parent.horizontalCenter
-    }
+    // TextField {
+    //     id: cidDownloadField
+    //     placeholderTextColor: "#999999"
+    //     placeholderText: "Enter the cid to download"
+    //     color: "black"
+    //     //  text: root.downloadCid
+    //     onTextChanged: root.downloadCid = text
+    //     anchors.top: debugButton.bottom
+    //     anchors.topMargin: 50
+    //     anchors.horizontalCenter: parent.horizontalCenter
+    // }
 
-    Button {
-        id: openFile2
-        text: "Open file"
-        onClicked: fileDialog2.open()
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: cidDownloadField.bottom
-        anchors.topMargin: 15
-        enabled: root.isRunning
-    }
+    // Button {
+    //     id: openFile2
+    //     text: "Open file"
+    //     onClicked: fileDialog2.open()
+    //     anchors.horizontalCenter: parent.horizontalCenter
+    //     anchors.top: cidDownloadField.bottom
+    //     anchors.topMargin: 15
+    //     enabled: root.isRunning
+    // }
 
-    Button {
-        id: cidDownloadButton
-        objectName: "cidDownloadButton"
-        text: "Download"
-        onClicked: root.backend.tryDownloadFile(root.downloadCid,
-                                                root.downloadDestination)
-        anchors.top: openFile2.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        enabled: root.isRunning
-        anchors.topMargin: 10
-    }
+    // Button {
+    //     id: cidDownloadButton
+    //     objectName: "cidDownloadButton"
+    //     text: "Download"
+    //     onClicked: root.backend.tryDownloadFile(root.downloadCid,
+    //                                             root.downloadDestination)
+    //     anchors.top: openFile2.bottom
+    //     anchors.horizontalCenter: parent.horizontalCenter
+    //     enabled: root.isRunning
+    //     anchors.topMargin: 10
+    // }
 
-    Button {
-        id: existsButton
-        objectName: "existsButton"
-        text: "Exists"
-        onClicked: root.backend.exists(root.downloadCid)
-        anchors.top: openFile2.bottom
-        anchors.left: cidDownloadButton.right
-        enabled: root.isRunning
-        anchors.topMargin: 10
-    }
+    // Button {
+    //     id: existsButton
+    //     objectName: "existsButton"
+    //     text: "Exists"
+    //     onClicked: root.backend.exists(root.downloadCid)
+    //     anchors.top: openFile2.bottom
+    //     anchors.left: cidDownloadButton.right
+    //     enabled: root.isRunning
+    //     anchors.topMargin: 10
+    // }
 
-    Button {
-        id: fetchButton
-        objectName: "fetchButton"
-        text: "Fetch"
-        onClicked: root.backend.fetch(root.downloadCid)
-        anchors.top: openFile2.bottom
-        anchors.left: existsButton.right
-        enabled: root.isRunning
-        anchors.topMargin: 10
-    }
+    // Button {
+    //     id: fetchButton
+    //     objectName: "fetchButton"
+    //     text: "Fetch"
+    //     onClicked: root.backend.fetch(root.downloadCid)
+    //     anchors.top: openFile2.bottom
+    //     anchors.left: existsButton.right
+    //     enabled: root.isRunning
+    //     anchors.topMargin: 10
+    // }
 
-    Button {
-        id: removeButton
-        objectName: "removeButton"
-        text: "Remove"
-        onClicked: root.backend.remove(root.downloadCid)
-        anchors.top: openFile2.bottom
-        anchors.right: cidDownloadButton.left
-        enabled: root.isRunning
-        anchors.topMargin: 10
-    }
+    // Button {
+    //     id: removeButton
+    //     objectName: "removeButton"
+    //     text: "Remove"
+    //     onClicked: root.backend.remove(root.downloadCid)
+    //     anchors.top: openFile2.bottom
+    //     anchors.right: cidDownloadButton.left
+    //     enabled: root.isRunning
+    //     anchors.topMargin: 10
+    // }
 
-    Button {
-        id: downloadManifestButton
-        objectName: "downloadManifestButton"
-        text: "Download manifest"
-        onClicked: root.backend.downloadManifest(root.downloadCid)
-        anchors.top: openFile2.bottom
-        anchors.right: removeButton.left
-        enabled: root.isRunning
-        anchors.topMargin: 10
-    }
+    // Button {
+    //     id: downloadManifestButton
+    //     objectName: "downloadManifestButton"
+    //     text: "Download manifest"
+    //     onClicked: root.backend.downloadManifest(root.downloadCid)
+    //     anchors.top: openFile2.bottom
+    //     anchors.right: removeButton.left
+    //     enabled: root.isRunning
+    //     anchors.topMargin: 10
+    // }
 
-    Button {
+
+    /*Button {
         id: downloadManifestsButton
         objectName: "downloadManifestsButton"
         text: "Manifests"
@@ -381,18 +383,7 @@ Rectangle {
         anchors.horizontalCenter: parent.horizontalCenter
         enabled: root.isRunning
         anchors.topMargin: 10
-    }
-
-    Button {
-        id: spaceButton
-        objectName: "spaceButton"
-        text: "Space"
-        onClicked: root.backend.space()
-        anchors.top: cidDownloadButton.bottom
-        anchors.right: downloadManifestsButton.left
-        enabled: root.isRunning
-        anchors.topMargin: 10
-    }
+    }*/
 
     // ── Manifests section ──────────────────────────────────────────────────
     Text {
@@ -401,7 +392,7 @@ Rectangle {
         color: "white"
         font.pixelSize: 14
         font.bold: true
-        anchors.top: downloadManifestsButton.bottom
+        anchors.top: versionButton.bottom
         anchors.topMargin: 30
         anchors.horizontalCenter: parent.horizontalCenter
     }
@@ -438,8 +429,8 @@ Rectangle {
         id: manifestTableHeader
         anchors.top: manifestInputRow.bottom
         anchors.topMargin: 8
-        anchors.left: manifestInputRow.left
-        anchors.right: manifestInputRow.right
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: parent.width - 40
         height: 28
         color: "#222222"
         radius: 2
@@ -448,10 +439,50 @@ Rectangle {
             anchors.fill: parent
             anchors.leftMargin: 6
 
-            Text { width: 200; text: "CID";          color: "#aaaaaa"; font.pixelSize: 11; font.bold: true; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
-            Text { width: 140; text: "Filename";     color: "#aaaaaa"; font.pixelSize: 11; font.bold: true; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
-            Text { width: 100; text: "MIME type";    color: "#aaaaaa"; font.pixelSize: 11; font.bold: true; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
-            Text { width: 90;  text: "Size (bytes)"; color: "#aaaaaa"; font.pixelSize: 11; font.bold: true; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
+            Text {
+                width: 150
+                text: "CID"
+                color: "#aaaaaa"
+                font.pixelSize: 11
+                font.bold: true
+                elide: Text.ElideRight
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Text {
+                width: 120
+                text: "Filename"
+                color: "#aaaaaa"
+                font.pixelSize: 11
+                font.bold: true
+                elide: Text.ElideRight
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Text {
+                width: 85
+                text: "MIME type"
+                color: "#aaaaaa"
+                font.pixelSize: 11
+                font.bold: true
+                elide: Text.ElideRight
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Text {
+                width: 75
+                text: "Size (bytes)"
+                color: "#aaaaaa"
+                font.pixelSize: 11
+                font.bold: true
+                elide: Text.ElideRight
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Text {
+                width: 110
+                text: ""
+                color: "#aaaaaa"
+                font.pixelSize: 11
+                font.bold: true
+                anchors.verticalCenter: parent.verticalCenter
+            }
         }
     }
 
@@ -460,7 +491,7 @@ Rectangle {
         anchors.top: manifestTableHeader.bottom
         anchors.left: manifestTableHeader.left
         anchors.right: manifestTableHeader.right
-        height: 180
+        height: 280
         color: "#111111"
         border.color: "#333333"
         border.width: 1
@@ -474,16 +505,17 @@ Rectangle {
 
             delegate: Rectangle {
                 width: manifestListView.width
-                height: 28
+                height: 36
                 color: index % 2 === 0 ? "#181818" : "#1e1e1e"
 
                 Row {
                     anchors.fill: parent
                     anchors.leftMargin: 6
+                    anchors.rightMargin: 4
                     spacing: 0
 
                     Text {
-                        width: 200
+                        width: 150
                         text: modelData["cid"] ?? ""
                         color: "#dddddd"
                         font.pixelSize: 11
@@ -495,7 +527,7 @@ Rectangle {
                         HoverHandler {}
                     }
                     Text {
-                        width: 140
+                        width: 120
                         text: modelData["filename"] ?? ""
                         color: "#dddddd"
                         font.pixelSize: 11
@@ -503,7 +535,7 @@ Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
                     }
                     Text {
-                        width: 100
+                        width: 85
                         text: modelData["mimetype"] ?? ""
                         color: "#dddddd"
                         font.pixelSize: 11
@@ -511,12 +543,40 @@ Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
                     }
                     Text {
-                        width: 90
+                        width: 75
                         text: modelData["datasetSize"] ?? ""
                         color: "#dddddd"
                         font.pixelSize: 11
                         elide: Text.ElideRight
                         anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Row {
+                        spacing: 4
+                        anchors.verticalCenter: parent.verticalCenter
+
+                        Button {
+                            width: 50
+                            height: 26
+                            text: "↓"
+                            enabled: root.isRunning()
+                            onClicked: {
+                                root.pendingDownloadManifest = modelData
+                                var filename = modelData["filename"]
+                                        || modelData["cid"] || "download"
+                                manifestSaveDialog.currentFile = StandardPaths.writableLocation(
+                                            StandardPaths.HomeLocation) + "/" + filename
+                                manifestSaveDialog.open()
+                            }
+                        }
+
+                        Button {
+                            width: 50
+                            height: 26
+                            text: "🗑"
+                            enabled: root.isRunning()
+                            onClicked: root.backend.remove(
+                                           modelData["cid"] ?? "")
+                        }
                     }
                 }
             }
@@ -531,29 +591,40 @@ Rectangle {
         }
     }
 
-    // ── Log level section ──────────────────────────────────────────────────
-    TextField {
-        id: logLevelField
-        placeholderTextColor: "#999999"
-        placeholderText: "Enter the log level to download"
-        color: "black"
-        //  text: root.downloadCid
-        onTextChanged: root.logLevel = text
+    Button {
+        id: spaceButton
+        objectName: "spaceButton"
+        text: "Space"
+        onClicked: root.backend.space()
         anchors.top: manifestTableContainer.bottom
-        anchors.topMargin: 30
+        enabled: root.isRunning
+        anchors.topMargin: 10
         anchors.horizontalCenter: parent.horizontalCenter
     }
 
-    Button {
-        id: logLevelButton
-        objectName: "logLevelButton"
-        text: "Log level"
-        onClicked: root.backend.updateLogLevel(root.logLevel)
-        anchors.top: logLevelField.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        enabled: root.isRunning
-        anchors.topMargin: 10
-    }
+    // ── Log level section ──────────────────────────────────────────────────
+    // TextField {
+    //     id: logLevelField
+    //     placeholderTextColor: "#999999"
+    //     placeholderText: "Enter the log level to download"
+    //     color: "black"
+    //     //  text: root.downloadCid
+    //     onTextChanged: root.logLevel = text
+    //     anchors.top: manifestTableContainer.bottom
+    //     anchors.topMargin: 30
+    //     anchors.horizontalCenter: parent.horizontalCenter
+    // }
+
+    // Button {
+    //     id: logLevelButton
+    //     objectName: "logLevelButton"
+    //     text: "Log level"
+    //     onClicked: root.backend.updateLogLevel(root.logLevel)
+    //     anchors.top: logLevelField.bottom
+    //     anchors.horizontalCenter: parent.horizontalCenter
+    //     enabled: root.isRunning
+    //     anchors.topMargin: 10
+    // }
 
     // TextEdit {
     //     id: selectableText
@@ -606,6 +677,22 @@ Rectangle {
             root.downloadDestination = fileDialog2.selectedFile
             console.log("Destination selected:",
                         root.backend.downloadDestination)
+        }
+    }
+
+    FileDialog {
+        id: manifestSaveDialog
+        fileMode: FileDialog.SaveFile
+        onAccepted: {
+            if (root.pendingDownloadManifest) {
+                root.backend.tryDownloadFile(
+                            root.pendingDownloadManifest["cid"],
+                            manifestSaveDialog.selectedFile)
+                root.pendingDownloadManifest = null
+            }
+        }
+        onRejected: {
+            root.pendingDownloadManifest = null
         }
     }
 
