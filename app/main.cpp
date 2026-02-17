@@ -29,6 +29,11 @@ int main(int argc, char* argv[]) {
     // Create QApplication first
     QApplication app(argc, argv);
 
+    // Set application properties for Qt Settings
+    QCoreApplication::setOrganizationName("Logos");
+    QCoreApplication::setOrganizationDomain("logos.co");
+    QCoreApplication::setApplicationName("LogosStorage");
+
     // Set the plugins directory
     QString pluginsDir = QDir::cleanPath(QCoreApplication::applicationDirPath() + "/../modules");
     std::cout << "Setting plugins directory to: " << pluginsDir.toStdString() << std::endl;

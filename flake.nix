@@ -10,13 +10,13 @@
     logos-storage-module.url = "github:logos-co/logos-storage-module";
     #logos-storage-module.url = "path:/home/arnaud/Work/logos/logos-storage-module";
     logos-capability-module.url = "github:logos-co/logos-capability-module";
-
+    logos-design-system.url = "github:logos-co/logos-design-system";
     logos-liblogos.inputs.logos-cpp-sdk.follows = "logos-cpp-sdk";
     logos-storage-module.inputs.logos-cpp-sdk.follows = "logos-cpp-sdk";
     logos-capability-module.inputs.logos-cpp-sdk.follows = "logos-cpp-sdk";
   };
 
-  outputs = { self, nixpkgs, logos-cpp-sdk, logos-liblogos, logos-storage-module, logos-capability-module }:
+  outputs = { self, nixpkgs, logos-cpp-sdk, logos-liblogos, logos-storage-module, logos-capability-module, logos-design-system }:
     let
       systems = [ "aarch64-darwin" "x86_64-darwin" "aarch64-linux" "x86_64-linux" ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f {
@@ -25,14 +25,15 @@
         logosLiblogos = logos-liblogos.packages.${system}.default;
         logosStorageModule = logos-storage-module.packages.${system}.default;
         logosCapabilityModule = logos-capability-module.packages.${system}.default;
+        logosDesignSystem = logos-design-system.packages.${system}.default;
       });
     in
     {
-      packages = forAllSystems ({ pkgs, logosSdk, logosLiblogos, logosStorageModule, logosCapabilityModule }: 
+      packages = forAllSystems ({ pkgs, logosSdk, logosLiblogos, logosStorageModule, logosCapabilityModule, logosDesignSystem }:
         let
           # Common configuration
           common = import ./nix/default.nix { 
-            inherit pkgs logosSdk logosLiblogos logosStorageModule;
+            inherit pkgs logosSdk logosLiblogos logosStorageModule logosDesignSystem;
           };
           src = ./.;
           
@@ -42,8 +43,8 @@
           };
           
           # App package
-          app = import ./nix/app.nix { 
-            inherit pkgs common src logosLiblogos logosSdk logosStorageModule logosCapabilityModule;
+          app = import ./nix/app.nix {
+            inherit pkgs common src logosLiblogos logosSdk logosStorageModule logosCapabilityModule logosDesignSystem;
             logosStorageUI = lib;
           };
 

@@ -62,6 +62,23 @@ if(NOT DEFINED LOGOS_STORAGE_ROOT)
     endif()
 endif()
 
+if(NOT DEFINED LOGOS_DESIGN_SYSTEM_ROOT)
+    set(_parent_logos_design_system "${CMAKE_SOURCE_DIR}/../logos-design-system")
+    set(_use_vendor ${LOGOS_STORAGE_UI_USE_VENDOR})
+
+    if(NOT _use_vendor)
+        if(NOT EXISTS "${_parent_logos_design_system}/CMakeLists.txt")
+            set(_use_vendor ON)
+        endif()
+    endif()
+
+    if(_use_vendor)
+        set(LOGOS_DESIGN_SYSTEM_ROOT "${CMAKE_SOURCE_DIR}/vendor/logos-design-system")
+    else()
+        set(LOGOS_DESIGN_SYSTEM_ROOT "${_parent_logos_design_system}")
+    endif()
+endif()
+
 set(_liblogos_found FALSE)
 if(EXISTS "${LOGOS_LIBLOGOS_ROOT}/src/common/interface.h")
     set(_liblogos_found TRUE)
@@ -328,6 +345,32 @@ if(absl_FOUND)
         absl::check
     )
 endif()
+
+# Set up QML module directory for runtime
+set(QML_THEME_DIR ${CMAKE_CURRENT_BINARY_DIR}/qml/Logos/Theme)
+set(QML_CONTROLS_DIR ${CMAKE_CURRENT_BINARY_DIR}/qml/Logos/Controls)
+
+# Detect if design system is source or installed layout
+set(_design_system_is_source FALSE)
+if(EXISTS "${LOGOS_DESIGN_SYSTEM_ROOT}/src/qml/theme")
+    set(_design_system_is_source TRUE)
+    set(DESIGN_SYSTEM_THEME_SRC "${LOGOS_DESIGN_SYSTEM_ROOT}/src/qml/theme")
+    set(DESIGN_SYSTEM_CONTROLS_SRC "${LOGOS_DESIGN_SYSTEM_ROOT}/src/qml/controls")
+else()
+    # Installed/Nix layout: files are in lib/Logos/Theme and lib/Logos/Controls
+    set(DESIGN_SYSTEM_THEME_SRC "${LOGOS_DESIGN_SYSTEM_ROOT}/lib/Logos/Theme")
+    set(DESIGN_SYSTEM_CONTROLS_SRC "${LOGOS_DESIGN_SYSTEM_ROOT}/lib/Logos/Controls")
+endif()
+
+# Copy QML module files to runtime directory
+# Pure QML module - no library, just QML files + qmldir
+add_custom_command(TARGET storage_ui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${QML_THEME_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${DESIGN_SYSTEM_THEME_SRC}/ ${QML_THEME_DIR}/
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${QML_CONTROLS_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${DESIGN_SYSTEM_CONTROLS_SRC}/ ${QML_CONTROLS_DIR}/
+    COMMENT "Setting up Logos.Theme and Logos.Controls QML modules for the app"
+)
 
 ########### LIBRARY DEFINITION END ###########
 

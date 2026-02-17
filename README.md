@@ -62,7 +62,23 @@ After building the app with `nix build`, you can run it:
 ./result/bin/logos-storage-ui-app
 ```
 
-The app will automatically load the required modules (capability_module, storage_module) and the storage_ui Qt plugin. All dependencies are bundled in the Nix store layout.
+## Configuration
+
+After onboarding, settings are saved to a file whose location depends on the OS:
+
+| OS      | Path                                             |
+|---------|--------------------------------------------------|
+| Linux   | `~/.config/Logos/LogosStorage.conf`              |
+| macOS   | `~/Library/Preferences/Logos.LogosStorage.plist` |
+| Windows | `HKCU\Software\Logos\LogosStorage` (Registry)    |
+
+## Configuration Management
+
+To restart the onboarding process, simply delete the configuration file and relaunch the application.
+
+You can override the configuration by placing a `config.json` file in the app's startup folder. This file takes precedence over any existing configuration.
+
+The application also provides a JSON editor in the debug panel for runtime configuration tweaks. To apply changes, restart the Storage Module.
 
 #### Nix Organization
 

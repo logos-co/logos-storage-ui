@@ -1,6 +1,7 @@
 #include "StorageBackend.h"
 #include <QDateTime>
 #include <QDebug>
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -38,6 +39,10 @@ StorageBackend::~StorageBackend()
 LogosResult StorageBackend::init(const QString& configJson = "{}") {
     qDebug() << "StorageBackend::initStorage called";
 
+    if (configJson != "{}") {
+        m_configJson = configJson;
+    }
+
     bool result = m_logos->storage_module.init(m_configJson);
 
     qDebug() << "StorageBackend::initStorage: init";
@@ -57,9 +62,11 @@ LogosResult StorageBackend::init(const QString& configJson = "{}") {
                 QString message = data[1].toString();
                 setStatus(Stopped);
                 debug("Failed to start Storage module:" + message);
+                emit startFailed(message);
             } else {
                 setStatus(Running);
                 debug("Storage module started.");
+                emit startCompleted();
             }
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageStart events";
@@ -75,8 +82,9 @@ LogosResult StorageBackend::init(const QString& configJson = "{}") {
             } else {
                 setStatus(Stopped);
                 debug("Storage module stopped.");
-                emit stopped();
             }
+
+            emit stopCompleted();
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageStop events";
     }
@@ -183,10 +191,11 @@ LogosResult StorageBackend::init(const QString& configJson = "{}") {
         qWarning() << "StorageWidget: failed to subscribe to storageDownloadProgress events";
     }
 
-    m_configJson = configJson;
-    emit configJsonChanged();
-
-    debug("config.json content is: " + m_configJson);
+    if (configJson != "{}") {
+        m_configJson = configJson;
+        emit configJsonChanged();
+        debug("new config is: " + m_configJson);
+    }
 
     return {true, ""};
 }
@@ -236,11 +245,13 @@ void StorageBackend::stop() {
 
     if (m_status == StorageStatus::Stopping) {
         debug("The Storage Module is already stopping.");
+        emit stopCompleted();
         return;
     }
 
     if (m_status != StorageStatus::Running) {
         debug("The Storage Module is not started.");
+        emit stopCompleted();
         return;
     }
 
@@ -698,6 +709,7 @@ QString StorageBackend::uploadStatus() const { return m_uploadStatus; }
 
 void StorageBackend::reloadIfChanged(const QString& configJson) {
     if (configJson == m_configJson) {
+        debug("No change detected in the config");
         return;
     }
 
@@ -753,4 +765,60 @@ void StorageBackend::reloadIfChanged(const QString& configJson) {
 
     m_configJson = configJson;
     setStatus(StorageStatus::Stopped);
+    emit configJsonChanged();
+}
+
+bool StorageBackend::validateDataDir(const QString& path) {
+    QFileInfo info(path);
+    return info.exists() && info.isDir() && info.isReadable() && info.isWritable();
+}
+
+QString StorageBackend::buildConfig(const QString& dataDir, int discPort, int tcpPort) {
+    debug("StorageBackend::updateBasicConfig called with dataDir=" + dataDir);
+
+    QJsonDocument doc = QJsonDocument::fromJson(m_configJson.toUtf8());
+    QJsonObject obj = doc.object();
+
+    obj["data-dir"] = dataDir;
+    obj["disc-port"] = discPort;
+
+    QJsonArray listenAddrs = {QString("/ip4/0.0.0.0/tcp/%1").arg(tcpPort)};
+    obj["listen-addrs"] = listenAddrs;
+
+    QJsonArray bootstrapArray;
+    for (const QString& node : BOOTSTRAP_NODES) {
+        bootstrapArray.append(node);
+    }
+    obj["bootstrap-node"] = bootstrapArray;
+
+    return QJsonDocument(obj).toJson(QJsonDocument::Indented);
+}
+
+QString StorageBackend::buildConfigFromFile(const QString& path) {
+    qDebug() << "StorageBackend::buildConfigFromFile called";
+
+    QFile file(path);
+    if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString configJson = QString::fromUtf8(file.readAll());
+
+        debug("StorageUIPlugin: config.json is found, configJson=" + configJson);
+
+        return configJson;
+    }
+
+    debug("StorageUIPlugin: Failed to load config.json");
+    return "{}";
+}
+
+void StorageBackend::status(StorageStatus status) { m_status = status; }
+
+QString StorageBackend::defaultDataDir() {
+    QString home = QDir::homePath();
+#ifdef Q_OS_WIN
+    return home + "/AppData/Roaming/Storage";
+#elif defined(Q_OS_MACOS)
+    return home + "/Library/Application Support/Storage";
+#else
+    return home + "/.cache/storage";
+#endif
 }

@@ -34,6 +34,23 @@ if(NOT DEFINED LOGOS_CPP_SDK_ROOT)
     endif()
 endif()
 
+if(NOT DEFINED LOGOS_DESIGN_SYSTEM_ROOT)
+    set(_parent_logos_design_system "${CMAKE_SOURCE_DIR}/../../../logos-design-system")
+    set(_use_vendor ${LOGOS_STORAGE_UI_USE_VENDOR})
+
+    if(NOT _use_vendor)
+        if(NOT EXISTS "${_parent_logos_design_system}/CMakeLists.txt")
+            set(_use_vendor ON)
+        endif()
+    endif()
+
+    if(_use_vendor)
+        set(LOGOS_DESIGN_SYSTEM_ROOT "${CMAKE_SOURCE_DIR}/../../vendor/logos-design-system")
+    else()
+        set(LOGOS_DESIGN_SYSTEM_ROOT "${_parent_logos_design_system}")
+    endif()
+endif()
+
 # Locate the logos_api header file.
 # If the file is found, the sdk is considered found.
 set(_cpp_sdk_found FALSE)
@@ -110,6 +127,26 @@ qt_add_qml_module(appqml
         ../StorageBackend.h
     QML_FILES
         StorageView.qml
+        OnBoarding.qml
+        Main.qml
+        StartNode.qml
+        LogosTextField.qml
+        LogosStorageButton.qml
+)
+
+# Set up QML module directory for runtime
+set(DESIGN_SYSTEM_QML ${LOGOS_DESIGN_SYSTEM_ROOT}/src/qml)
+set(QML_THEME_DIR ${CMAKE_CURRENT_BINARY_DIR}/qml/Logos/Theme)
+set(QML_CONTROLS_DIR ${CMAKE_CURRENT_BINARY_DIR}/qml/Logos/Controls)
+
+# Copy QML module files to runtime directory
+# Pure QML module - no library, just QML files + qmldir
+add_custom_command(TARGET storage_generated POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${QML_THEME_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${DESIGN_SYSTEM_QML}/theme/ ${QML_THEME_DIR}/
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${QML_CONTROLS_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${DESIGN_SYSTEM_QML}/controls/ ${QML_CONTROLS_DIR}/
+    COMMENT "Setting up Logos.Theme and Logos.Controls QML modules for the app"
 )
 
 ########### QML DEFINITION END ###########
