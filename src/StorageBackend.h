@@ -1,6 +1,7 @@
 #pragma once
 #include "logos_api.h"
 #include "logos_sdk.h"
+#include <QFile>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -10,11 +11,24 @@
 static const int RET_OK = 0;
 static const int RET_PROGRESS = 3;
 
+// Add manual SPR from https://spr.codex.storage/devnet
+static const QStringList BOOTSTRAP_NODES = {
+    "spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-"
+    "EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-"
+    "uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE",
+    "spr:CiUIAhIhApIj9p6zJDRbw2NoCo-"
+    "tj98Y760YbppRiEpGIE1yGaMzEgIDARpJCicAJQgCEiECkiP2nrMkNFvDY2gKj62P3xjvrRhumlGISkYgTXIZozMQvcz8wQYaCwoJBAWhF3WRAnVEG"
+    "gsKCQQFoRd1kQJ1RCpGMEQCIFZB84O_nzPNuViqEGRL1vJTjHBJ-i5ZDgFL5XZxm4HAAiB8rbLHkUdFfWdiOmlencYVn0noSMRHzn4lJYoShuVzlw",
+    "spr:CiUIAhIhApqRgeWRPSXocTS9RFkQmwTZRG-"
+    "Cdt7UR2N7POoz606ZEgIDARpJCicAJQgCEiECmpGB5ZE9JehxNL1EWRCbBNlEb4J23tRHY3s86jPrTpkQj8_"
+    "8wQYaCwoJBAXfEfiRAnVOGgsKCQQF3xH4kQJ1TipGMEQCIGWJMsF57N1iIEQgTH7IrVOgEgv0J2P2v3jvQr5Cjy-RAiAy4aiZ8QtyDvCfl_K_"
+    "w6SyZ9csFGkRNTpirq_M_QNgKw"};
+
 class StorageBackend : public QObject {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(QString debugLogs READ debugLogs NOTIFY debugLogsChanged)
-    Q_PROPERTY(StorageStatus status READ status NOTIFY statusChanged)
+    Q_PROPERTY(StorageStatus status READ status WRITE status NOTIFY statusChanged)
     Q_PROPERTY(QString cid READ cid NOTIFY cidChanged)
     Q_PROPERTY(QString configJson READ configJson NOTIFY configJsonChanged)
     Q_PROPERTY(int uploadProgress READ uploadProgress NOTIFY uploadProgressChanged)
@@ -30,6 +44,8 @@ class StorageBackend : public QObject {
     QString configJson() const;
     int uploadProgress() const;
     QString uploadStatus() const;
+
+    Q_INVOKABLE static QString defaultDataDir();
 
     explicit StorageBackend(LogosAPI* logosAPI = nullptr, QObject* parent = nullptr);
     ~StorageBackend();
@@ -54,13 +70,20 @@ class StorageBackend : public QObject {
     void downloadManifest(const QString& cid);
     void downloadManifests();
     void space();
+    bool validateDataDir(const QString& path);
     LogosResult init(const QString& configJson);
     void updateLogLevel(const QString& logLevel);
+    void reloadIfChanged(const QString& configJson);
+    void status(StorageStatus status);
+    QString buildConfig(const QString& dataDir, int discPort, int tcpPort);
+    QString buildConfigFromFile(const QString& path);
 
   signals:
+    void startCompleted();
+    void startFailed(const QString& error);
     void statusChanged();
     void debugLogsChanged();
-    void stopped();
+    void stopCompleted();
     void cidChanged();
     void configJsonChanged();
     void uploadProgressChanged();
@@ -72,7 +95,6 @@ class StorageBackend : public QObject {
     void setStatus(StorageStatus newStatus);
     void peerConnect(const QString& peerId);
     void debug(const QString& log);
-    void reloadIfChanged(const QString& configJson);
 
     LogosAPI* m_logosAPI;
     LogosModules* m_logos;

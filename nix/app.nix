@@ -1,5 +1,5 @@
 # Builds the logos-storage-ui-app standalone application
-{ pkgs, common, src, logosLiblogos, logosSdk, logosStorageModule, logosCapabilityModule, logosStorageUI }:
+{ pkgs, common, src, logosLiblogos, logosSdk, logosStorageModule, logosCapabilityModule, logosStorageUI, logosDesignSystem }:
 
 pkgs.stdenv.mkDerivation rec {
   pname = "${common.pname}-app";
@@ -211,6 +211,17 @@ pkgs.stdenv.mkDerivation rec {
     # Copy storage_ui Qt plugin to root directory (not modules, as it's loaded differently)
     if [ -f "${logosStorageUI}/lib/storage_ui.$OS_EXT" ]; then
       cp -L "${logosStorageUI}/lib/storage_ui.$OS_EXT" "$out/"
+    fi
+
+    # Copy QML modules from design system (Logos.Theme and Logos.Controls)
+    if [ -d "${logosDesignSystem}/lib/Logos" ]; then
+      echo "Installing QML modules from design system..."
+      mkdir -p "$out/lib"
+      cp -r "${logosDesignSystem}/lib/Logos" "$out/lib/"
+      echo "Installed Logos QML modules:"
+      ls -la "$out/lib/Logos/"
+    else
+      echo "Warning: Logos QML modules not found in design system at ${logosDesignSystem}/lib/Logos"
     fi
 
     # Create a README for reference

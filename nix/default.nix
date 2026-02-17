@@ -1,5 +1,5 @@
 # Common build configuration shared across all packages
-{ pkgs, logosSdk, logosLiblogos, logosStorageModule }:
+{ pkgs, logosSdk, logosLiblogos, logosStorageModule, logosDesignSystem }:
 
 {
   pname = "logos-storage-ui";
@@ -28,6 +28,7 @@
     "-DLOGOS_CPP_SDK_ROOT=${logosSdk}"
     "-DLOGOS_LIBLOGOS_ROOT=${logosLiblogos}"
     "-DLOGOS_STORAGE_ROOT=${logosStorageModule}"
+    "-DLOGOS_DESIGN_SYSTEM_ROOT=${logosDesignSystem}"
   ];
   
   # Environment variables
@@ -35,6 +36,7 @@
     LOGOS_CPP_SDK_ROOT = "${logosSdk}";
     LOGOS_LIBLOGOS_ROOT = "${logosLiblogos}";
     LOGOS_STORAGE_ROOT = "${logosStorageModule}";
+    LOGOS_DESIGN_SYSTEM_ROOT = "${logosDesignSystem}";
   };
   
   # Metadata

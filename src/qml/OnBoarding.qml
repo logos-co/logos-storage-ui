@@ -2,18 +2,21 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
 import QtQuick.Layouts
-import Logos.DesignSystem
+import Logos.Theme
 import Logos.Controls
 
 Rectangle {
     id: root
-    width: 600
-    height: 400
     color: Theme.palette.background
+    Layout.fillWidth: true
+    Layout.fillHeight: true
+    implicitWidth: 600
+    implicitHeight: 400
 
     property int discoveryPort: 8090
-    property string dataDir: ".storage/data-dir"
+    property int tcpPort: 0
     property var backend: mockBackend
+    property string dataDir: backend.defaultDataDir()
     signal completed
 
     QtObject {
@@ -21,6 +24,10 @@ Rectangle {
 
         function validateDataDir(path) {
             return path != "error"
+        }
+
+        function defaultDataDir() {
+            return ".cache/storage"
         }
     }
 
@@ -31,7 +38,7 @@ Rectangle {
 
         LogosText {
             id: titleText
-            font.pixelSize: Theme.typography.headerText
+            font.pixelSize: Theme.typography.titleText
             text: "Logos Storage"
             //  anchors.verticalCenter: parent.verticalCenter
         }
@@ -47,16 +54,11 @@ Rectangle {
                 color: Theme.palette.text
             }
 
-            TextField {
-                property bool isValid: acceptableInput && text.length > 0
-
+            LogosTextField {
+                isValid: acceptableInput && text.length > 0
                 id: discoveryPortTextField
                 placeholderText: "Enter the discovery port"
-                placeholderTextColor: Theme.palette.textPlaceholder
-                color: acceptableInput ? Theme.palette.text : Theme.palette.error
-                selectByMouse: true
                 text: root.discoveryPort
-                padding: 8
                 validator: IntValidator {
                     bottom: 1
                     top: 65535
@@ -66,18 +68,32 @@ Rectangle {
                         root.discoveryPort = parseInt(text)
                     }
                 }
-                background: Rectangle {
-                    Rectangle {
-                        anchors.fill: parent
-                        color: Theme.palette.backgroundSecondary
-                    }
+            }
+        }
 
-                    // Border bottom
-                    Rectangle {
-                        anchors.bottom: parent.bottom
-                        width: parent.width
-                        height: 1
-                        color: discoveryPortTextField.isValid ? Theme.palette.textMuted : Theme.palette.error
+        ColumnLayout {
+            id: tcpPortColumn
+            spacing: Theme.spacing.tiny
+            Layout.fillWidth: true
+
+            LogosText {
+                text: "TCP port"
+                font.pixelSize: Theme.typography.secondaryText
+                color: Theme.palette.text
+            }
+
+            LogosTextField {
+                isValid: acceptableInput && text.length > 0
+                id: tcpPortTextField
+                placeholderText: "Enter the TCP port"
+                text: root.tcpPort
+                validator: IntValidator {
+                    bottom: 0
+                    top: 65535
+                }
+                onTextChanged: {
+                    if (isValid) {
+                        root.tcpPort = parseInt(text)
                     }
                 }
             }
@@ -94,31 +110,11 @@ Rectangle {
             RowLayout {
                 spacing: Theme.spacing.tiny
 
-                TextField {
-                    property bool isValid: true
-
+                LogosTextField {
                     id: dataDirTextField
-                    padding: 8
                     placeholderText: "Enter the data dir"
-                    placeholderTextColor: Theme.palette.textPlaceholder
-                    color: isValid ? Theme.palette.text : Theme.palette.error
-                    selectByMouse: true
                     text: root.dataDir
                     Layout.fillWidth: true
-                    background: Rectangle {
-                        Rectangle {
-                            anchors.fill: parent
-                            color: Theme.palette.backgroundSecondary
-                        }
-
-                        // Border bottom
-                        Rectangle {
-                            anchors.bottom: parent.bottom
-                            width: parent.width
-                            height: 1
-                            color: dataDirTextField.isValid ? Theme.palette.textMuted : Theme.palette.error
-                        }
-                    }
                     onTextChanged: {
                         if (text.length > 0) {
                             isValid = root.backend.validateDataDir(text)
@@ -130,7 +126,7 @@ Rectangle {
                     }
                 }
 
-                Button {
+                LogosStorageButton {
                     text: "Choose"
                     onClicked: folderDialog.open()
                 }
@@ -143,12 +139,16 @@ Rectangle {
                 }
             }
         }
+    }
 
-        Button {
-            text: "Next"
-            enabled: discoveryPortTextField.acceptableInput
-                     && dataDirTextField.isValid
-            onClicked: root.completed()
-        }
+    LogosStorageButton {
+        text: "Next"
+        anchors.bottom: parent.bottom
+        anchors.right: parent.right
+        anchors.bottomMargin: 10
+        anchors.rightMargin: 10
+        enabled: discoveryPortTextField.acceptableInput
+                 && tcpPortTextField.acceptableInput && dataDirTextField.isValid
+        onClicked: root.completed()
     }
 }

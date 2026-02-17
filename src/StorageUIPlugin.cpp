@@ -1,5 +1,6 @@
 #include "StorageUIPlugin.h"
 #include "StorageBackend.h"
+#include <QCoreApplication>
 #include <QDebug>
 #include <QFile>
 #include <QFileInfo>
@@ -7,14 +8,46 @@
 #include <QQmlEngine>
 #include <QQuickItem>
 #include <QQuickWidget>
+#include <QSettings>
 
 QWidget* StorageUIPlugin::createWidget(LogosAPI* logosAPI) {
     qDebug() << "StorageUIPlugin::createWidget called";
 
+    QCoreApplication::setOrganizationName("Logos");
+    QCoreApplication::setOrganizationDomain("logos.co");
+    QCoreApplication::setApplicationName("LogosStorage");
+
     QQuickWidget* quickWidget = new QQuickWidget();
     quickWidget->setResizeMode(QQuickWidget::SizeRootObjectToView);
 
-    QString qmlPath = "qrc:/StorageView.qml";
+    // Add import path for Logos QML modules (Logos.Theme, Logos.Controls)
+    QQmlEngine* engine = quickWidget->engine();
+    QString qmlModulesPath = QCoreApplication::applicationDirPath() + "/../lib";
+    engine->addImportPath(qmlModulesPath);
+
+    qDebug() << "StorageUIPlugin: Loading settings...";
+
+    QSettings settings("Logos", "LogosStorage");
+    int discoveryPort = settings.value("Storage/discoveryPort", 0).toInt();
+    int tcpPort = settings.value("Storage/tcpPort", 0).toInt();
+    QString dataDir = settings.value("Storage/dataDir", "").toString();
+    bool onboardingCompleted = settings.value("Storage/onboardingCompleted", false).toBool();
+
+    qDebug() << "StorageUIPlugin: Settings Loaded onboardingCompleted=" << onboardingCompleted;
+    qDebug() << "StorageUIPlugin: Settings Loaded dataDir=" << dataDir;
+    qDebug() << "StorageUIPlugin: Settings Loaded discoveryPort=" << discoveryPort;
+    qDebug() << "StorageUIPlugin: Settings Loaded tcpPort=" << tcpPort;
+
+    QString qmlPath = "qrc:/Main.qml";
+
+    // Create backend instance
+    StorageBackend* backend = new StorageBackend(logosAPI, quickWidget);
+
+    if (onboardingCompleted) {
+        qmlPath = "qrc:/StorageView.qml";
+    }
+
+    qDebug() << "StorageUIPlugin: qmlPath=" << qmlPath;
 
     quickWidget->setSource(QUrl(qmlPath));
 
@@ -22,41 +55,38 @@ QWidget* StorageUIPlugin::createWidget(LogosAPI* logosAPI) {
         qWarning() << "StorageUIPlugin: Failed to load QML:" << quickWidget->errors();
     }
 
-    // Create backend instance
-    StorageBackend* backend = new StorageBackend(logosAPI, quickWidget);
-
     // Set backend as context property
     QQuickItem* root = quickWidget->rootObject();
     Q_ASSERT(root);
 
     root->setProperty("backend", QVariant::fromValue(static_cast<QObject*>(backend)));
 
-    QFileInfo info("config.json");
     QString configJson = "{}";
 
-    if (info.exists() && info.isFile()) {
-        qDebug() << "StorageUIPlugin: config.json is found, let's try to load it...";
-
-        QFile file("config.json");
-        if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            configJson = QString::fromUtf8(file.readAll());
-
-            qDebug() << "StorageUIPlugin: config.json is found, let's try to load it... configJson=" << configJson;
-        } else {
-            qDebug() << "StorageUIPlugin: Failed to load config.json";
-        }
+    if (onboardingCompleted) {
+        configJson = backend->buildConfig(dataDir, discoveryPort, tcpPort);
     }
+
+    QFileInfo info("config.json");
+
+    if (info.exists() && info.isFile()) {
+        qWarning()
+            << "StorageUIPlugin: config.json is found ! It will override the configuration loaded by the onboarding !";
+        configJson = backend->buildConfigFromFile("config.json");
+    }
+
+    qDebug() << "StorageUIPlugin: configuration loaded configLoaded=" << configJson;
 
     LogosResult result = backend->init(configJson);
 
     if (!result.success) {
         QString error = result.getError();
         qWarning() << "StorageUIPlugin: Failed to init backend, will use mock version:" << error;
-    } else {
-        result = backend->start();
+    } else if (onboardingCompleted) {
+        LogosResult result = backend->start();
 
         if (!result.success) {
-            qWarning() << "StorageUIPlugin: Failed to init backend, will use mock version:" << result.getError();
+            qWarning() << "StorageUIPlugin: Failed to start the Storage Module.";
         }
     }
 
@@ -126,7 +156,7 @@ void StorageUIPlugin::destroyWidget(QWidget* widget) {
     });
 
     // Connect to stop signal
-    QObject::connect(backend, &StorageBackend::stopped, &loop, [&]() { loop.quit(); }, Qt::QueuedConnection);
+    QObject::connect(backend, &StorageBackend::stopCompleted, &loop, [&]() { loop.quit(); }, Qt::QueuedConnection);
 
     // Call the stop method asynchronously
     QMetaObject::invokeMethod(backend, "stop", Qt::QueuedConnection);

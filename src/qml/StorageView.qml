@@ -5,8 +5,10 @@ import QtQuick.Layouts
 
 Rectangle {
     id: root
-    width: 400
-    height: 700
+    Layout.fillWidth: true
+    Layout.fillHeight: true
+    implicitWidth: 600
+    implicitHeight: 400
     color: "#000000"
 
     property var backend: mockBackend
@@ -538,6 +540,7 @@ Rectangle {
                         color: "#d4d4d4"
                         width: parent.width
                         height: parent.height
+                        wrapMode: Text.WrapAnywhere
 
                         background: Rectangle {
                             color: "#1e1e1e"
