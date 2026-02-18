@@ -22,10 +22,6 @@ Rectangle {
     QtObject {
         id: mockBackend
 
-        function validateDataDir(path) {
-            return path != "error"
-        }
-
         function defaultDataDir() {
             return ".cache/storage"
         }
@@ -111,17 +107,12 @@ Rectangle {
                 spacing: Theme.spacing.tiny
 
                 LogosTextField {
+                    isValid: text.trim().length > 0
                     id: dataDirTextField
                     placeholderText: "Enter the data dir"
                     text: root.dataDir
                     Layout.fillWidth: true
                     onTextChanged: {
-                        if (text.length > 0) {
-                            isValid = root.backend.validateDataDir(text)
-                        } else {
-                            isValid = false
-                        }
-
                         root.dataDir = text
                     }
                 }

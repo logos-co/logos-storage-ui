@@ -18,8 +18,6 @@ Button {
         color: {
             if (!control.enabled)
                 return Theme.palette.backgroundElevated
-            if (control.hovered)
-                return Theme.palette.backgroundTertiary
             return Theme.palette.backgroundSecondary
         }
         border.width: 1

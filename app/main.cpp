@@ -30,8 +30,10 @@ int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
 
     // Set application properties for Qt Settings
+    // QCoreApplication::setOrganizationName("Logos");
+    // QCoreApplication::setOrganizationDomain("logos.co");
+    // QCoreApplication::setApplicationName("LogosStorage");
     QCoreApplication::setOrganizationName("Logos");
-    QCoreApplication::setOrganizationDomain("logos.co");
     QCoreApplication::setApplicationName("LogosStorage");
 
     // Set the plugins directory

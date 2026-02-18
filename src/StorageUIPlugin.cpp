@@ -14,7 +14,6 @@ QWidget* StorageUIPlugin::createWidget(LogosAPI* logosAPI) {
     qDebug() << "StorageUIPlugin::createWidget called";
 
     QCoreApplication::setOrganizationName("Logos");
-    QCoreApplication::setOrganizationDomain("logos.co");
     QCoreApplication::setApplicationName("LogosStorage");
 
     QQuickWidget* quickWidget = new QQuickWidget();
@@ -27,29 +26,23 @@ QWidget* StorageUIPlugin::createWidget(LogosAPI* logosAPI) {
 
     qDebug() << "StorageUIPlugin: Loading settings...";
 
-    QSettings settings("Logos", "LogosStorage");
-    int discoveryPort = settings.value("Storage/discoveryPort", 0).toInt();
-    int tcpPort = settings.value("Storage/tcpPort", 0).toInt();
-    QString dataDir = settings.value("Storage/dataDir", "").toString();
-    bool onboardingCompleted = settings.value("Storage/onboardingCompleted", false).toBool();
+    // Default constructor uses QCoreApplication org/domain/app — same path as QML QtCore.Settings
+    // QSettings settings;
+    // int discoveryPort = settings.value("Storage/discoveryPort", 8090).toInt();
+    // int tcpPort = settings.value("Storage/tcpPort", 0).toInt();
+    // QString dataDir = settings.value("Storage/dataDir", "").toString();
+    // bool onboardingCompleted = settings.value("Storage/onboardingCompleted", false).toBool();
 
-    qDebug() << "StorageUIPlugin: Settings Loaded onboardingCompleted=" << onboardingCompleted;
-    qDebug() << "StorageUIPlugin: Settings Loaded dataDir=" << dataDir;
-    qDebug() << "StorageUIPlugin: Settings Loaded discoveryPort=" << discoveryPort;
-    qDebug() << "StorageUIPlugin: Settings Loaded tcpPort=" << tcpPort;
+    // qDebug() << "StorageUIPlugin: Settings file:" << settings.fileName();
+    // qDebug() << "StorageUIPlugin: onboardingCompleted=" << onboardingCompleted;
+    // qDebug() << "StorageUIPlugin: dataDir=" << dataDir;
+    // qDebug() << "StorageUIPlugin: discoveryPort=" << discoveryPort;
+    // qDebug() << "StorageUIPlugin: tcpPort=" << tcpPort;
 
-    QString qmlPath = "qrc:/Main.qml";
-
-    // Create backend instance
+    // Always load Main.qml — QML handles navigation (onboarding vs startNode)
     StorageBackend* backend = new StorageBackend(logosAPI, quickWidget);
 
-    if (onboardingCompleted) {
-        qmlPath = "qrc:/StorageView.qml";
-    }
-
-    qDebug() << "StorageUIPlugin: qmlPath=" << qmlPath;
-
-    quickWidget->setSource(QUrl(qmlPath));
+    quickWidget->setSource(QUrl("qrc:/Main.qml"));
 
     if (quickWidget->status() == QQuickWidget::Error) {
         qWarning() << "StorageUIPlugin: Failed to load QML:" << quickWidget->errors();
@@ -61,33 +54,27 @@ QWidget* StorageUIPlugin::createWidget(LogosAPI* logosAPI) {
 
     root->setProperty("backend", QVariant::fromValue(static_cast<QObject*>(backend)));
 
-    QString configJson = "{}";
+    // Build config from settings if onboarding was done, otherwise use empty config
+    QString configJson = StorageBackend::getUserConfig();
+    qDebug() << "UserConfig" << StorageBackend::getUserConfigPath();
+    qDebug() << "configJson" << configJson;
+    // if (onboardingCompleted && !dataDir.isEmpty()) {
+    //     configJson = backend->buildConfig(dataDir, discoveryPort, tcpPort);
+    // }
 
-    if (onboardingCompleted) {
-        configJson = backend->buildConfig(dataDir, discoveryPort, tcpPort);
-    }
+    // config.json overrides everything (dev/debug use)
+    // QFileInfo info("config.json");
+    // if (info.exists() && info.isFile()) {
+    //     qWarning() << "StorageUIPlugin: config.json found — overriding settings config";
+    //     configJson = backend->buildConfigFromFile("config.json");
+    // }
 
-    QFileInfo info("config.json");
-
-    if (info.exists() && info.isFile()) {
-        qWarning()
-            << "StorageUIPlugin: config.json is found ! It will override the configuration loaded by the onboarding !";
-        configJson = backend->buildConfigFromFile("config.json");
-    }
-
-    qDebug() << "StorageUIPlugin: configuration loaded configLoaded=" << configJson;
+    // qDebug() << "StorageUIPlugin: configJson=" << configJson;
 
     LogosResult result = backend->init(configJson);
 
     if (!result.success) {
-        QString error = result.getError();
-        qWarning() << "StorageUIPlugin: Failed to init backend, will use mock version:" << error;
-    } else if (onboardingCompleted) {
-        LogosResult result = backend->start();
-
-        if (!result.success) {
-            qWarning() << "StorageUIPlugin: Failed to start the Storage Module.";
-        }
+        qWarning() << "StorageUIPlugin: Failed to init backend:" << result.getError();
     }
 
     return quickWidget;

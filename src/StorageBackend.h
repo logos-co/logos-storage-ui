@@ -54,6 +54,8 @@ class StorageBackend : public QObject {
     qint64 quotaReservedBytes() const;
 
     Q_INVOKABLE static QString defaultDataDir();
+    static QString getUserConfig();
+    static QString getUserConfigPath();
 
     explicit StorageBackend(LogosAPI* logosAPI = nullptr, QObject* parent = nullptr);
     ~StorageBackend();
@@ -78,13 +80,13 @@ class StorageBackend : public QObject {
     void downloadManifest(const QString& cid);
     void downloadManifests();
     void space();
-    bool validateDataDir(const QString& path);
     LogosResult init(const QString& configJson);
     void updateLogLevel(const QString& logLevel);
     void reloadIfChanged(const QString& configJson);
     void status(StorageStatus status);
     QString buildConfig(const QString& dataDir, int discPort, int tcpPort);
     QString buildConfigFromFile(const QString& path);
+    void saveUserConfig(const QString& configJson);
 
   signals:
     void startCompleted();
@@ -98,6 +100,7 @@ class StorageBackend : public QObject {
     void uploadStatusChanged();
     void manifestsChanged();
     void quotaChanged();
+    void initCompleted();
 
   private slots:
 
