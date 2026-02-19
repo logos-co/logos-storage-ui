@@ -54,28 +54,18 @@ QWidget* StorageUIPlugin::createWidget(LogosAPI* logosAPI) {
 
     root->setProperty("backend", QVariant::fromValue(static_cast<QObject*>(backend)));
 
+    backend->ready();
+    // Storage init is done in the QML
     // Build config from settings if onboarding was done, otherwise use empty config
-    QString configJson = StorageBackend::getUserConfig();
-    qDebug() << "UserConfig" << StorageBackend::getUserConfigPath();
-    qDebug() << "configJson" << configJson;
-    // if (onboardingCompleted && !dataDir.isEmpty()) {
-    //     configJson = backend->buildConfig(dataDir, discoveryPort, tcpPort);
+    // QString configJson = StorageBackend::getUserConfig();
+    // qDebug() << "UserConfig" << StorageBackend::getUserConfigPath();
+    // qDebug() << "configJson" << configJson;
+
+    // LogosResult result = backend->init(configJson);
+
+    // if (!result.success) {
+    //     qWarning() << "StorageUIPlugin: Failed to init backend:" << result.getError();
     // }
-
-    // config.json overrides everything (dev/debug use)
-    // QFileInfo info("config.json");
-    // if (info.exists() && info.isFile()) {
-    //     qWarning() << "StorageUIPlugin: config.json found — overriding settings config";
-    //     configJson = backend->buildConfigFromFile("config.json");
-    // }
-
-    // qDebug() << "StorageUIPlugin: configJson=" << configJson;
-
-    LogosResult result = backend->init(configJson);
-
-    if (!result.success) {
-        qWarning() << "StorageUIPlugin: Failed to init backend:" << result.getError();
-    }
 
     return quickWidget;
 }

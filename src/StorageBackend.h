@@ -1,6 +1,7 @@
 #pragma once
 #include "logos_api.h"
 #include "logos_sdk.h"
+#include <QDir>
 #include <QFile>
 #include <QObject>
 #include <QString>
@@ -10,6 +11,10 @@
 
 static const int RET_OK = 0;
 static const int RET_PROGRESS = 3;
+static const QUrl ECHO_PROVIDER("https://echo.codex.storage/");
+static const QString APP_HOME = QDir::homePath() + "/.logos_storage";
+static const QString DEFAULT_DATA_DIR = APP_HOME + "/data";
+static const QString USER_CONFIG_PATH = APP_HOME + "/config.json";
 
 // Add manual SPR from https://spr.codex.storage/devnet
 static const QStringList BOOTSTRAP_NODES = {
@@ -30,7 +35,6 @@ class StorageBackend : public QObject {
     Q_PROPERTY(QString debugLogs READ debugLogs NOTIFY debugLogsChanged)
     Q_PROPERTY(StorageStatus status READ status WRITE status NOTIFY statusChanged)
     Q_PROPERTY(QString cid READ cid NOTIFY cidChanged)
-    Q_PROPERTY(QString configJson READ configJson NOTIFY configJsonChanged)
     Q_PROPERTY(int uploadProgress READ uploadProgress NOTIFY uploadProgressChanged)
     Q_PROPERTY(QString uploadStatus READ uploadStatus NOTIFY uploadStatusChanged)
     Q_PROPERTY(QVariantList manifests READ manifests NOTIFY manifestsChanged)
@@ -39,7 +43,20 @@ class StorageBackend : public QObject {
     Q_PROPERTY(qint64 quotaReservedBytes READ quotaReservedBytes NOTIFY quotaChanged)
 
   public:
-    enum StorageStatus { Stopped = 0, Starting, Running, Stopping, Destroyed };
+    enum StorageStatus {
+        // Stopped means that the context is created but the module is not started
+        Stopped = 0,
+
+        Starting,
+
+        // Running means the module is started
+        Running,
+
+        Stopping,
+
+        // Destroyed means the context is not created (or has been destroyed).
+        Destroyed
+    };
     Q_ENUM(StorageStatus)
 
     QString cid() const;
@@ -53,9 +70,7 @@ class StorageBackend : public QObject {
     qint64 quotaUsedBytes() const;
     qint64 quotaReservedBytes() const;
 
-    Q_INVOKABLE static QString defaultDataDir();
-    static QString getUserConfig();
-    static QString getUserConfigPath();
+    static QJsonDocument defaultConfig();
 
     explicit StorageBackend(LogosAPI* logosAPI = nullptr, QObject* parent = nullptr);
     ~StorageBackend();
@@ -82,27 +97,58 @@ class StorageBackend : public QObject {
     void space();
     LogosResult init(const QString& configJson);
     void updateLogLevel(const QString& logLevel);
-    void reloadIfChanged(const QString& configJson);
     void status(StorageStatus status);
-    QString buildConfig(const QString& dataDir, int discPort, int tcpPort);
-    QString buildUpnpConfig(const QString& dataDir);
-    QString buildNatExtConfig(const QString& dataDir, int tcpPort);
-    QString buildConfigFromFile(const QString& path);
+
+    // Save the user config passed in parameter
+    // into the user config json.
     void saveUserConfig(const QString& configJson);
 
+    // Save the current config object
+    // into the user config json.
+    void saveCurrentConfig();
+
+    // Load the user config saved previously
+    void loadUserConfig();
+
+    // Take a new config json and reload the Storage context
+    // if the configuration has changed.
+    //
+    // This method cannot be used if the Storage Module
+    // is running, starting or stopping.
+    //
+    // If the Storage Module was already created,
+    // it will be destroyed first.
+    //
+    // On success, the status will be set to Stopped.
+    //
+    // Emit initCompleted on success.
+    // Emit initFailed on failure.
+    void reloadIfChanged(const QString& configJson);
+
+    // Enables the upnp in the config
+    // and re-create a context with the new configuration
+    void enableUpnpConfig();
+
+    // Enables the net external in the config
+    // and re-create a context with the new configuration
+    void enableNatExtConfig(int tcpPort);
+
   signals:
+    void ready();
     void startCompleted();
     void startFailed(const QString& error);
     void statusChanged();
     void debugLogsChanged();
     void stopCompleted();
     void cidChanged();
-    void configJsonChanged();
     void uploadProgressChanged();
     void uploadStatusChanged();
     void manifestsChanged();
     void quotaChanged();
     void initCompleted();
+    void initFailed();
+    void natExtConfigFailed(const QString& error);
+    void natExtConfigCompleted();
 
   private slots:
 
@@ -116,7 +162,6 @@ class StorageBackend : public QObject {
     StorageStatus m_status;
     QString m_debugLogs;
     QString m_cid;
-    QString m_configJson;
     int m_uploadProgress = 0;
     QString m_uploadStatus = "";
     qint64 m_uploadTotalBytes = 0;
@@ -125,4 +170,5 @@ class StorageBackend : public QObject {
     qint64 m_quotaMaxBytes = 0;
     qint64 m_quotaUsedBytes = 0;
     qint64 m_quotaReservedBytes = 0;
+    QJsonDocument m_config;
 };

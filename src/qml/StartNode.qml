@@ -4,13 +4,8 @@ import QtQuick.Controls
 import Logos.Controls
 import Logos.Theme
 
-Rectangle {
+LogosStorageLayout {
     id: root
-    color: Theme.palette.background
-    Layout.fillWidth: true
-    Layout.fillHeight: true
-    implicitWidth: 600
-    implicitHeight: 400
 
     property var backend: mockBackend
     property string status: ""
@@ -64,9 +59,8 @@ Rectangle {
     }
 
     ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: 20
-        anchors.bottomMargin: 60
+        Layout.fillWidth: true
+        anchors.centerIn: parent
         spacing: Theme.spacing.medium
 
         LogosText {

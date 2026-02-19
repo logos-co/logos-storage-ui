@@ -132,7 +132,6 @@ qt_add_qml_module(appqml
         StartNode.qml
         LogosTextField.qml
         LogosStorageButton.qml
-        Nat.qml
         LogosStorageLayout.qml
         PortForwarding.qml
 )

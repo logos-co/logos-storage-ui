@@ -10,6 +10,7 @@
 #include <QLocale>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QSslSocket>
 
 // StorageBackend is responsible for managing the interaction with the storage module.
 // It is mocked in the QML.
@@ -30,6 +31,8 @@ StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
     }
     
     m_logos = new LogosModules(m_logosAPI);
+
+    emit ready();
 }
 
 StorageBackend::~StorageBackend()
@@ -38,20 +41,24 @@ StorageBackend::~StorageBackend()
     m_logos = nullptr;
 }
 
-LogosResult StorageBackend::init(const QString& configJson = "{}") {
+LogosResult StorageBackend::init(const QString& configJson) {
     qDebug() << "StorageBackend::initStorage called";
 
-    if (configJson != "{}") {
-        m_configJson = configJson;
+    m_config = QJsonDocument::fromJson(configJson.toUtf8());
+    if (m_config.isNull()) {
+        qDebug() << "StorageBackend::initStorage invalid json config" << configJson;
+        emit initFailed();
+        return {false, "", "Failed to create the storage, invalid json config"};
     }
 
-    bool result = m_logos->storage_module.init(m_configJson);
+    bool result = m_logos->storage_module.init(configJson);
 
     qDebug() << "StorageBackend::initStorage: init";
 
     if (!result) {
         setStatus(Destroyed);
         debug("Failed to init storage");
+        emit initFailed();
         return {false, "", "Filed to init storage"};
     }
 
@@ -197,13 +204,8 @@ LogosResult StorageBackend::init(const QString& configJson = "{}") {
         qWarning() << "StorageWidget: failed to subscribe to storageDownloadProgress events";
     }
 
-    if (configJson != "{}") {
-        m_configJson = configJson;
-        emit configJsonChanged();
-        debug("new config is: " + m_configJson);
-    }
-
     emit initCompleted();
+    debug("new config is: " + configJson);
 
     return {true, ""};
 }
@@ -725,12 +727,7 @@ void StorageBackend::space() {
     static constexpr qint64 DEFAULT_QUOTA = 20LL * 1024 * 1024 * 1024; // 20 GB
 
     // Check config for a quota-max-bytes override
-    qint64 configQuota = 0;
-    QJsonDocument doc = QJsonDocument::fromJson(m_configJson.toUtf8());
-    if (!doc.isNull()) {
-        configQuota = doc.object().value("quota-max-bytes").toVariant().toLongLong();
-    }
-
+    qint64 configQuota = m_config.object().value("quota-max-bytes").toVariant().toLongLong();
     qint64 apiQuota = result.getInt("quotaMaxBytes");
     m_quotaMaxBytes      = apiQuota > 0 ? apiQuota : (configQuota > 0 ? configQuota : DEFAULT_QUOTA);
     m_quotaUsedBytes     = result.getInt("quotaUsedBytes");
@@ -764,29 +761,25 @@ StorageBackend::StorageStatus StorageBackend::status() const { return m_status; 
 
 QString StorageBackend::cid() const { return m_cid; }
 
-QString StorageBackend::configJson() const { return m_configJson; }
+QString StorageBackend::configJson() const { return QString::fromUtf8(m_config.toJson(QJsonDocument::Compact)); }
 
 int StorageBackend::uploadProgress() const { return m_uploadProgress; }
 
 QString StorageBackend::uploadStatus() const { return m_uploadStatus; }
 
 void StorageBackend::reloadIfChanged(const QString& configJson) {
-    if (configJson == m_configJson) {
+    QJsonDocument config = QJsonDocument::fromJson(configJson.toUtf8());
+    if (config.isNull()) {
+        debug("Invalid json detected !");
+        return;
+    }
+
+    if (m_config == config) {
         debug("No change detected in the config");
         return;
     }
 
     debug("New config detected");
-
-    QJsonDocument doc = QJsonDocument::fromJson(configJson.toUtf8());
-    if (doc.isNull()) {
-        debug("Invalid json detected !");
-
-        m_configJson = configJson;
-        emit configJsonChanged();
-
-        return;
-    }
 
     if (m_status == StorageStatus::Running || m_status == StorageStatus::Stopping ||
         m_status == StorageStatus::Starting) {
@@ -805,59 +798,42 @@ void StorageBackend::reloadIfChanged(const QString& configJson) {
         }
     }
 
-    bool result = m_logos->storage_module.init(configJson);
+    LogosResult result = init(configJson);
 
-    if (!result) {
-        debug("Failed to init context with new config, will rollback.");
-
-        bool result = m_logos->storage_module.init(m_configJson);
-
-        if (!result) {
-            debug("Failed to init context with old config, that's a serious issue.");
-        } else {
-            debug("Old config restored");
-            setStatus(StorageStatus::Stopped);
-
-            m_configJson = configJson;
-            emit configJsonChanged();
-        }
+    if (!result.success) {
+        debug("Failed to init context with new config: " + result.getError());
         return;
     }
 
     debug("New config loaded successfully");
 
-    m_configJson = configJson;
+    m_config = config;
     setStatus(StorageStatus::Stopped);
-    emit configJsonChanged();
+}
+
+void StorageBackend::saveCurrentConfig() {
+    qDebug() << "StorageBackend::saveUserConfig";
+    saveUserConfig(QString::fromUtf8(m_config.toJson(QJsonDocument::Compact)));
 }
 
 void StorageBackend::saveUserConfig(const QString& configJson) {
     qDebug() << "StorageBackend::saveUserConfig";
 
-    QString configPath = getUserConfigPath();
-    QString folderPath = QFileInfo(configPath).absolutePath();
+    QString folderPath = QFileInfo(USER_CONFIG_PATH).absolutePath();
     QDir().mkpath(folderPath);
-    QFile file(configPath);
+    QFile file(USER_CONFIG_PATH);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         file.write(configJson.toUtf8());
         file.close();
-        debug("Config saved to " + configPath);
+        debug("Config saved to " + USER_CONFIG_PATH);
     } else {
-        debug("Failed to save config to " + configPath);
+        debug("Failed to save config to " + USER_CONFIG_PATH);
     }
 }
 
-QString StorageBackend::buildConfig(const QString& dataDir, int discPort, int tcpPort) {
-    debug("StorageBackend::updateBasicConfig called with dataDir=" + dataDir);
-
-    QJsonDocument doc = QJsonDocument::fromJson(m_configJson.toUtf8());
+QJsonDocument StorageBackend::defaultConfig() {
+    QJsonDocument doc = QJsonDocument();
     QJsonObject obj = doc.object();
-
-    obj["data-dir"] = dataDir;
-    obj["disc-port"] = discPort;
-
-    QJsonArray listenAddrs = {QString("/ip4/0.0.0.0/tcp/%1").arg(tcpPort)};
-    obj["listen-addrs"] = listenAddrs;
 
     QJsonArray bootstrapArray;
     for (const QString& node : BOOTSTRAP_NODES) {
@@ -865,94 +841,81 @@ QString StorageBackend::buildConfig(const QString& dataDir, int discPort, int tc
     }
     obj["bootstrap-node"] = bootstrapArray;
 
-    return QJsonDocument(obj).toJson(QJsonDocument::Indented);
+    obj["data-dir"] = DEFAULT_DATA_DIR;
+
+    return QJsonDocument(obj);
 }
 
-QString StorageBackend::buildUpnpConfig(const QString& dataDir) {
-    debug("StorageBackend::buildUpnpConfig called with dataDir=" + dataDir);
+void StorageBackend::enableUpnpConfig() {
+    debug("StorageBackend::enableUpnpConfig called");
 
-    QJsonDocument doc = QJsonDocument::fromJson(m_configJson.toUtf8());
+    QJsonDocument doc = defaultConfig();
     QJsonObject obj = doc.object();
 
-    obj["data-dir"] = dataDir;
-
-    QJsonArray bootstrapArray;
-    for (const QString& node : BOOTSTRAP_NODES) {
-        bootstrapArray.append(node);
-    }
     obj["nat"] = "upnp";
 
-    return QJsonDocument(obj).toJson(QJsonDocument::Indented);
+    reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
 }
 
-QString StorageBackend::buildNatExtConfig(const QString& dataDir, int tcpPort) {
-    debug("StorageBackend::buildUpnpConfig called with dataDir=" + dataDir +
-          " and tcpPort=" + QString::number(tcpPort));
+void StorageBackend::enableNatExtConfig(int tcpPort) {
+    qDebug() << "StorageBackend::enableNatExtConfig called with tcpPort" << tcpPort;
 
-    QJsonDocument doc = QJsonDocument::fromJson(m_configJson.toUtf8());
+    QJsonDocument doc = defaultConfig();
     QJsonObject obj = doc.object();
 
-    obj["data-dir"] = dataDir;
+    QJsonArray listenAddrs = {QString("/ip4/0.0.0.0/tcp/%1").arg(tcpPort)};
+    obj["listen-addrs"] = listenAddrs;
 
-    QJsonArray bootstrapArray;
-    for (const QString& node : BOOTSTRAP_NODES) {
-        bootstrapArray.append(node);
-    }
+    qDebug() << "StorageBackend::enableNatExtConfig Retrieving the public IP";
 
-    debug("Retrieving the public IP");
+    // Create the network manager
+    QNetworkAccessManager* manager = new QNetworkAccessManager(this);
+    QNetworkRequest request(QUrl("https://echo.codex.storage/"));
+    request.setRawHeader("Accept", "text/plain");
+    QNetworkReply* reply = manager->get(request);
 
-    QNetworkAccessManager manager;
-    QEventLoop loop;
-    QNetworkReply* reply = manager.get(QNetworkRequest(QUrl("https://echo.codex.storage/")));
-    QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-    loop.exec();
+    connect(reply, &QNetworkReply::finished, this, [this, reply, manager, obj]() {
+        reply->deleteLater();
+        manager->deleteLater();
 
-    QString ip = reply->readAll().trimmed();
-    reply->deleteLater();
+        if (reply->error() != QNetworkReply::NoError) {
+            emit natExtConfigFailed(reply->errorString());
+            return;
+        }
 
-    debug("Public IP detected:" + ip);
+        QString ip = reply->readAll().trimmed();
 
-    obj["nat"] = "extip:" + ip;
+        qDebug() << "StorageBackend::enableNatExtConfig ip=" << ip;
 
-    return QJsonDocument(obj).toJson(QJsonDocument::Indented);
-}
+        obj["nat"] = "extip:" + ip;
 
-QString StorageBackend::buildConfigFromFile(const QString& path) {
-    qDebug() << "StorageBackend::buildConfigFromFile called";
+        qDebug() << "StorageBackend::enableNatExtConfig config="
+                 << QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact));
 
-    QFile file(path);
-    if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QString configJson = QString::fromUtf8(file.readAll());
+        reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
 
-        debug("StorageUIPlugin: config.json is found, configJson=" + configJson);
-
-        return configJson;
-    }
-
-    debug("StorageUIPlugin: Failed to load config.json");
-    return "{}";
+        emit natExtConfigCompleted();
+    });
 }
 
 void StorageBackend::status(StorageStatus status) { m_status = status; }
 
-QString StorageBackend::getUserConfigPath() { return QDir::homePath() + "/.logos_storage/config.json"; }
+void StorageBackend::loadUserConfig() {
+    qDebug() << "StorageBackend::loadUserConfig called.";
 
-QString StorageBackend::getUserConfig() {
-    QFile file(getUserConfigPath());
+    QFile file(USER_CONFIG_PATH);
+    LogosResult result;
+
     if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return QString::fromUtf8(file.readAll());
+        result = init(QString::fromUtf8(file.readAll()));
+    } else {
+        qWarning() << "StorageBackend::loadUserConfig Failed to read the user config file, fallback to default config";
+        result = init(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Compact)));
     }
 
-    return "{}";
-}
-
-QString StorageBackend::defaultDataDir() {
-    QString home = QDir::homePath();
-#ifdef Q_OS_WIN
-    return home + "/AppData/Roaming/Storage";
-#elif defined(Q_OS_MACOS)
-    return home + "/Library/Application Support/Storage";
-#else
-    return home + "/.cache/storage";
-#endif
+    if (!result.success) {
+        qWarning() << "StorageBackend::loadUserConfig Failed to load the user config: " + result.getError();
+    } else {
+        debug("User config loaded successfully");
+    }
 }

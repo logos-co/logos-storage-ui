@@ -8,12 +8,13 @@ LogosStorageLayout {
 
     property var tcpPort: 0
 
-    signal portTcpSelected(int port)
+    signal completed(int port)
 
     ColumnLayout {
         anchors.centerIn: parent
         spacing: Theme.spacing.medium
         width: 400
+        Layout.fillWidth: true
 
         LogosText {
             id: questionText
@@ -30,6 +31,7 @@ LogosStorageLayout {
         }
 
         LogosTextField {
+            Layout.fillWidth: true
             isValid: acceptableInput && text.length > 0
             id: tcpPortTextField
             placeholderText: "Enter the TCP port"
@@ -44,15 +46,12 @@ LogosStorageLayout {
                 }
             }
         }
-    }
 
-    LogosStorageButton {
-        text: "Next"
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-        anchors.bottomMargin: 10
-        anchors.rightMargin: 10
-        enabled: tcpPortTextField.isValid
-        onClicked: root.portTcpSelected(root.tcpPort)
+        LogosStorageButton {
+            text: "Next"
+
+            enabled: tcpPortTextField.isValid
+            onClicked: root.completed(root.tcpPort)
+        }
     }
 }

@@ -25,19 +25,17 @@ Item {
             console.log("mock start called")
         }
 
-        function defaultDataDir() {
-            return ".cache/storage"
-        }
-
-        function buildConfig() {}
-
         function saveUserConfig() {}
+
+        function loadUserConfig() {}
 
         function reloadIfChanged() {}
 
-        function buildUpnpConfig() {}
+        function enableUpnpConfig() {}
 
-        function buildNatExtConfig() {}
+        function enableNatExtConfig() {}
+
+        function saveCurrentConfig() {}
 
         function stop() {}
     }
@@ -51,6 +49,10 @@ Item {
         property string dataDir: ""
         property bool onboardingCompleted: false
         property string natStrategy: "any"
+
+        Component.onCompleted: {
+            console.info("Settings completed")
+        }
     }
 
     StackView {
@@ -63,33 +65,9 @@ Item {
         id: onboardingComponent
 
         OnBoarding {
-            backend: root.backend
-            // discoveryPort: settings.discoveryPort
-            // tcpPort: settings.tcpPort
-            dataDir: settings.dataDir
-
-            onCompleted: {
-                // settings.discoveryPort = discoveryPort
-                settings.dataDir = dataDir
-                // settings.tcpPort = tcpPort
-                settings.onboardingCompleted = true
-
-                stackView.push(natComponent)
-            }
-        }
-    }
-
-    Component {
-        id: natComponent
-
-        Nat {
-            onCompleted: function (enabled) {
-                if (enabled) {
-                    settings.natStrategy = "upnp"
-                    let config = root.backend.buildUpnpConfig(settings.dataDir)
-                    root.backend.reloadIfChanged(config)
-                    root.backend.start()
-                    stackView.push(startNodeComponent)
+            onCompleted: function (upnpEnabled) {
+                if (upnpEnabled) {
+                    root.backend.enableUpnpConfig()
                 } else {
                     stackView.push(portForwardingComponent)
                 }
@@ -117,6 +95,8 @@ Item {
             }
 
             onNext: {
+                settings.onboardingCompleted = true
+                root.backend.saveCurrentConfig()
                 stackView.push(storageComponent)
             }
         }
@@ -126,14 +106,8 @@ Item {
         id: portForwardingComponent
 
         PortForwarding {
-            onPortTcpSelected: function (port) {
-                settings.tcpPort = port
-                settings.natStrategy = "extip"
-                let config = root.backend.buildNatExtConfig(settings.dataDir,
-                                                            port)
-                root.backend.reloadIfChanged(config)
-                root.backend.start()
-                stackView.push(startNodeComponent)
+            onCompleted: function (port) {
+                root.backend.enableNatExtConfig(port)
             }
         }
     }
@@ -145,11 +119,23 @@ Item {
             stackView.pop()
         }
 
-        function onInitCompleted() {
+        function onInitCompleted() {}
+
+        function onReady() {
+            console.info("i am ready")
             if (settings.onboardingCompleted) {
+                console.info("onboardingCompleted completed")
+                root.backend.loadUserConfig()
                 root.backend.start()
                 stackView.replace(storageComponent, StackView.Immediate)
             }
+        }
+
+        function onNatExtConfigFailed(error) {}
+
+        function onNatExtConfigCompleted(error) {
+            root.backend.start()
+            stackView.push(startNodeComponent)
         }
     }
 }
