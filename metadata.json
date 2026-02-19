@@ -5,6 +5,7 @@
     "author": "Logos Core Team",
     "type": "ui",
     "main": "storage_ui",
+    "icon": ":/icons/storage.png",
     "dependencies": [
         "storage_module"
     ],

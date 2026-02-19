@@ -6,5 +6,6 @@
         <file alias="StorageView.qml">qml/StorageView.qml</file>
         <file alias="LogosTextField.qml">qml/LogosTextField.qml</file>
         <file alias="LogosStorageButton.qml">qml/LogosStorageButton.qml</file>
+        <file>icons/storage.png</file>
     </qresource>
 </RCC>
