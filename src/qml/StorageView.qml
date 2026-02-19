@@ -4,12 +4,13 @@ import QtQuick.Dialogs
 import QtQuick.Layouts
 import QtCore
 
+// qmllint disable unqualified
 Rectangle {
     id: root
     Layout.fillWidth: true
     Layout.fillHeight: true
-    implicitWidth: 600
-    implicitHeight: 600
+    implicitWidth: 800
+    implicitHeight: 800
     color: "#000000"
 
     property var backend: mockBackend
@@ -63,9 +64,12 @@ Rectangle {
         property var status: root.stopped
         property var debugLogs: "Hello !"
         property var configJson: "{}"
-        property url cid: ""
         property string uploadStatus: ""
         property int uploadProgress: 0
+        property var manifests: []
+        property var quotaMaxBytes: 20 * 1024 * 1024 * 1024 // 20 GB default
+        property var quotaUsedBytes: 0
+        property var quotaReservedBytes: 0
 
         function start(newConfigJson) {
             status = root.running
@@ -74,63 +78,6 @@ Rectangle {
         function stop() {
             status = root.stopped
         }
-
-        function tryPeerConnect(peerId) {
-            console.log("Attempting peer connection...")
-        }
-
-        function tryDebug() {
-            console.log("Attempting peer connection...")
-        }
-
-        function spr() {}
-
-        function showPeerId() {}
-
-        function version() {}
-
-        function dataDir() {}
-
-        function tryUploadFinalize() {
-            console.log("Attempting upload finalize")
-        }
-
-        function tryUploadFile(file) {
-            console.log("Attempting upload file")
-        }
-
-        function tryDownloadFile(cid, file) {
-            console.log("Attempting download a file", cid, file)
-        }
-
-        function exists(cid) {
-            console.log("Attempting exists", cid)
-        }
-
-        function fetch(cid) {
-            console.log("Attempting fetch", cid)
-        }
-
-        function remove(cid) {
-            console.log("Attempting remove", cid)
-        }
-
-        function downloadManifest(cid) {
-            console.log("Attempting downloadManifest", cid)
-        }
-
-        function downloadManifests() {
-            console.log("Attempting downloadManifests")
-        }
-
-        function space() {}
-
-        function updateLogLevel(logLevel) {}
-
-        property var manifests: []
-        property var quotaMaxBytes: 20 * 1024 * 1024 * 1024 // 20 GB default
-        property var quotaUsedBytes: 0
-        property var quotaReservedBytes: 0
     }
 
     function formatBytes(bytes) {
@@ -157,13 +104,15 @@ Rectangle {
     }
 
     Button {
+        property var isStopped: root.backend.status == root.stopped
+
         id: startStopButton
         objectName: "startStopButton"
         anchors.leftMargin: 50
         text: root.startStopText()
         enabled: root.canStartStop()
-        onClicked: root.backend.status == root.stopped ? root.backend.start(
-                                                             jsonEditor.text) : root.backend.stop()
+        onClicked: isStopped ? root.backend.start(
+                                   jsonEditor.text) : root.backend.stop()
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.top: statusTextElement.bottom
         anchors.topMargin: 10
@@ -216,7 +165,7 @@ Rectangle {
                 implicitHeight: 6
 
                 Rectangle {
-                    width: parent.width * parent.parent.visualPosition
+                    width: parent.width * control.visualPosition
                     height: parent.height
                     radius: 3
                     color: "#4CAF50"

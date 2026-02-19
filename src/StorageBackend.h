@@ -85,6 +85,8 @@ class StorageBackend : public QObject {
     void reloadIfChanged(const QString& configJson);
     void status(StorageStatus status);
     QString buildConfig(const QString& dataDir, int discPort, int tcpPort);
+    QString buildUpnpConfig(const QString& dataDir);
+    QString buildNatExtConfig(const QString& dataDir, int tcpPort);
     QString buildConfigFromFile(const QString& path);
     void saveUserConfig(const QString& configJson);
 

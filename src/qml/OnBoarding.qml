@@ -1,22 +1,18 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Dialogs
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-Rectangle {
+LogosStorageLayout {
     id: root
-    color: Theme.palette.background
-    Layout.fillWidth: true
-    Layout.fillHeight: true
-    implicitWidth: 600
-    implicitHeight: 400
 
     property int discoveryPort: 8090
     property int tcpPort: 0
     property var backend: mockBackend
+    property var local: false
     property string dataDir: backend.defaultDataDir()
+
     signal completed
 
     QtObject {
@@ -30,78 +26,51 @@ Rectangle {
     ColumnLayout {
         anchors.centerIn: parent
         spacing: Theme.spacing.medium
-        width: 400
 
         LogosText {
             id: titleText
             font.pixelSize: Theme.typography.titleText
             text: "Logos Storage"
-            //  anchors.verticalCenter: parent.verticalCenter
+            Layout.alignment: Qt.AlignCenter
         }
 
-        ColumnLayout {
-            id: discoveryPortColumn
-            spacing: Theme.spacing.tiny
-            Layout.fillWidth: true
-
-            LogosText {
-                text: "Discovery port"
-                font.pixelSize: Theme.typography.secondaryText
-                color: Theme.palette.text
-            }
-
-            LogosTextField {
-                isValid: acceptableInput && text.length > 0
-                id: discoveryPortTextField
-                placeholderText: "Enter the discovery port"
-                text: root.discoveryPort
-                validator: IntValidator {
-                    bottom: 1
-                    top: 65535
-                }
-                onTextChanged: {
-                    if (isValid) {
-                        root.discoveryPort = parseInt(text)
-                    }
-                }
-            }
+        LogosText {
+            id: questionText
+            font.pixelSize: Theme.typography.titleText
+            text: "First, let's choose the storage folder"
+            Layout.alignment: Qt.AlignCenter
         }
 
-        ColumnLayout {
-            id: tcpPortColumn
-            spacing: Theme.spacing.tiny
-            Layout.fillWidth: true
+        // ColumnLayout {
+        //     id: discoveryPortColumn
+        //     spacing: Theme.spacing.tiny
+        //     Layout.fillWidth: true
 
-            LogosText {
-                text: "TCP port"
-                font.pixelSize: Theme.typography.secondaryText
-                color: Theme.palette.text
-            }
+        //     LogosText {
+        //         text: "Discovery port"
+        //         font.pixelSize: Theme.typography.secondaryText
+        //         color: Theme.palette.text
+        //     }
 
-            LogosTextField {
-                isValid: acceptableInput && text.length > 0
-                id: tcpPortTextField
-                placeholderText: "Enter the TCP port"
-                text: root.tcpPort
-                validator: IntValidator {
-                    bottom: 0
-                    top: 65535
-                }
-                onTextChanged: {
-                    if (isValid) {
-                        root.tcpPort = parseInt(text)
-                    }
-                }
-            }
-        }
-
+        //     LogosTextField {
+        //         isValid: acceptableInput && text.length > 0
+        //         id: discoveryPortTextField
+        //         placeholderText: "Enter the discovery port"
+        //         text: root.discoveryPort
+        //         validator: IntValidator {
+        //             bottom: 1
+        //             top: 65535
+        //         }
+        //         onTextChanged: {
+        //             if (isValid) {
+        //                 root.discoveryPort = parseInt(text)
+        //             }
+        //         }
+        //     }
+        // }
         ColumnLayout {
             spacing: Theme.spacing.tiny
             Layout.fillWidth: true
-
-            LogosText {
-                text: "Data dir"
-            }
 
             RowLayout {
                 spacing: Theme.spacing.tiny
@@ -130,6 +99,20 @@ Rectangle {
                 }
             }
         }
+
+        // Column {
+        //     CheckBox {
+        //         text: "Do you want to connect to a local network ?"
+        //         checked: false
+        //         onCheckedChanged: root.local = checked
+        //     }
+
+        //     LogosText {
+        //         font.pixelSize: Theme.typography.secondaryText
+        //         text: "You will not "
+        //         Layout.alignment: Qt.AlignCenter
+        //     }
+        // }
     }
 
     LogosStorageButton {
@@ -138,8 +121,11 @@ Rectangle {
         anchors.right: parent.right
         anchors.bottomMargin: 10
         anchors.rightMargin: 10
-        enabled: discoveryPortTextField.acceptableInput
-                 && tcpPortTextField.acceptableInput && dataDirTextField.isValid
-        onClicked: root.completed()
+        enabled: dataDirTextField.isValid
+        // enabled: discoveryPortTextField.acceptableInput
+        //          && tcpPortTextField.acceptableInput && dataDirTextField.isValid
+        onClicked: function () {
+            root.completed()
+        }
     }
 }

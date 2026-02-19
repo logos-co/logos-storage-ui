@@ -1,6 +1,9 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QtQml>
+#include <QQmlDebuggingEnabler>
+
+static QQmlTriviallyDestructibleDebuggingEnabler enabler;
 
 int main(int argc, char* argv[]) {
     QGuiApplication app(argc, argv);

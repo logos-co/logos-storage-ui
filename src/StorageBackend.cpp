@@ -8,6 +8,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLocale>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
 
 // StorageBackend is responsible for managing the interaction with the storage module.
 // It is mocked in the QML.
@@ -862,6 +864,55 @@ QString StorageBackend::buildConfig(const QString& dataDir, int discPort, int tc
         bootstrapArray.append(node);
     }
     obj["bootstrap-node"] = bootstrapArray;
+
+    return QJsonDocument(obj).toJson(QJsonDocument::Indented);
+}
+
+QString StorageBackend::buildUpnpConfig(const QString& dataDir) {
+    debug("StorageBackend::buildUpnpConfig called with dataDir=" + dataDir);
+
+    QJsonDocument doc = QJsonDocument::fromJson(m_configJson.toUtf8());
+    QJsonObject obj = doc.object();
+
+    obj["data-dir"] = dataDir;
+
+    QJsonArray bootstrapArray;
+    for (const QString& node : BOOTSTRAP_NODES) {
+        bootstrapArray.append(node);
+    }
+    obj["nat"] = "upnp";
+
+    return QJsonDocument(obj).toJson(QJsonDocument::Indented);
+}
+
+QString StorageBackend::buildNatExtConfig(const QString& dataDir, int tcpPort) {
+    debug("StorageBackend::buildUpnpConfig called with dataDir=" + dataDir +
+          " and tcpPort=" + QString::number(tcpPort));
+
+    QJsonDocument doc = QJsonDocument::fromJson(m_configJson.toUtf8());
+    QJsonObject obj = doc.object();
+
+    obj["data-dir"] = dataDir;
+
+    QJsonArray bootstrapArray;
+    for (const QString& node : BOOTSTRAP_NODES) {
+        bootstrapArray.append(node);
+    }
+
+    debug("Retrieving the public IP");
+
+    QNetworkAccessManager manager;
+    QEventLoop loop;
+    QNetworkReply* reply = manager.get(QNetworkRequest(QUrl("https://echo.codex.storage/")));
+    QObject::connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+    loop.exec();
+
+    QString ip = reply->readAll().trimmed();
+    reply->deleteLater();
+
+    debug("Public IP detected:" + ip);
+
+    obj["nat"] = "extip:" + ip;
 
     return QJsonDocument(obj).toJson(QJsonDocument::Indented);
 }

@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Controls
 import Logos.Controls
 import Logos.Theme
 
@@ -11,40 +12,67 @@ Rectangle {
     implicitWidth: 600
     implicitHeight: 400
 
-    property var backend
+    property var backend: mockBackend
     property string status: ""
+    property string title: "Starting your node...."
     property bool starting: true
     property bool success: false
 
     signal back
     signal next
 
+    function onNodeStarted() {
+        root.starting = false
+        root.status = "Logos Storage started successfully."
+        root.title = "Success"
+        root.success = true
+    }
+
+    QtObject {
+        id: mockBackend
+
+        readonly property bool isMock: true
+        property string configJson: "{}"
+
+        signal startCompleted
+        signal startFailed
+        signal nodeStarted
+    }
+
+    Timer {
+        interval: 2000
+        running: root.backend && root.backend.isMock === true
+        onTriggered: {
+            console.log("timer triggered")
+            root.onNodeStarted()
+        }
+    }
+
     Connections {
         target: root.backend
 
         function onStartCompleted() {
-            console.log("onStartCompleted received")
-            root.starting = false
-            root.status = "Logos Storage started successfully."
-            root.success = true
+            console.log("onStartCompleted")
+            root.onNodeStarted()
         }
 
         function onStartFailed(error) {
-            console.log("onStartFailed received")
             root.starting = false
+            root.title = "Error"
             root.status = "Failed to start: " + error
         }
     }
 
     ColumnLayout {
-        anchors.centerIn: parent
+        anchors.fill: parent
+        anchors.margins: 20
+        anchors.bottomMargin: 60
         spacing: Theme.spacing.medium
-        width: 400
 
         LogosText {
             id: titleText
             font.pixelSize: Theme.typography.titleText
-            text: "Starting your node...."
+            text: root.title
             Layout.alignment: Qt.AlignHCenter
         }
 

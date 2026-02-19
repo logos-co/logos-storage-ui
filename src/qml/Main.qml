@@ -1,50 +1,28 @@
 import QtQuick
 import QtQuick.Controls
 import QtCore
-import Logos.Theme
-import Logos.Controls
 
 // qmllint disable unqualified
 Item {
     id: root
-    implicitWidth: 600
-    implicitHeight: 400
+    implicitWidth: 800
+    implicitHeight: 800
 
     property var backend: mockBackend
 
-    // Timer {
-    //     readonly property int running: 2
-
-    //     id: timer
-    //     interval: 2000
-    //     repeat: false
-    //     onTriggered: {
-    //         console.log("timer triggered")
-    //         // root.backend.status = running
-    //         // root.backend.startCompleted()
-    //         // console.info(root.backend.status)
-    //     }
-    // }
     QtObject {
         id: mockBackend
 
+        readonly property bool isMock: true
         property int status
 
         signal startCompleted
         signal startFailed
         signal stopCompleted
-
-        function updateBasicConfig(dataDir, discPort) {
-            console.log("updateBasicConfig", dataDir, discPort)
-        }
+        signal initCompleted
 
         function start() {
-            //   timer.start()
-            console.log("mock start callde")
-        }
-
-        function stop() {
-            root.backend.stopCompleted()
+            console.log("mock start called")
         }
 
         function defaultDataDir() {
@@ -53,9 +31,15 @@ Item {
 
         function buildConfig() {}
 
+        function saveUserConfig() {}
+
         function reloadIfChanged() {}
 
-        function init() {}
+        function buildUpnpConfig() {}
+
+        function buildNatExtConfig() {}
+
+        function stop() {}
     }
 
     Settings {
@@ -66,59 +50,90 @@ Item {
         property int tcpPort: 0
         property string dataDir: ""
         property bool onboardingCompleted: false
+        property string natStrategy: "any"
     }
 
     StackView {
         id: stackView
         anchors.fill: parent
-        initialItem: onboarding
+        initialItem: onboardingComponent
     }
 
     Component {
-        id: onboarding
+        id: onboardingComponent
 
         OnBoarding {
-            id: onboardingInstance
             backend: root.backend
-            discoveryPort: settings.discoveryPort
-            tcpPort: settings.tcpPort
-            dataDir: settings.dataDir.length > 0 ? settings.dataDir : root.backend.defaultDataDir()
+            // discoveryPort: settings.discoveryPort
+            // tcpPort: settings.tcpPort
+            dataDir: settings.dataDir
 
             onCompleted: {
-                settings.discoveryPort = discoveryPort
+                // settings.discoveryPort = discoveryPort
                 settings.dataDir = dataDir
-                settings.tcpPort = tcpPort
+                // settings.tcpPort = tcpPort
                 settings.onboardingCompleted = true
 
-                let config = root.backend.buildConfig(dataDir,
-                                                      discoveryPort, tcpPort)
-                root.backend.saveUserConfig(config)
-                root.backend.reloadIfChanged(config)
-                root.backend.start()
-
-                stackView.push(startNodeView)
+                stackView.push(natComponent)
             }
         }
     }
 
     Component {
-        id: storageView
+        id: natComponent
+
+        Nat {
+            onCompleted: function (enabled) {
+                if (enabled) {
+                    settings.natStrategy = "upnp"
+                    let config = root.backend.buildUpnpConfig(settings.dataDir)
+                    root.backend.reloadIfChanged(config)
+                    root.backend.start()
+                    stackView.push(startNodeComponent)
+                } else {
+                    stackView.push(portForwardingComponent)
+                }
+            }
+        }
+    }
+
+    Component {
+        id: storageComponent
+
         StorageView {
             backend: root.backend
         }
     }
 
     Component {
-        id: startNodeView
+        id: startNodeComponent
 
         StartNode {
             backend: root.backend
 
             onBack: {
                 root.backend.stop()
+                stackView.pop()
             }
+
             onNext: {
-                stackView.push(storageView)
+                stackView.push(storageComponent)
+            }
+        }
+    }
+
+    Component {
+        id: portForwardingComponent
+
+        PortForwarding {
+            onPortTcpSelected: function (port) {
+                settings.tcpPort = port
+                settings.natStrategy = "extip"
+                let config = root.backend.buildNatExtConfig(settings.dataDir,
+                                                            port)
+                root.backend.reloadIfChanged(config)
+                root.backend.start()
+                stackView.push(startNodeComponent)
             }
         }
     }
@@ -133,7 +148,7 @@ Item {
         function onInitCompleted() {
             if (settings.onboardingCompleted) {
                 root.backend.start()
-                stackView.replace(storageView, StackView.Immediate)
+                stackView.replace(storageComponent, StackView.Immediate)
             }
         }
     }
