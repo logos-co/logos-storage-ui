@@ -133,6 +133,25 @@ class StorageBackend : public QObject {
     // and re-create a context with the new configuration
     void enableNatExtConfig(int tcpPort);
 
+    // This method try to get guidance about the resolution
+    // of the misconfiguration for the node.
+    // The idea is to check if:
+    //
+    // 1- upnp is enabled. In this case, the user should go back
+    // and try to configure the port forwarding
+    // 2- port forwarning is enabled. Indicate that the port has to
+    // be free and open to remote connection.
+    void guessResolution();
+
+    // This method will ensure that the node is ready to be used.
+    // 1- Make a call to debug function in the storage module and
+    // make sure that the node has peer. If not, the UI should suggest
+    // to modifiy the discovery port (8090) in the advance settings (to come).
+    // 2- Ensure that the tcp port is open to remote connection. If not,
+    // the UI should suggest to change go back and try another port and double
+    // check that the port forwarding is enabled on the router.
+    void checkNodeIsUp();
+
   signals:
     void ready();
     void startCompleted();
@@ -146,9 +165,8 @@ class StorageBackend : public QObject {
     void manifestsChanged();
     void quotaChanged();
     void initCompleted();
-    void initFailed();
-    void natExtConfigFailed(const QString& error);
     void natExtConfigCompleted();
+    void error(const QString& message);
 
   private slots:
 
@@ -156,6 +174,7 @@ class StorageBackend : public QObject {
     void setStatus(StorageStatus newStatus);
     void peerConnect(const QString& peerId);
     void debug(const QString& log);
+    void reportError(const QString& message);
 
     LogosAPI* m_logosAPI;
     LogosModules* m_logos;

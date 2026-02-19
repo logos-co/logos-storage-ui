@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtCore
+import Logos.Theme
 
 // qmllint disable unqualified
 Item {
@@ -20,6 +21,9 @@ Item {
         signal startFailed
         signal stopCompleted
         signal initCompleted
+        signal ready
+        signal error
+        signal natExtConfigCompleted
 
         function start() {
             console.log("mock start called")
@@ -38,6 +42,8 @@ Item {
         function saveCurrentConfig() {}
 
         function stop() {}
+
+        function guessResolution() {}
     }
 
     Settings {
@@ -61,13 +67,23 @@ Item {
         initialItem: onboardingComponent
     }
 
+    ErrorToast {
+        id: errorToast
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: Theme.spacing.medium
+    }
+
     Component {
         id: onboardingComponent
 
         OnBoarding {
             onCompleted: function (upnpEnabled) {
+                console.info("onboarding completed")
                 if (upnpEnabled) {
                     root.backend.enableUpnpConfig()
+                    root.backend.start()
+                    stackView.push(startNodeComponent)
                 } else {
                     stackView.push(portForwardingComponent)
                 }
@@ -122,16 +138,16 @@ Item {
         function onInitCompleted() {}
 
         function onReady() {
-            console.info("i am ready")
             if (settings.onboardingCompleted) {
-                console.info("onboardingCompleted completed")
                 root.backend.loadUserConfig()
                 root.backend.start()
                 stackView.replace(storageComponent, StackView.Immediate)
             }
         }
 
-        function onNatExtConfigFailed(error) {}
+        function onError(message) {
+            errorToast.show("Error", message)
+        }
 
         function onNatExtConfigCompleted(error) {
             root.backend.start()

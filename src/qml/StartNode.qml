@@ -10,6 +10,7 @@ LogosStorageLayout {
     property var backend: mockBackend
     property string status: ""
     property string title: "Starting your node...."
+    property string resolution: ""
     property bool starting: true
     property bool success: false
 
@@ -56,6 +57,8 @@ LogosStorageLayout {
             root.title = "Error"
             root.status = "Failed to start: " + error
         }
+
+        function guessResolution() {}
     }
 
     ColumnLayout {
@@ -74,6 +77,13 @@ LogosStorageLayout {
             id: statusText
             font.pixelSize: Theme.typography.primaryText
             text: root.status
+            Layout.alignment: Qt.AlignHCenter
+        }
+
+        LogosText {
+            id: suggestionText
+            font.pixelSize: Theme.typography.primaryText
+            text: root.suggestion
             Layout.alignment: Qt.AlignHCenter
         }
     }
@@ -96,5 +106,15 @@ LogosStorageLayout {
         text: "Next"
         onClicked: root.next()
         enabled: root.success == true
+    }
+
+    Connections {
+        target: root.backend
+
+        function onStartFailed(error) {
+            root.title = "Erreur"
+            root.status = "Your node failed to start with this error: " + error
+            root.method = root.backend.guessResolution()
+        }
     }
 }

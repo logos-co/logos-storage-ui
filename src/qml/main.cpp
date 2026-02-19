@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
         Qt::QueuedConnection);
 
     engine.addImportPath(QCoreApplication::applicationDirPath() + "/qml");
-    engine.loadFromModule("StorageBackend", "OnBoarding");
+    engine.loadFromModule("StorageBackend", "Main");
 
     return app.exec();
 }

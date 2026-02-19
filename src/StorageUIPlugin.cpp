@@ -102,13 +102,13 @@ void StorageUIPlugin::destroyWidget(QWidget* widget) {
         return;
     }
 
-    if (backend->status() != StorageBackend::StorageStatus::Destroyed) {
-        qDebug() << "StorageUIPlugin::destroyWidget: backend is not initialised so let's detroy it.";
+    if (backend->status() == StorageBackend::StorageStatus::Destroyed) {
+        qDebug() << "StorageUIPlugin::destroyWidget: backend is not initialised so let's delete the widget.";
         quickWidget->deleteLater();
         return;
     }
 
-    if (backend->status() == StorageBackend::StorageStatus::Running) {
+    if (backend->status() != StorageBackend::StorageStatus::Running) {
         qDebug() << "StorageUIPlugin::destroyWidget: backend is not running so let's detroy it.";
 
         backend->destroy();

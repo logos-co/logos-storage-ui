@@ -47,7 +47,7 @@ LogosResult StorageBackend::init(const QString& configJson) {
     m_config = QJsonDocument::fromJson(configJson.toUtf8());
     if (m_config.isNull()) {
         qDebug() << "StorageBackend::initStorage invalid json config" << configJson;
-        emit initFailed();
+        reportError("Failed to create the storage: invalid JSON config");
         return {false, "", "Failed to create the storage, invalid json config"};
     }
 
@@ -57,9 +57,8 @@ LogosResult StorageBackend::init(const QString& configJson) {
 
     if (!result) {
         setStatus(Destroyed);
-        debug("Failed to init storage");
-        emit initFailed();
-        return {false, "", "Filed to init storage"};
+        reportError("Failed to init storage");
+        return {false, "", "Failed to init storage"};
     }
 
     setStatus(Stopped);
@@ -72,6 +71,7 @@ LogosResult StorageBackend::init(const QString& configJson) {
                 setStatus(Stopped);
                 debug("Failed to start Storage module:" + message);
                 emit startFailed(message);
+                reportError("Failed to start: " + message);
             } else {
                 setStatus(Running);
                 debug("Storage module started.");
@@ -237,6 +237,8 @@ LogosResult StorageBackend::start(const QString& newConfigJson) {
     setStatus(Starting);
     debug("Starting Storage module...");
 
+    // TODO trach the start attempts in a file
+
     auto result = m_logos->storage_module.start();
 
     if (!result) {
@@ -294,6 +296,11 @@ void StorageBackend::destroy() {
 }
 
 QString StorageBackend::debugLogs() const { return m_debugLogs; };
+
+void StorageBackend::reportError(const QString& message) {
+    debug(message);
+    emit error(message);
+}
 
 void StorageBackend::debug(const QString& log) {
     if (!m_debugLogs.isEmpty()) {
@@ -866,36 +873,38 @@ void StorageBackend::enableNatExtConfig(int tcpPort) {
     QJsonArray listenAddrs = {QString("/ip4/0.0.0.0/tcp/%1").arg(tcpPort)};
     obj["listen-addrs"] = listenAddrs;
 
+    reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+
     qDebug() << "StorageBackend::enableNatExtConfig Retrieving the public IP";
-
+    emit natExtConfigCompleted();
     // Create the network manager
-    QNetworkAccessManager* manager = new QNetworkAccessManager(this);
-    QNetworkRequest request(QUrl("https://echo.codex.storage/"));
-    request.setRawHeader("Accept", "text/plain");
-    QNetworkReply* reply = manager->get(request);
+    // QNetworkAccessManager* manager = new QNetworkAccessManager(this);
+    // QNetworkRequest request(QUrl("https://echo.codex.storage/"));
+    // request.setRawHeader("Accept", "text/plain");
+    // QNetworkReply* reply = manager->get(request);
 
-    connect(reply, &QNetworkReply::finished, this, [this, reply, manager, obj]() {
-        reply->deleteLater();
-        manager->deleteLater();
+    // connect(reply, &QNetworkReply::finished, this, [this, reply, manager, obj]() {
+    //     reply->deleteLater();
+    //     manager->deleteLater();
 
-        if (reply->error() != QNetworkReply::NoError) {
-            emit natExtConfigFailed(reply->errorString());
-            return;
-        }
+    //     if (reply->error() != QNetworkReply::NoError) {
+    //         reportError("NAT config failed: " + reply->errorString());
+    //         return;
+    //     }
 
-        QString ip = reply->readAll().trimmed();
+    //     QString ip = reply->readAll().trimmed();
 
-        qDebug() << "StorageBackend::enableNatExtConfig ip=" << ip;
+    //     qDebug() << "StorageBackend::enableNatExtConfig ip=" << ip;
 
-        obj["nat"] = "extip:" + ip;
+    //     obj["nat"] = "extip:" + ip;
 
-        qDebug() << "StorageBackend::enableNatExtConfig config="
-                 << QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact));
+    //     qDebug() << "StorageBackend::enableNatExtConfig config="
+    //              << QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact));
 
-        reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+    //     reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
 
-        emit natExtConfigCompleted();
-    });
+    //     emit natExtConfigCompleted();
+    // });
 }
 
 void StorageBackend::status(StorageStatus status) { m_status = status; }

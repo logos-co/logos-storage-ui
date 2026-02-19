@@ -134,6 +134,7 @@ qt_add_qml_module(appqml
         LogosStorageButton.qml
         LogosStorageLayout.qml
         PortForwarding.qml
+        ErrorToast.qml
 )
 
 # Set up QML module directory for runtime
