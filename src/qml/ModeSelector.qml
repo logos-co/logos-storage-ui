@@ -8,7 +8,7 @@ LogosStorageLayout {
 
     signal completed(bool isGuide)
 
-    property int selectedMode: -1 // 0 = guide, 1 = advanced
+    property int selectedMode: -1
 
     ColumnLayout {
         anchors.centerIn: parent
@@ -30,9 +30,7 @@ LogosStorageLayout {
             Layout.fillWidth: true
         }
 
-        Item {
-            height: Theme.spacing.medium
-        }
+        Item { height: Theme.spacing.medium }
 
         Row {
             spacing: Theme.spacing.medium
@@ -43,38 +41,22 @@ LogosStorageLayout {
                 width: 190
                 height: 230
                 radius: 14
-                color: root.selectedMode === 0 ? Qt.rgba(1, 1, 1,
-                                                         0.08) : "transparent"
-                border.color: root.selectedMode === 0 ? "white" : Qt.rgba(1, 1,
-                                                                          1,
-                                                                          0.2)
+                color: root.selectedMode === 0 ? Theme.palette.overlayLight : "transparent"
+                border.color: root.selectedMode === 0 ? Theme.palette.text : Theme.palette.borderTertiaryMuted
                 border.width: root.selectedMode === 0 ? 2 : 1
 
                 ColumnLayout {
                     anchors.centerIn: parent
                     spacing: 14
 
-                    // Nothing OS dot icon like
-                    Grid {
-                        columns: 5
-                        spacing: 4
+                    GuideIcon {
+                        dotColor: Theme.palette.text
                         Layout.alignment: Qt.AlignHCenter
-
-                        Repeater {
-                            model: [0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0]
-                            Rectangle {
-                                width: 6
-                                height: 6
-                                radius: 2
-                                color: "white"
-                                opacity: modelData ? 0.9 : 0.1
-                            }
-                        }
                     }
 
                     Text {
                         text: "Guide"
-                        color: "white"
+                        color: Theme.palette.text
                         font.pixelSize: 16
                         font.bold: true
                         Layout.alignment: Qt.AlignHCenter
@@ -82,7 +64,7 @@ LogosStorageLayout {
 
                     Text {
                         text: "Step-by-step setup.\nRecommended for\nmost users."
-                        color: Qt.rgba(1, 1, 1, 0.55)
+                        color: Theme.palette.textSecondary
                         font.pixelSize: 12
                         horizontalAlignment: Text.AlignHCenter
                         Layout.alignment: Qt.AlignHCenter
@@ -103,38 +85,22 @@ LogosStorageLayout {
                 width: 190
                 height: 230
                 radius: 14
-                color: root.selectedMode === 1 ? Qt.rgba(1, 1, 1,
-                                                         0.08) : "transparent"
-                border.color: root.selectedMode === 1 ? "white" : Qt.rgba(1, 1,
-                                                                          1,
-                                                                          0.2)
+                color: root.selectedMode === 1 ? Theme.palette.overlayLight : "transparent"
+                border.color: root.selectedMode === 1 ? Theme.palette.text : Theme.palette.borderTertiaryMuted
                 border.width: root.selectedMode === 1 ? 2 : 1
 
                 ColumnLayout {
                     anchors.centerIn: parent
                     spacing: 14
 
-                    // Nothing OS dot icon like
-                    Grid {
-                        columns: 5
-                        spacing: 4
+                    AdvancedIcon {
+                        dotColor: Theme.palette.text
                         Layout.alignment: Qt.AlignHCenter
-
-                        Repeater {
-                            model: [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1]
-                            Rectangle {
-                                width: 6
-                                height: 6
-                                radius: 2
-                                color: "white"
-                                opacity: modelData ? 0.9 : 0.1
-                            }
-                        }
                     }
 
                     Text {
                         text: "Advanced"
-                        color: "white"
+                        color: Theme.palette.text
                         font.pixelSize: 16
                         font.bold: true
                         Layout.alignment: Qt.AlignHCenter
@@ -142,7 +108,7 @@ LogosStorageLayout {
 
                     Text {
                         text: "Manual JSON\nconfiguration for\nexperienced users."
-                        color: Qt.rgba(1, 1, 1, 0.55)
+                        color: Theme.palette.textSecondary
                         font.pixelSize: 12
                         horizontalAlignment: Text.AlignHCenter
                         Layout.alignment: Qt.AlignHCenter
@@ -159,9 +125,7 @@ LogosStorageLayout {
             }
         }
 
-        Item {
-            height: Theme.spacing.small
-        }
+        Item { height: Theme.spacing.small }
 
         LogosStorageButton {
             text: "Continue"

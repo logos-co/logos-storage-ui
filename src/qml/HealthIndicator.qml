@@ -1,4 +1,5 @@
 import QtQuick
+import Logos.Theme
 
 Item {
     id: root
@@ -57,14 +58,14 @@ Item {
             height: 10
             radius: 5
             anchors.verticalCenter: parent.verticalCenter
-            color: root.nodeIsUp ? "#4CAF50" : "#f44336"
+            color: root.nodeIsUp ? Theme.palette.success : Theme.palette.error
             opacity: root.blinkOn ? 1.0 : 0.15
         }
 
         Text {
             anchors.verticalCenter: parent.verticalCenter
             text: root.nodeIsUp ? "Node reachable" : "Node unreachable"
-            color: root.nodeIsUp ? "#4CAF50" : "#f44336"
+            color: root.nodeIsUp ? Theme.palette.success : Theme.palette.error
             font.pixelSize: 12
         }
     }

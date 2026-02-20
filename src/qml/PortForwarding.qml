@@ -16,10 +16,6 @@ LogosStorageLayout {
     Connections {
         target: root.backend
 
-        // The nat ext checking needs a bit of
-        // time because the Storage backend retrieves
-        // the public IP by making a call to the echo service.
-        // When the config is done, just push the startNodeComponent.
         function onNatExtConfigCompleted() {
             root.loading = false
             root.completed(root.tcpPort)
@@ -30,20 +26,26 @@ LogosStorageLayout {
         anchors.centerIn: parent
         spacing: Theme.spacing.medium
         width: 400
-        Layout.fillWidth: true
 
-        LogosText {
-            id: questionText
-            font.pixelSize: Theme.typography.titleText
-            text: "Choose your TCP port"
-            Layout.alignment: Qt.AlignCenter
+        PortIcon {
+            animated: root.loading
+            dotColor: Theme.palette.text
+            Layout.alignment: Qt.AlignHCenter
         }
 
         LogosText {
-            id: questionDescriptionText
+            font.pixelSize: Theme.typography.titleText
+            text: "Port Configuration"
+            Layout.alignment: Qt.AlignHCenter
+        }
+
+        LogosText {
             font.pixelSize: Theme.typography.primaryText
-            text: "The TCP port has to be open to connect with other remote peers."
-            Layout.alignment: Qt.AlignCenter
+            text: "The TCP port must be open to connect with remote peers."
+            Layout.alignment: Qt.AlignHCenter
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
         }
 
         LogosTextField {
@@ -64,14 +66,14 @@ LogosStorageLayout {
             }
         }
 
-        Row {
+        RowLayout {
+            Layout.alignment: Qt.AlignHCenter
             spacing: Theme.spacing.small
 
             LogosStorageButton {
                 text: "Back"
-                onClicked: {
-                    root.back()
-                }
+                enabled: !root.loading
+                onClicked: root.back()
             }
 
             LogosStorageButton {
@@ -82,6 +84,14 @@ LogosStorageLayout {
                     root.backend.enableNatExtConfig(root.tcpPort)
                 }
             }
+        }
+
+        LogosText {
+            font.pixelSize: Theme.typography.primaryText
+            text: "Retrieving your public IP..."
+            color: Theme.palette.textTertiary
+            visible: root.loading
+            Layout.alignment: Qt.AlignHCenter
         }
     }
 

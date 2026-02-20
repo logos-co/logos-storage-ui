@@ -9,7 +9,7 @@ LogosStorageLayout {
 
     property var backend: mockBackend
     property string status: ""
-    property string title: "Starting your node...."
+    property string title: "Starting your node"
     property string resolution: ""
     property bool starting: true
     property bool success: false
@@ -19,15 +19,13 @@ LogosStorageLayout {
 
     function onNodeStarted() {
         root.starting = false
-        root.status = "Logos Storage started successfully."
-        root.title = "Success"
+        root.status = "Your node is up and reachable."
+        root.title = "Node is ready"
         root.success = true
     }
 
     Component.onCompleted: root.backend.start()
 
-    // Wait after startCompleted before calling checkNodeIs to
-    // make sure the the node is started and ready.
     Timer {
         id: nodeCheckTimer
         interval: 500
@@ -39,9 +37,8 @@ LogosStorageLayout {
         target: root.backend
 
         function onStartCompleted() {
-            console.info("startCompleted")
-            root.title = "Checking.."
-            root.status = "Your node is started, checking everything is up."
+            root.title = "Checking connectivity"
+            root.status = "Node started, verifying reachability..."
             nodeCheckTimer.start()
         }
 
@@ -57,7 +54,7 @@ LogosStorageLayout {
 
         function onNodeIsntUp(reason) {
             root.starting = false
-            root.title = "Node not reachable"
+            root.title = "Node unreachable"
             root.status = ""
             root.resolution = reason
         }
@@ -69,28 +66,35 @@ LogosStorageLayout {
         spacing: Theme.spacing.medium
 
         LogosText {
-            id: titleText
             font.pixelSize: Theme.typography.titleText
             text: root.title
             Layout.alignment: Qt.AlignHCenter
         }
 
-        LogosText {
-            id: statusText
-            font.pixelSize: Theme.typography.primaryText
-            text: root.status
+        NodeStatusIcon {
+            starting: root.starting
+            success: root.success
             Layout.alignment: Qt.AlignHCenter
-            wrapMode: Text.WordWrap
         }
 
         LogosText {
-            id: resolutionText
+            font.pixelSize: Theme.typography.primaryText
+            text: root.status
+            visible: root.status !== ""
+            Layout.alignment: Qt.AlignHCenter
+            horizontalAlignment: Text.AlignHCenter
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
+        }
+
+        LogosText {
             font.pixelSize: Theme.typography.primaryText
             text: root.resolution
             visible: root.resolution !== ""
             color: Theme.palette.error
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
+            horizontalAlignment: Text.AlignHCenter
             Layout.alignment: Qt.AlignHCenter
         }
     }
@@ -101,12 +105,11 @@ LogosStorageLayout {
         anchors.bottomMargin: 10
         anchors.leftMargin: 10
         text: "Back"
-        onClicked: function () {
+        enabled: !root.starting
+        onClicked: {
             root.backend.stop()
             root.back()
         }
-
-        enabled: root.starting == false
     }
 
     LogosStorageButton {
@@ -115,40 +118,33 @@ LogosStorageLayout {
         anchors.bottomMargin: 10
         anchors.rightMargin: 10
         text: "Next"
-        onClicked: function () {
+        enabled: root.success
+        onClicked: {
             root.backend.saveCurrentConfig()
             root.next()
         }
-        enabled: root.success == true
     }
 
-    // In preview/mock mode, simulate a successful node start after 2 seconds
     Timer {
         interval: 2000
         running: root.backend && root.backend.isMock === true
-        onTriggered: root.onNodeStarted()
         repeat: false
+        onTriggered: root.onNodeStarted()
     }
 
     QtObject {
         id: mockBackend
 
         readonly property bool isMock: true
-        property string configJson: "{}"
 
         signal startCompleted
         signal startFailed(string error)
         signal nodeIsUp
         signal nodeIsntUp(string reason)
 
-        function guessResolution() {
-            return ""
-        }
-
         function checkNodeIsUp() {}
-
         function stop() {}
-
         function saveCurrentConfig() {}
+        function start() {}
     }
 }
