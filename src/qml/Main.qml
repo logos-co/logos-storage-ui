@@ -4,6 +4,20 @@ import QtCore
 import Logos.Theme
 
 // qmllint disable unqualified
+
+// Application flow overview:
+// On startup, the onboarding screen is shown by default.
+// If the storage backend emits a ready event and onboarding is already
+// complete, the onboarding screen is immediately replaced by the
+// storageComponent.
+// Onboarding offers two choices:
+//   1. UPnP            : the user proceeds directly to the startNodeComponent.
+//   2. Port forwarding : the user selects a TCP port before proceeding
+//  to the startNodeComponent.
+// The startNodeComponent waits for the node to start and verifies that
+// it is reachable. If the node is unreachable, the user is prompted to
+// edit the configuration. Once reachable, clicking "Next" marks
+// onboarding as complete.
 Item {
     id: root
     implicitWidth: 800
@@ -11,54 +25,46 @@ Item {
 
     property var backend: mockBackend
 
-    QtObject {
-        id: mockBackend
+    Connections {
+        target: root.backend
 
-        readonly property bool isMock: true
-        property int status
+        // The node is stopped during the onboarding
+        // when the user try to change his settings
+        // and click on "Back",
+        // In that case, we pop the navigation after
+        // the node is stopped.
+        function onStopCompleted() {
+            if (!settings.onboardingCompleted) {
 
-        signal startCompleted
-        signal startFailed
-        signal stopCompleted
-        signal initCompleted
-        signal ready
-        signal error
-        signal natExtConfigCompleted
-
-        function start() {
-            console.log("mock start called")
+                //    stackView.pop()
+            }
         }
 
-        function saveUserConfig() {}
+        // When the onboarding is completed,
+        // the user should have a config save in his
+        // home folder.
+        // After the config is loaded, the node will be
+        // started and the storeComponent will replace
+        // the stackView item immediatly.
+        function onReady() {
+            if (settings.onboardingCompleted) {
+                root.backend.loadUserConfig()
+                root.backend.start()
+                stackView.replace(storageComponent, StackView.Immediate)
+            }
+        }
 
-        function loadUserConfig() {}
-
-        function reloadIfChanged() {}
-
-        function enableUpnpConfig() {}
-
-        function enableNatExtConfig() {}
-
-        function saveCurrentConfig() {}
-
-        function stop() {}
-
-        function guessResolution() {}
+        // If there is any error, display it in a toast view
+        function onError(message) {
+            errorToast.show("Error", message)
+        }
     }
 
     Settings {
         id: settings
         category: "Storage"
 
-        property int discoveryPort: 8090
-        property int tcpPort: 0
-        property string dataDir: ""
         property bool onboardingCompleted: false
-        property string natStrategy: "any"
-
-        Component.onCompleted: {
-            console.info("Settings completed")
-        }
     }
 
     StackView {
@@ -67,22 +73,16 @@ Item {
         initialItem: onboardingComponent
     }
 
-    ErrorToast {
-        id: errorToast
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: Theme.spacing.medium
-    }
-
     Component {
         id: onboardingComponent
 
         OnBoarding {
+            backend: root.backend
+
+            // The completed event means the user
+            // selected upup or port forwarding.
             onCompleted: function (upnpEnabled) {
-                console.info("onboarding completed")
                 if (upnpEnabled) {
-                    root.backend.enableUpnpConfig()
-                    root.backend.start()
                     stackView.push(startNodeComponent)
                 } else {
                     stackView.push(portForwardingComponent)
@@ -106,13 +106,11 @@ Item {
             backend: root.backend
 
             onBack: {
-                root.backend.stop()
                 stackView.pop()
             }
 
             onNext: {
                 settings.onboardingCompleted = true
-                root.backend.saveCurrentConfig()
                 stackView.push(storageComponent)
             }
         }
@@ -122,36 +120,66 @@ Item {
         id: portForwardingComponent
 
         PortForwarding {
-            onCompleted: function (port) {
-                root.backend.enableNatExtConfig(port)
+            backend: root.backend
+            loading: false
+
+            onBack: {
+                stackView.pop()
+            }
+
+            onCompleted: function () {
+                stackView.push(startNodeComponent)
             }
         }
     }
 
-    Connections {
-        target: root.backend
+    ErrorToast {
+        id: errorToast
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: Theme.spacing.medium
+    }
 
-        function onStopCompleted() {
-            stackView.pop()
+    QtObject {
+        id: mockBackend
+
+        readonly property bool isMock: true
+        property int status
+
+        signal startCompleted
+        signal startFailed
+        signal stopCompleted
+        signal initCompleted
+        signal ready
+        signal error
+        signal natExtConfigCompleted
+        signal nodeIsUp
+        signal nodeIsntUp
+
+        function start() {
+            console.log("mock start called")
         }
 
-        function onInitCompleted() {}
+        function saveUserConfig() {}
 
-        function onReady() {
-            if (settings.onboardingCompleted) {
-                root.backend.loadUserConfig()
-                root.backend.start()
-                stackView.replace(storageComponent, StackView.Immediate)
-            }
+        function loadUserConfig() {}
+
+        function reloadIfChanged() {}
+
+        function enableUpnpConfig() {}
+
+        function enableNatExtConfig() {
+            natExtConfigCompleted()
         }
 
-        function onError(message) {
-            errorToast.show("Error", message)
-        }
+        function saveCurrentConfig() {}
 
-        function onNatExtConfigCompleted(error) {
-            root.backend.start()
-            stackView.push(startNodeComponent)
+        function stop() {}
+
+        function checkNodeIsUp() {}
+
+        function guessResolution() {
+            return ""
         }
     }
 }

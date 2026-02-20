@@ -24,46 +24,48 @@ LogosStorageLayout {
         root.success = true
     }
 
-    QtObject {
-        id: mockBackend
+    Component.onCompleted: root.backend.start()
 
-        readonly property bool isMock: true
-        property string configJson: "{}"
-
-        signal startCompleted
-        signal startFailed
-        signal nodeStarted
-    }
-
+    // Wait after startCompleted before calling checkNodeIs to
+    // make sure the the node is started and ready.
     Timer {
-        interval: 2000
-        running: root.backend && root.backend.isMock === true
-        onTriggered: {
-            console.log("timer triggered")
-            root.onNodeStarted()
-        }
+        id: nodeCheckTimer
+        interval: 500
+        repeat: false
+        onTriggered: root.backend.checkNodeIsUp()
     }
 
     Connections {
         target: root.backend
 
         function onStartCompleted() {
-            console.log("onStartCompleted")
-            root.onNodeStarted()
+            console.info("startCompleted")
+            root.title = "Checking.."
+            root.status = "Your node is started, checking everything is up."
+            nodeCheckTimer.start()
         }
 
         function onStartFailed(error) {
             root.starting = false
-            root.title = "Error"
-            root.status = "Failed to start: " + error
+            root.title = "Failed to start"
+            root.status = "Your node failed to start: " + error
         }
 
-        function guessResolution() {}
+        function onNodeIsUp() {
+            root.onNodeStarted()
+        }
+
+        function onNodeIsntUp(reason) {
+            root.starting = false
+            root.title = "Node not reachable"
+            root.status = ""
+            root.resolution = reason
+        }
     }
 
     ColumnLayout {
-        Layout.fillWidth: true
         anchors.centerIn: parent
+        width: 400
         spacing: Theme.spacing.medium
 
         LogosText {
@@ -78,12 +80,17 @@ LogosStorageLayout {
             font.pixelSize: Theme.typography.primaryText
             text: root.status
             Layout.alignment: Qt.AlignHCenter
+            wrapMode: Text.WordWrap
         }
 
         LogosText {
-            id: suggestionText
+            id: resolutionText
             font.pixelSize: Theme.typography.primaryText
-            text: root.suggestion
+            text: root.resolution
+            visible: root.resolution !== ""
+            color: Theme.palette.error
+            wrapMode: Text.WordWrap
+            Layout.fillWidth: true
             Layout.alignment: Qt.AlignHCenter
         }
     }
@@ -94,7 +101,11 @@ LogosStorageLayout {
         anchors.bottomMargin: 10
         anchors.leftMargin: 10
         text: "Back"
-        onClicked: root.back()
+        onClicked: function () {
+            root.backend.stop()
+            root.back()
+        }
+
         enabled: root.starting == false
     }
 
@@ -104,17 +115,40 @@ LogosStorageLayout {
         anchors.bottomMargin: 10
         anchors.rightMargin: 10
         text: "Next"
-        onClicked: root.next()
+        onClicked: function () {
+            root.backend.saveCurrentConfig()
+            root.next()
+        }
         enabled: root.success == true
     }
 
-    Connections {
-        target: root.backend
+    // In preview/mock mode, simulate a successful node start after 2 seconds
+    Timer {
+        interval: 2000
+        running: root.backend && root.backend.isMock === true
+        onTriggered: root.onNodeStarted()
+        repeat: false
+    }
 
-        function onStartFailed(error) {
-            root.title = "Erreur"
-            root.status = "Your node failed to start with this error: " + error
-            root.method = root.backend.guessResolution()
+    QtObject {
+        id: mockBackend
+
+        readonly property bool isMock: true
+        property string configJson: "{}"
+
+        signal startCompleted
+        signal startFailed(string error)
+        signal nodeIsUp
+        signal nodeIsntUp(string reason)
+
+        function guessResolution() {
+            return ""
         }
+
+        function checkNodeIsUp() {}
+
+        function stop() {}
+
+        function saveCurrentConfig() {}
     }
 }

@@ -14,9 +14,9 @@
   ];
   
   # Common runtime dependencies
-  buildInputs = [ 
-    pkgs.qt6.qtbase 
-    pkgs.qt6.qtremoteobjects 
+  buildInputs = [
+    pkgs.qt6.qtbase
+    pkgs.qt6.qtremoteobjects
     pkgs.zstd
     pkgs.krb5
     pkgs.abseil-cpp

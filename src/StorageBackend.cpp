@@ -9,6 +9,7 @@
 #include <QJsonObject>
 #include <QLocale>
 #include <QNetworkAccessManager>
+#include <QNetworkProxyFactory>
 #include <QNetworkReply>
 #include <QSslSocket>
 
@@ -23,6 +24,9 @@
 StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
     : QObject(parent), m_status(Destroyed), m_logosAPI(nullptr), m_logos(nullptr) {
     qDebug() << "Initializing StorageBackend...";
+
+    // Disable system proxy detection — it crashes in Nix/some Linux environments
+    QNetworkProxyFactory::setUseSystemConfiguration(false);
     
     if (logosAPI) {
         m_logosAPI = logosAPI;
@@ -75,8 +79,8 @@ LogosResult StorageBackend::init(const QString& configJson) {
             } else {
                 setStatus(Running);
                 debug("Storage module started.");
-                QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
-                QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
+                //  QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
+                // QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
                 emit startCompleted();
             }
         })) {
@@ -873,38 +877,128 @@ void StorageBackend::enableNatExtConfig(int tcpPort) {
     QJsonArray listenAddrs = {QString("/ip4/0.0.0.0/tcp/%1").arg(tcpPort)};
     obj["listen-addrs"] = listenAddrs;
 
-    reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+    // Fetch the public IP asynchronously so we can set nat=extip:IP in the config.
+    // If the request fails, we proceed without the IP (node will still start, just without extip NAT).
+    debug("Retrieving public IP...");
 
-    qDebug() << "StorageBackend::enableNatExtConfig Retrieving the public IP";
-    emit natExtConfigCompleted();
-    // Create the network manager
-    // QNetworkAccessManager* manager = new QNetworkAccessManager(this);
-    // QNetworkRequest request(QUrl("https://echo.codex.storage/"));
-    // request.setRawHeader("Accept", "text/plain");
-    // QNetworkReply* reply = manager->get(request);
+    QNetworkAccessManager* manager = new QNetworkAccessManager(this);
+    QNetworkRequest request(ECHO_PROVIDER);
 
-    // connect(reply, &QNetworkReply::finished, this, [this, reply, manager, obj]() {
-    //     reply->deleteLater();
-    //     manager->deleteLater();
+    // Set text/plain to receive only the IP
+    request.setRawHeader("Accept", "text/plain");
 
-    //     if (reply->error() != QNetworkReply::NoError) {
-    //         reportError("NAT config failed: " + reply->errorString());
-    //         return;
-    //     }
+    QNetworkReply* reply = manager->get(request);
 
-    //     QString ip = reply->readAll().trimmed();
+    connect(reply, &QNetworkReply::finished, this, [this, reply, manager, obj]() mutable {
+        reply->deleteLater();
+        manager->deleteLater();
 
-    //     qDebug() << "StorageBackend::enableNatExtConfig ip=" << ip;
+        if (reply->error() != QNetworkReply::NoError) {
+            debug("Failed to retrieve public IP: " + reply->errorString() + ". Proceeding without extip NAT.");
+        } else {
+            QString ip = QString::fromUtf8(reply->readAll()).trimmed();
+            debug("Public IP: " + ip);
+            obj["nat"] = "extip:" + ip;
+        }
 
-    //     obj["nat"] = "extip:" + ip;
+        reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+        emit natExtConfigCompleted();
+    });
+}
 
-    //     qDebug() << "StorageBackend::enableNatExtConfig config="
-    //              << QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact));
+void StorageBackend::checkNodeIsUp() {
+    qDebug() << "StorageBackend::checkNodeIsUp called.";
 
-    //     reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+    // First we get the debug info in order to get the peers and
+    // the announceAddresses
+    LogosResult result = m_logos->storage_module.debug();
+    if (!result.success) {
+        qDebug() << "Failed to get node debug info: " << result.getError();
+        emit nodeIsntUp("Failed to get node debug info: " + result.getError());
+        return;
+    }
 
-    //     emit natExtConfigCompleted();
-    // });
+    // Ensure that the node has at least one peer.
+    QVariantMap table = result.getValue<QVariantMap>("table");
+    QVariantList nodes = table["nodes"].toList();
+
+    debug(QString("Connected peers: %1").arg(nodes.size()));
+    if (nodes.isEmpty()) {
+        emit nodeIsntUp("No peers connected. "
+                        "Try modifying the discovery port (default 8090) in the advanced settings.");
+        return;
+    }
+
+    debug("DHT seems okay, found peers");
+
+    // Extract TCP ports from announceAddresses.
+    // Format: "/ip4/1.2.3.4/tcp/PORT"
+    QVariantList announceAddresses = result.getValue<QVariantList>("announceAddresses");
+    QList<int> ports;
+    for (const QVariant& addr : announceAddresses) {
+        QStringList parts = addr.toString().split("/");
+        // "/ip4/1.2.3.4/tcp/8079" splits to ["", "ip4", "1.2.3.4", "tcp", "8079"]
+        int tcpIndex = parts.indexOf("tcp");
+        if (tcpIndex >= 0 && tcpIndex + 1 < parts.size()) {
+            int port = parts[tcpIndex + 1].toInt();
+            if (port > 0 && !ports.contains(port)) {
+                ports.append(port);
+            }
+        }
+    }
+
+    QString nat = m_config.object()["nat"].toString();
+
+    if (ports.isEmpty()) {
+        debug("No TCP ports found in announce addresses, considering node as not up");
+        if (nat == "upnp") {
+            emit nodeIsntUp("UPnP is configured but there is no announced addresses. "
+                            "Try going back and configure port forwarding manually on your router.");
+        } else {
+            emit nodeIsntUp("No announced addresses found. Your TCP port is propably incorrect. "
+                            "Try going back and check your port forwarding configuration.");
+        }
+
+        return;
+    }
+
+    debug(QString("Checking reachability for %1 port(s)...").arg(ports.size()));
+
+    // Check each port via the echo service, one by one.
+    bool foundReachable = false;
+    for (int port : ports) {
+        QNetworkAccessManager manager;
+        QNetworkRequest request(QUrl(QString("%1/port/%2").arg(ECHO_PROVIDER).arg(port)));
+        QNetworkReply* reply = manager.get(request);
+
+        QEventLoop loop;
+        connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+        loop.exec();
+
+        if (reply->error() == QNetworkReply::NoError) {
+            bool reachable = QJsonDocument::fromJson(reply->readAll()).object()["reachable"].toBool();
+            debug("Port " + QString::number(port) + (reachable ? " is reachable" : " is not reachable"));
+            if (reachable) {
+                foundReachable = true;
+            }
+        } else {
+            debug("Port check failed for port " + QString::number(port) + ": " + reply->errorString());
+        }
+
+        reply->deleteLater();
+    }
+
+    if (foundReachable) {
+        emit nodeIsUp();
+    } else {
+        if (nat == "upnp") {
+            emit nodeIsntUp("UPnP is configured but the node is not reachable from the internet. "
+                            "Try going back and configure port forwarding manually on your router.");
+        } else {
+            emit nodeIsntUp("No ports are reachable from the internet. "
+                            "Try going back and check your port forwarding configuration.");
+        }
+    }
 }
 
 void StorageBackend::status(StorageStatus status) { m_status = status; }

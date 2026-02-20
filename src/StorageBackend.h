@@ -11,7 +11,7 @@
 
 static const int RET_OK = 0;
 static const int RET_PROGRESS = 3;
-static const QUrl ECHO_PROVIDER("https://echo.codex.storage/");
+static const QString ECHO_PROVIDER = "https://echo.codex.storage/";
 static const QString APP_HOME = QDir::homePath() + "/.logos_storage";
 static const QString DEFAULT_DATA_DIR = APP_HOME + "/data";
 static const QString USER_CONFIG_PATH = APP_HOME + "/config.json";
@@ -133,23 +133,18 @@ class StorageBackend : public QObject {
     // and re-create a context with the new configuration
     void enableNatExtConfig(int tcpPort);
 
-    // This method try to get guidance about the resolution
-    // of the misconfiguration for the node.
-    // The idea is to check if:
-    //
-    // 1- upnp is enabled. In this case, the user should go back
-    // and try to configure the port forwarding
-    // 2- port forwarning is enabled. Indicate that the port has to
-    // be free and open to remote connection.
-    void guessResolution();
-
     // This method will ensure that the node is ready to be used.
+    //
     // 1- Make a call to debug function in the storage module and
     // make sure that the node has peer. If not, the UI should suggest
     // to modifiy the discovery port (8090) in the advance settings (to come).
+    //
     // 2- Ensure that the tcp port is open to remote connection. If not,
     // the UI should suggest to change go back and try another port and double
     // check that the port forwarding is enabled on the router.
+    //
+    // Emit nodeIsUp() on success
+    // Emit nodeIsntUp(error) on failure
     void checkNodeIsUp();
 
   signals:
@@ -167,6 +162,12 @@ class StorageBackend : public QObject {
     void initCompleted();
     void natExtConfigCompleted();
     void error(const QString& message);
+
+    // Emitted when the node port is reachable from the internet
+    void nodeIsUp();
+
+    // Emitted when the node port is not reachable, with a reason
+    void nodeIsntUp(const QString& reason);
 
   private slots:
 
