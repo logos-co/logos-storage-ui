@@ -53,6 +53,8 @@ LogosStorageLayout {
         return backend.status == running
     }
 
+    Component.onCompleted: root.backend.start()
+
     QtObject {
         id: mockBackend
 

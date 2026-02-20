@@ -772,8 +772,6 @@ StorageBackend::StorageStatus StorageBackend::status() const { return m_status; 
 
 QString StorageBackend::cid() const { return m_cid; }
 
-QString StorageBackend::configJson() const { return QString::fromUtf8(m_config.toJson(QJsonDocument::Compact)); }
-
 int StorageBackend::uploadProgress() const { return m_uploadProgress; }
 
 QString StorageBackend::uploadStatus() const { return m_uploadStatus; }
@@ -824,7 +822,7 @@ void StorageBackend::reloadIfChanged(const QString& configJson) {
 
 void StorageBackend::saveCurrentConfig() {
     qDebug() << "StorageBackend::saveUserConfig";
-    saveUserConfig(QString::fromUtf8(m_config.toJson(QJsonDocument::Compact)));
+    saveUserConfig(QString::fromUtf8(m_config.toJson(QJsonDocument::Indented)));
 }
 
 void StorageBackend::saveUserConfig(const QString& configJson) {
@@ -865,7 +863,7 @@ void StorageBackend::enableUpnpConfig() {
 
     obj["nat"] = "upnp";
 
-    reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+    reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented)));
 }
 
 void StorageBackend::enableNatExtConfig(int tcpPort) {
@@ -1013,7 +1011,7 @@ void StorageBackend::loadUserConfig() {
         result = init(QString::fromUtf8(file.readAll()));
     } else {
         qWarning() << "StorageBackend::loadUserConfig Failed to read the user config file, fallback to default config";
-        result = init(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Compact)));
+        result = init(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
     }
 
     if (!result.success) {

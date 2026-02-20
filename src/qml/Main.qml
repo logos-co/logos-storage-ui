@@ -33,12 +33,12 @@ Item {
         // and click on "Back",
         // In that case, we pop the navigation after
         // the node is stopped.
-        function onStopCompleted() {
-            if (!settings.onboardingCompleted) {
+        // function onStopCompleted() {
+        //     if (!settings.onboardingCompleted) {
 
-                //    stackView.pop()
-            }
-        }
+        //         //    stackView.pop()
+        //     }
+        // }
 
         // When the onboarding is completed,
         // the user should have a config save in his
@@ -49,7 +49,6 @@ Item {
         function onReady() {
             if (settings.onboardingCompleted) {
                 root.backend.loadUserConfig()
-                root.backend.start()
                 stackView.replace(storageComponent, StackView.Immediate)
             }
         }
@@ -70,7 +69,21 @@ Item {
     StackView {
         id: stackView
         anchors.fill: parent
-        initialItem: onboardingComponent
+        initialItem: modeSelectorComponent
+    }
+
+    Component {
+        id: modeSelectorComponent
+
+        ModeSelector {
+            onCompleted: function (isGuide) {
+                if (isGuide) {
+                    stackView.push(onboardingComponent)
+                } else {
+                    stackView.push(advancedSetupComponent)
+                }
+            }
+        }
     }
 
     Component {
@@ -79,14 +92,29 @@ Item {
         OnBoarding {
             backend: root.backend
 
-            // The completed event means the user
-            // selected upup or port forwarding.
+            onBack: stackView.pop()
+
             onCompleted: function (upnpEnabled) {
                 if (upnpEnabled) {
                     stackView.push(startNodeComponent)
                 } else {
                     stackView.push(portForwardingComponent)
                 }
+            }
+        }
+    }
+
+    Component {
+        id: advancedSetupComponent
+
+        AdvancedSetup {
+            backend: root.backend
+
+            onBack: stackView.pop()
+
+            onCompleted: function () {
+                settings.onboardingCompleted = true
+                stackView.replace(storageComponent, StackView.Immediate)
             }
         }
     }

@@ -136,6 +136,8 @@ qt_add_qml_module(appqml
         PortForwarding.qml
         ErrorToast.qml
         HealthIndicator.qml
+        ModeSelector.qml
+        AdvancedSetup.qml
 )
 
 # Set up QML module directory for runtime

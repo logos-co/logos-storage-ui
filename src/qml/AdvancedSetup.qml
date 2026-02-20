@@ -10,7 +10,7 @@ LogosStorageLayout {
     property var backend: null
 
     signal back
-    signal completed(string configJson)
+    signal completed
 
     ColumnLayout {
         anchors.fill: parent
@@ -56,7 +56,8 @@ LogosStorageLayout {
                     property bool isValid: true
 
                     Component.onCompleted: {
-                        text = (root.backend && root.backend.configJson) ? root.backend.configJson : "{}"
+                        text = (root.backend
+                                && root.backend.configJson) ? root.backend.configJson : "{}"
                         validate()
                     }
 
@@ -102,7 +103,11 @@ LogosStorageLayout {
                     anchors.fill: parent
                     enabled: jsonArea.isValid
                     cursorShape: jsonArea.isValid ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    onClicked: root.completed(jsonArea.text)
+                    onClicked: function () {
+                        root.backend.saveUserConfig(jsonArea.text)
+                        root.backend.reloadIfChanged(jsonArea.text)
+                        root.completed()
+                    }
                 }
             }
         }

@@ -62,7 +62,6 @@ class StorageBackend : public QObject {
     QString cid() const;
     QString debugLogs() const;
     StorageStatus status() const;
-    QString configJson() const;
     int uploadProgress() const;
     QString uploadStatus() const;
     QVariantList manifests() const;

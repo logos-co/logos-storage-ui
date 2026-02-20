@@ -43,28 +43,25 @@ LogosStorageLayout {
                 width: 190
                 height: 230
                 radius: 14
-                color: root.selectedMode === 0 ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-                border.color: root.selectedMode === 0 ? "white" : Qt.rgba(1, 1, 1, 0.2)
+                color: root.selectedMode === 0 ? Qt.rgba(1, 1, 1,
+                                                         0.08) : "transparent"
+                border.color: root.selectedMode === 0 ? "white" : Qt.rgba(1, 1,
+                                                                          1,
+                                                                          0.2)
                 border.width: root.selectedMode === 0 ? 2 : 1
 
                 ColumnLayout {
                     anchors.centerIn: parent
                     spacing: 14
 
-                    // Nothing OS dot icon — crosshair/compass
+                    // Nothing OS dot icon like
                     Grid {
                         columns: 5
                         spacing: 4
                         Layout.alignment: Qt.AlignHCenter
 
                         Repeater {
-                            model: [
-                                0, 0, 1, 0, 0,
-                                0, 0, 1, 0, 0,
-                                1, 1, 0, 1, 1,
-                                0, 0, 1, 0, 0,
-                                0, 0, 1, 0, 0
-                            ]
+                            model: [0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0]
                             Rectangle {
                                 width: 6
                                 height: 6
@@ -106,28 +103,25 @@ LogosStorageLayout {
                 width: 190
                 height: 230
                 radius: 14
-                color: root.selectedMode === 1 ? Qt.rgba(1, 1, 1, 0.08) : "transparent"
-                border.color: root.selectedMode === 1 ? "white" : Qt.rgba(1, 1, 1, 0.2)
+                color: root.selectedMode === 1 ? Qt.rgba(1, 1, 1,
+                                                         0.08) : "transparent"
+                border.color: root.selectedMode === 1 ? "white" : Qt.rgba(1, 1,
+                                                                          1,
+                                                                          0.2)
                 border.width: root.selectedMode === 1 ? 2 : 1
 
                 ColumnLayout {
                     anchors.centerIn: parent
                     spacing: 14
 
-                    // Nothing OS dot icon — X pattern
+                    // Nothing OS dot icon like
                     Grid {
                         columns: 5
                         spacing: 4
                         Layout.alignment: Qt.AlignHCenter
 
                         Repeater {
-                            model: [
-                                1, 0, 0, 0, 1,
-                                0, 1, 0, 1, 0,
-                                0, 0, 1, 0, 0,
-                                0, 1, 0, 1, 0,
-                                1, 0, 0, 0, 1
-                            ]
+                            model: [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1]
                             Rectangle {
                                 width: 6
                                 height: 6
