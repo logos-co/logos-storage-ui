@@ -18,5 +18,6 @@
         <file alias="AdvancedIcon.qml">qml/AdvancedIcon.qml</file>
         <file alias="UpnpIcon.qml">qml/UpnpIcon.qml</file>
         <file alias="PortIcon.qml">qml/PortIcon.qml</file>
+        <file>icons/storage.png</file>
     </qresource>
 </RCC>
