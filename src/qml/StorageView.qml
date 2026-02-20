@@ -5,13 +5,8 @@ import QtQuick.Layouts
 import QtCore
 
 // qmllint disable unqualified
-Rectangle {
+LogosStorageLayout {
     id: root
-    Layout.fillWidth: true
-    Layout.fillHeight: true
-    implicitWidth: 800
-    implicitHeight: 800
-    color: "#000000"
 
     property var backend: mockBackend
     readonly property int stopped: 0
@@ -90,6 +85,11 @@ Rectangle {
         if (bytes < 1024 * 1024 * 1024)
             return (bytes / (1024 * 1024)).toFixed(1) + " MB"
         return (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB"
+    }
+
+    HealthIndicator {
+        backend: root.backend
+        anchors.fill: parent
     }
 
     Text {

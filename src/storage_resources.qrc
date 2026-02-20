@@ -9,5 +9,6 @@
         <file alias="LogosStorageLayout.qml">qml/LogosStorageLayout.qml</file>
         <file alias="PortForwarding.qml">qml/PortForwarding.qml</file>
         <file alias="ErrorToast.qml">qml/ErrorToast.qml</file>
+        <file alias="HealthIndicator.qml">qml/HealthIndicator.qml</file>
     </qresource>
 </RCC>
