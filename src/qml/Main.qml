@@ -2,139 +2,212 @@ import QtQuick
 import QtQuick.Controls
 import QtCore
 import Logos.Theme
-import Logos.Controls
 
 // qmllint disable unqualified
+
+// Application flow overview:
+// On startup, the onboarding screen is shown by default.
+// If the storage backend emits a ready event and onboarding is already
+// complete, the onboarding screen is immediately replaced by the
+// storageComponent.
+// Onboarding offers two choices:
+//   1. UPnP            : the user proceeds directly to the startNodeComponent.
+//   2. Port forwarding : the user selects a TCP port before proceeding
+//  to the startNodeComponent.
+// The startNodeComponent waits for the node to start and verifies that
+// it is reachable. If the node is unreachable, the user is prompted to
+// edit the configuration. Once reachable, clicking "Next" marks
+// onboarding as complete.
 Item {
     id: root
-    implicitWidth: 600
-    implicitHeight: 400
+    implicitWidth: 800
+    implicitHeight: 800
 
     property var backend: mockBackend
 
-    // Timer {
-    //     readonly property int running: 2
+    Connections {
+        target: root.backend
 
-    //     id: timer
-    //     interval: 2000
-    //     repeat: false
-    //     onTriggered: {
-    //         console.log("timer triggered")
-    //         // root.backend.status = running
-    //         // root.backend.startCompleted()
-    //         // console.info(root.backend.status)
-    //     }
-    // }
-    QtObject {
-        id: mockBackend
+        // The node is stopped during the onboarding
+        // when the user try to change his settings
+        // and click on "Back",
+        // In that case, we pop the navigation after
+        // the node is stopped.
+        // function onStopCompleted() {
+        //     if (!settings.onboardingCompleted) {
 
-        property int status
+        //         //    stackView.pop()
+        //     }
+        // }
 
-        signal startCompleted
-        signal startFailed
-        signal stopCompleted
-
-        function updateBasicConfig(dataDir, discPort) {
-            console.log("updateBasicConfig", dataDir, discPort)
+        // When the onboarding is completed,
+        // the user should have a config save in his
+        // home folder.
+        // After the config is loaded, the node will be
+        // started and the storeComponent will replace
+        // the stackView item immediatly.
+        function onReady() {
+            if (settings.onboardingCompleted) {
+                root.backend.loadUserConfig()
+                stackView.replace(storageComponent, StackView.Immediate)
+            }
         }
 
-        function start() {
-            //   timer.start()
-            console.log("mock start callde")
+        // If there is any error, display it in a toast view
+        function onError(message) {
+            errorToast.show("Error", message)
         }
-
-        function stop() {
-            root.backend.stopCompleted()
-        }
-
-        function defaultDataDir() {
-            return ".cache/storage"
-        }
-
-        function buildConfig() {}
-
-        function reloadIfChanged() {}
-
-        function init() {}
     }
 
     Settings {
         id: settings
         category: "Storage"
 
-        property int discoveryPort: 8090
-        property int tcpPort: 0
-        property string dataDir: ""
         property bool onboardingCompleted: false
     }
 
     StackView {
         id: stackView
         anchors.fill: parent
-        initialItem: onboarding
+        initialItem: modeSelectorComponent
     }
 
     Component {
-        id: onboarding
+        id: modeSelectorComponent
 
-        OnBoarding {
-            id: onboardingInstance
-            backend: root.backend
-            discoveryPort: settings.discoveryPort
-            tcpPort: settings.tcpPort
-            dataDir: settings.dataDir.length > 0 ? settings.dataDir : root.backend.defaultDataDir()
-
-            onCompleted: {
-                settings.discoveryPort = discoveryPort
-                settings.dataDir = dataDir
-                settings.tcpPort = tcpPort
-                settings.onboardingCompleted = true
-
-                let config = root.backend.buildConfig(dataDir,
-                                                      discoveryPort, tcpPort)
-                root.backend.saveUserConfig(config)
-                root.backend.reloadIfChanged(config)
-                root.backend.start()
-
-                stackView.push(startNodeView)
+        ModeSelector {
+            onCompleted: function (isGuide) {
+                if (isGuide) {
+                    stackView.push(onboardingComponent)
+                } else {
+                    stackView.push(advancedSetupComponent)
+                }
             }
         }
     }
 
     Component {
-        id: storageView
+        id: onboardingComponent
+
+        OnBoarding {
+            backend: root.backend
+
+            onBack: stackView.pop()
+
+            onCompleted: function (upnpEnabled) {
+                if (upnpEnabled) {
+                    stackView.push(startNodeComponent)
+                } else {
+                    stackView.push(portForwardingComponent)
+                }
+            }
+        }
+    }
+
+    Component {
+        id: advancedSetupComponent
+
+        AdvancedSetup {
+            backend: root.backend
+
+            onBack: stackView.pop()
+
+            onCompleted: function () {
+                settings.onboardingCompleted = true
+                stackView.replace(storageComponent, StackView.Immediate)
+            }
+        }
+    }
+
+    Component {
+        id: storageComponent
+
         StorageView {
             backend: root.backend
         }
     }
 
     Component {
-        id: startNodeView
+        id: startNodeComponent
 
         StartNode {
             backend: root.backend
 
             onBack: {
-                root.backend.stop()
+                stackView.pop()
             }
+
             onNext: {
-                stackView.push(storageView)
+                settings.onboardingCompleted = true
+                stackView.push(storageComponent)
             }
         }
     }
 
-    Connections {
-        target: root.backend
+    Component {
+        id: portForwardingComponent
 
-        function onStopCompleted() {
-            stackView.pop()
+        PortForwarding {
+            backend: root.backend
+            loading: false
+
+            onBack: {
+                stackView.pop()
+            }
+
+            onCompleted: function () {
+                stackView.push(startNodeComponent)
+            }
+        }
+    }
+
+    ErrorToast {
+        id: errorToast
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: Theme.spacing.medium
+    }
+
+    QtObject {
+        id: mockBackend
+
+        readonly property bool isMock: true
+        property int status
+
+        signal startCompleted
+        signal startFailed
+        signal stopCompleted
+        signal initCompleted
+        signal ready
+        signal error
+        signal natExtConfigCompleted
+        signal nodeIsUp
+        signal nodeIsntUp
+
+        function start() {
+            console.log("mock start called")
         }
 
-        function onInitCompleted() {
-            if (settings.onboardingCompleted) {
-                root.backend.start()
-                stackView.replace(storageView, StackView.Immediate)
-            }
+        function saveUserConfig() {}
+
+        function loadUserConfig() {}
+
+        function reloadIfChanged() {}
+
+        function enableUpnpConfig() {}
+
+        function enableNatExtConfig() {
+            natExtConfigCompleted()
+        }
+
+        function saveCurrentConfig() {}
+
+        function stop() {}
+
+        function checkNodeIsUp() {}
+
+        function guessResolution() {
+            return ""
         }
     }
 }

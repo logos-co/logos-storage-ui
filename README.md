@@ -78,6 +78,41 @@ To restart the onboarding process, simply delete the prefences file and relaunch
 
 The application also provides a JSON editor in the debug panel for runtime configuration tweaks. To apply changes, restart the Storage Module.
 
+## Troubleshooting
+
+### Node has no peers
+
+**Symptom:**  
+The node starts successfully but never connects to any peer.
+
+**Cause:**  
+Logos Storage uses a discovery port (default `8090`) to announce itself to the DHT and find peers. If this port is already use by another process, the DHT cannot work properly.
+
+**Fix:**  
+Ensure that no process is running on `8090` process or change the default port value in the advanced configuration.
+
+### UPnP not working
+
+**Symptom:**  
+You selected UPnP during setup but the node remains unreachable.
+
+**Cause:**  
+UPnP relies on your router supporting and enabling the UPnP protocol. Many routers have it disabled by default for security reasons.
+
+**Fix:**  
+Make sure UPnP is enabled on your router or switch to port forwarding config.
+
+### Manual port forwarding
+
+**Symptom:**  
+You configure the port forwarding with a TCP port but the node remains unreachable.
+
+**Cause:**  
+The port is not open on your router.
+
+**Fix:**  
+Make port forwarding is enabled for this port on your router.
+
 #### Nix Organization
 
 The nix build system is organized into modular files in the `/nix` directory:

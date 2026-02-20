@@ -6,6 +6,18 @@
         <file alias="StorageView.qml">qml/StorageView.qml</file>
         <file alias="LogosTextField.qml">qml/LogosTextField.qml</file>
         <file alias="LogosStorageButton.qml">qml/LogosStorageButton.qml</file>
+        <file alias="LogosStorageLayout.qml">qml/LogosStorageLayout.qml</file>
+        <file alias="PortForwarding.qml">qml/PortForwarding.qml</file>
+        <file alias="ErrorToast.qml">qml/ErrorToast.qml</file>
+        <file alias="HealthIndicator.qml">qml/HealthIndicator.qml</file>
+        <file alias="ModeSelector.qml">qml/ModeSelector.qml</file>
+        <file alias="AdvancedSetup.qml">qml/AdvancedSetup.qml</file>
+        <file alias="DotIcon.qml">qml/DotIcon.qml</file>
+        <file alias="NodeStatusIcon.qml">qml/NodeStatusIcon.qml</file>
+        <file alias="GuideIcon.qml">qml/GuideIcon.qml</file>
+        <file alias="AdvancedIcon.qml">qml/AdvancedIcon.qml</file>
+        <file alias="UpnpIcon.qml">qml/UpnpIcon.qml</file>
+        <file alias="PortIcon.qml">qml/PortIcon.qml</file>
         <file>icons/storage.png</file>
     </qresource>
 </RCC>

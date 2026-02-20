@@ -1,6 +1,9 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QtQml>
+#include <QQmlDebuggingEnabler>
+
+static QQmlTriviallyDestructibleDebuggingEnabler enabler;
 
 int main(int argc, char* argv[]) {
     QGuiApplication app(argc, argv);
@@ -16,7 +19,7 @@ int main(int argc, char* argv[]) {
         Qt::QueuedConnection);
 
     engine.addImportPath(QCoreApplication::applicationDirPath() + "/qml");
-    engine.loadFromModule("StorageBackend", "OnBoarding");
+    engine.loadFromModule("StorageBackend", "Main");
 
     return app.exec();
 }

@@ -6,10 +6,7 @@ import Logos.Controls
 LogosStorageLayout {
     id: root
 
-    property var backend: mockBackend
-
-    signal back
-    signal completed(bool upnpEnabled)
+    signal completed(bool isGuide)
 
     property int selectedMode: -1
 
@@ -19,13 +16,13 @@ LogosStorageLayout {
         width: 430
 
         LogosText {
-            text: "Network Configuration"
+            text: "Logos Storage"
             font.pixelSize: Theme.typography.titleText
             Layout.alignment: Qt.AlignHCenter
         }
 
         LogosText {
-            text: "How is your network configured?"
+            text: "How would you like to set up your node?"
             font.pixelSize: Theme.typography.primaryText
             Layout.alignment: Qt.AlignHCenter
             horizontalAlignment: Text.AlignHCenter
@@ -39,7 +36,7 @@ LogosStorageLayout {
             spacing: Theme.spacing.medium
             Layout.alignment: Qt.AlignHCenter
 
-            // ── UPnP card ────────────────────────────────────────────────
+            // ── Guide card ───────────────────────────────────────────────
             Rectangle {
                 width: 190
                 height: 230
@@ -52,13 +49,13 @@ LogosStorageLayout {
                     anchors.centerIn: parent
                     spacing: 14
 
-                    UpnpIcon {
+                    GuideIcon {
                         dotColor: Theme.palette.text
                         Layout.alignment: Qt.AlignHCenter
                     }
 
                     Text {
-                        text: "UPnP"
+                        text: "Guide"
                         color: Theme.palette.text
                         font.pixelSize: 16
                         font.bold: true
@@ -66,7 +63,7 @@ LogosStorageLayout {
                     }
 
                     Text {
-                        text: "Automatic port\nforwarding via\nUPnP router."
+                        text: "Step-by-step setup.\nRecommended for\nmost users."
                         color: Theme.palette.textSecondary
                         font.pixelSize: 12
                         horizontalAlignment: Text.AlignHCenter
@@ -83,7 +80,7 @@ LogosStorageLayout {
                 }
             }
 
-            // ── Port Forwarding card ─────────────────────────────────────
+            // ── Advanced card ────────────────────────────────────────────
             Rectangle {
                 width: 190
                 height: 230
@@ -96,13 +93,13 @@ LogosStorageLayout {
                     anchors.centerIn: parent
                     spacing: 14
 
-                    PortIcon {
+                    AdvancedIcon {
                         dotColor: Theme.palette.text
                         Layout.alignment: Qt.AlignHCenter
                     }
 
                     Text {
-                        text: "Port Forwarding"
+                        text: "Advanced"
                         color: Theme.palette.text
                         font.pixelSize: 16
                         font.bold: true
@@ -110,7 +107,7 @@ LogosStorageLayout {
                     }
 
                     Text {
-                        text: "Manual TCP port\nconfiguration on\nyour router."
+                        text: "Manual JSON\nconfiguration for\nexperienced users."
                         color: Theme.palette.textSecondary
                         font.pixelSize: 12
                         horizontalAlignment: Text.AlignHCenter
@@ -130,31 +127,11 @@ LogosStorageLayout {
 
         Item { height: Theme.spacing.small }
 
-        RowLayout {
+        LogosStorageButton {
+            text: "Continue"
+            enabled: root.selectedMode !== -1
+            onClicked: root.completed(root.selectedMode === 0)
             Layout.alignment: Qt.AlignHCenter
-            spacing: Theme.spacing.medium
-
-            LogosStorageButton {
-                text: "Back"
-                onClicked: root.back()
-            }
-
-            LogosStorageButton {
-                text: "Continue"
-                enabled: root.selectedMode !== -1
-                onClicked: {
-                    if (root.selectedMode === 0) {
-                        root.backend.enableUpnpConfig()
-                    }
-                    root.completed(root.selectedMode === 0)
-                }
-            }
         }
-    }
-
-    QtObject {
-        id: mockBackend
-
-        function enableUpnpConfig() {}
     }
 }

@@ -132,6 +132,18 @@ qt_add_qml_module(appqml
         StartNode.qml
         LogosTextField.qml
         LogosStorageButton.qml
+        LogosStorageLayout.qml
+        PortForwarding.qml
+        ErrorToast.qml
+        HealthIndicator.qml
+        ModeSelector.qml
+        AdvancedSetup.qml
+        DotIcon.qml
+        NodeStatusIcon.qml
+        GuideIcon.qml
+        AdvancedIcon.qml
+        UpnpIcon.qml
+        PortIcon.qml
 )
 
 # Set up QML module directory for runtime

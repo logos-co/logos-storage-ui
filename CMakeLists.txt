@@ -130,7 +130,7 @@ endif()
 # Discover the required dependencies.
 # Without this discovery part, the dependencies cannot be found.
 # COMPONENTS is kind of generic for Qt modules.
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets RemoteObjects Quick QuickWidgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets RemoteObjects Quick QuickWidgets Network)
 
 # Get the real path to handle symlinks correctly
 #get_filename_component(REAL_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" REALPATH)
@@ -419,6 +419,7 @@ target_link_libraries(storage_ui PRIVATE
     Qt6::RemoteObjects
     Qt6::Quick
     Qt6::QuickWidgets
+    Qt6::Network
     component-interfaces
 )
 

@@ -8,6 +8,10 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLocale>
+#include <QNetworkAccessManager>
+#include <QNetworkProxyFactory>
+#include <QNetworkReply>
+#include <QSslSocket>
 
 // StorageBackend is responsible for managing the interaction with the storage module.
 // It is mocked in the QML.
@@ -20,6 +24,9 @@
 StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
     : QObject(parent), m_status(Destroyed), m_logosAPI(nullptr), m_logos(nullptr) {
     qDebug() << "Initializing StorageBackend...";
+
+    // Disable system proxy detection — it crashes in Nix/some Linux environments
+    QNetworkProxyFactory::setUseSystemConfiguration(false);
     
     if (logosAPI) {
         m_logosAPI = logosAPI;
@@ -28,6 +35,8 @@ StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
     }
     
     m_logos = new LogosModules(m_logosAPI);
+
+    emit ready();
 }
 
 StorageBackend::~StorageBackend()
@@ -36,21 +45,24 @@ StorageBackend::~StorageBackend()
     m_logos = nullptr;
 }
 
-LogosResult StorageBackend::init(const QString& configJson = "{}") {
+LogosResult StorageBackend::init(const QString& configJson) {
     qDebug() << "StorageBackend::initStorage called";
 
-    if (configJson != "{}") {
-        m_configJson = configJson;
+    m_config = QJsonDocument::fromJson(configJson.toUtf8());
+    if (m_config.isNull()) {
+        qDebug() << "StorageBackend::initStorage invalid json config" << configJson;
+        reportError("Failed to create the storage: invalid JSON config");
+        return {false, "", "Failed to create the storage, invalid json config"};
     }
 
-    bool result = m_logos->storage_module.init(m_configJson);
+    bool result = m_logos->storage_module.init(configJson);
 
     qDebug() << "StorageBackend::initStorage: init";
 
     if (!result) {
         setStatus(Destroyed);
-        debug("Failed to init storage");
-        return {false, "", "Filed to init storage"};
+        reportError("Failed to init storage");
+        return {false, "", "Failed to init storage"};
     }
 
     setStatus(Stopped);
@@ -63,11 +75,12 @@ LogosResult StorageBackend::init(const QString& configJson = "{}") {
                 setStatus(Stopped);
                 debug("Failed to start Storage module:" + message);
                 emit startFailed(message);
+                reportError("Failed to start: " + message);
             } else {
                 setStatus(Running);
                 debug("Storage module started.");
-                QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
-                QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
+                //  QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
+                // QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
                 emit startCompleted();
             }
         })) {
@@ -195,13 +208,8 @@ LogosResult StorageBackend::init(const QString& configJson = "{}") {
         qWarning() << "StorageWidget: failed to subscribe to storageDownloadProgress events";
     }
 
-    if (configJson != "{}") {
-        m_configJson = configJson;
-        emit configJsonChanged();
-        debug("new config is: " + m_configJson);
-    }
-
     emit initCompleted();
+    debug("new config is: " + configJson);
 
     return {true, ""};
 }
@@ -232,6 +240,8 @@ LogosResult StorageBackend::start(const QString& newConfigJson) {
 
     setStatus(Starting);
     debug("Starting Storage module...");
+
+    // TODO trach the start attempts in a file
 
     auto result = m_logos->storage_module.start();
 
@@ -290,6 +300,11 @@ void StorageBackend::destroy() {
 }
 
 QString StorageBackend::debugLogs() const { return m_debugLogs; };
+
+void StorageBackend::reportError(const QString& message) {
+    debug(message);
+    emit error(message);
+}
 
 void StorageBackend::debug(const QString& log) {
     if (!m_debugLogs.isEmpty()) {
@@ -723,12 +738,7 @@ void StorageBackend::space() {
     static constexpr qint64 DEFAULT_QUOTA = 20LL * 1024 * 1024 * 1024; // 20 GB
 
     // Check config for a quota-max-bytes override
-    qint64 configQuota = 0;
-    QJsonDocument doc = QJsonDocument::fromJson(m_configJson.toUtf8());
-    if (!doc.isNull()) {
-        configQuota = doc.object().value("quota-max-bytes").toVariant().toLongLong();
-    }
-
+    qint64 configQuota = m_config.object().value("quota-max-bytes").toVariant().toLongLong();
     qint64 apiQuota = result.getInt("quotaMaxBytes");
     m_quotaMaxBytes      = apiQuota > 0 ? apiQuota : (configQuota > 0 ? configQuota : DEFAULT_QUOTA);
     m_quotaUsedBytes     = result.getInt("quotaUsedBytes");
@@ -762,29 +772,23 @@ StorageBackend::StorageStatus StorageBackend::status() const { return m_status; 
 
 QString StorageBackend::cid() const { return m_cid; }
 
-QString StorageBackend::configJson() const { return m_configJson; }
-
 int StorageBackend::uploadProgress() const { return m_uploadProgress; }
 
 QString StorageBackend::uploadStatus() const { return m_uploadStatus; }
 
 void StorageBackend::reloadIfChanged(const QString& configJson) {
-    if (configJson == m_configJson) {
+    QJsonDocument config = QJsonDocument::fromJson(configJson.toUtf8());
+    if (config.isNull()) {
+        debug("Invalid json detected !");
+        return;
+    }
+
+    if (m_config == config) {
         debug("No change detected in the config");
         return;
     }
 
     debug("New config detected");
-
-    QJsonDocument doc = QJsonDocument::fromJson(configJson.toUtf8());
-    if (doc.isNull()) {
-        debug("Invalid json detected !");
-
-        m_configJson = configJson;
-        emit configJsonChanged();
-
-        return;
-    }
 
     if (m_status == StorageStatus::Running || m_status == StorageStatus::Stopping ||
         m_status == StorageStatus::Starting) {
@@ -803,59 +807,42 @@ void StorageBackend::reloadIfChanged(const QString& configJson) {
         }
     }
 
-    bool result = m_logos->storage_module.init(configJson);
+    LogosResult result = init(configJson);
 
-    if (!result) {
-        debug("Failed to init context with new config, will rollback.");
-
-        bool result = m_logos->storage_module.init(m_configJson);
-
-        if (!result) {
-            debug("Failed to init context with old config, that's a serious issue.");
-        } else {
-            debug("Old config restored");
-            setStatus(StorageStatus::Stopped);
-
-            m_configJson = configJson;
-            emit configJsonChanged();
-        }
+    if (!result.success) {
+        debug("Failed to init context with new config: " + result.getError());
         return;
     }
 
     debug("New config loaded successfully");
 
-    m_configJson = configJson;
+    m_config = config;
     setStatus(StorageStatus::Stopped);
-    emit configJsonChanged();
+}
+
+void StorageBackend::saveCurrentConfig() {
+    qDebug() << "StorageBackend::saveUserConfig";
+    saveUserConfig(QString::fromUtf8(m_config.toJson(QJsonDocument::Indented)));
 }
 
 void StorageBackend::saveUserConfig(const QString& configJson) {
     qDebug() << "StorageBackend::saveUserConfig";
 
-    QString configPath = getUserConfigPath();
-    QString folderPath = QFileInfo(configPath).absolutePath();
+    QString folderPath = QFileInfo(USER_CONFIG_PATH).absolutePath();
     QDir().mkpath(folderPath);
-    QFile file(configPath);
+    QFile file(USER_CONFIG_PATH);
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         file.write(configJson.toUtf8());
         file.close();
-        debug("Config saved to " + configPath);
+        debug("Config saved to " + USER_CONFIG_PATH);
     } else {
-        debug("Failed to save config to " + configPath);
+        debug("Failed to save config to " + USER_CONFIG_PATH);
     }
 }
 
-QString StorageBackend::buildConfig(const QString& dataDir, int discPort, int tcpPort) {
-    debug("StorageBackend::updateBasicConfig called with dataDir=" + dataDir);
-
-    QJsonDocument doc = QJsonDocument::fromJson(m_configJson.toUtf8());
+QJsonDocument StorageBackend::defaultConfig() {
+    QJsonDocument doc = QJsonDocument();
     QJsonObject obj = doc.object();
-
-    obj["data-dir"] = dataDir;
-    obj["disc-port"] = discPort;
-
-    QJsonArray listenAddrs = {QString("/ip4/0.0.0.0/tcp/%1").arg(tcpPort)};
-    obj["listen-addrs"] = listenAddrs;
 
     QJsonArray bootstrapArray;
     for (const QString& node : BOOTSTRAP_NODES) {
@@ -863,45 +850,173 @@ QString StorageBackend::buildConfig(const QString& dataDir, int discPort, int tc
     }
     obj["bootstrap-node"] = bootstrapArray;
 
-    return QJsonDocument(obj).toJson(QJsonDocument::Indented);
+    obj["data-dir"] = DEFAULT_DATA_DIR;
+
+    return QJsonDocument(obj);
 }
 
-QString StorageBackend::buildConfigFromFile(const QString& path) {
-    qDebug() << "StorageBackend::buildConfigFromFile called";
+void StorageBackend::enableUpnpConfig() {
+    debug("StorageBackend::enableUpnpConfig called");
 
-    QFile file(path);
-    if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QString configJson = QString::fromUtf8(file.readAll());
+    QJsonDocument doc = defaultConfig();
+    QJsonObject obj = doc.object();
 
-        debug("StorageUIPlugin: config.json is found, configJson=" + configJson);
+    obj["nat"] = "upnp";
 
-        return configJson;
+    reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented)));
+}
+
+void StorageBackend::enableNatExtConfig(int tcpPort) {
+    qDebug() << "StorageBackend::enableNatExtConfig called with tcpPort" << tcpPort;
+
+    QJsonDocument doc = defaultConfig();
+    QJsonObject obj = doc.object();
+
+    QJsonArray listenAddrs = {QString("/ip4/0.0.0.0/tcp/%1").arg(tcpPort)};
+    obj["listen-addrs"] = listenAddrs;
+
+    // Fetch the public IP asynchronously so we can set nat=extip:IP in the config.
+    // If the request fails, we proceed without the IP (node will still start, just without extip NAT).
+    debug("Retrieving public IP...");
+
+    QNetworkAccessManager* manager = new QNetworkAccessManager(this);
+    QNetworkRequest request(ECHO_PROVIDER);
+
+    // Set text/plain to receive only the IP
+    request.setRawHeader("Accept", "text/plain");
+
+    QNetworkReply* reply = manager->get(request);
+
+    connect(reply, &QNetworkReply::finished, this, [this, reply, manager, obj]() mutable {
+        reply->deleteLater();
+        manager->deleteLater();
+
+        if (reply->error() != QNetworkReply::NoError) {
+            debug("Failed to retrieve public IP: " + reply->errorString() + ". Proceeding without extip NAT.");
+        } else {
+            QString ip = QString::fromUtf8(reply->readAll()).trimmed();
+            debug("Public IP: " + ip);
+            obj["nat"] = "extip:" + ip;
+        }
+
+        reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+        emit natExtConfigCompleted();
+    });
+}
+
+void StorageBackend::checkNodeIsUp() {
+    qDebug() << "StorageBackend::checkNodeIsUp called.";
+
+    // First we get the debug info in order to get the peers and
+    // the announceAddresses
+    LogosResult result = m_logos->storage_module.debug();
+    if (!result.success) {
+        qDebug() << "Failed to get node debug info: " << result.getError();
+        emit nodeIsntUp("Failed to get node debug info: " + result.getError());
+        return;
     }
 
-    debug("StorageUIPlugin: Failed to load config.json");
-    return "{}";
+    // Ensure that the node has at least one peer.
+    QVariantMap table = result.getValue<QVariantMap>("table");
+    QVariantList nodes = table["nodes"].toList();
+
+    debug(QString("Connected peers: %1").arg(nodes.size()));
+    if (nodes.isEmpty()) {
+        emit nodeIsntUp("No peers connected. "
+                        "Try modifying the discovery port (default 8090) in the advanced settings.");
+        return;
+    }
+
+    debug("DHT seems okay, found peers");
+
+    // Extract TCP ports from announceAddresses.
+    // Format: "/ip4/1.2.3.4/tcp/PORT"
+    QVariantList announceAddresses = result.getValue<QVariantList>("announceAddresses");
+    QList<int> ports;
+    for (const QVariant& addr : announceAddresses) {
+        QStringList parts = addr.toString().split("/");
+        // "/ip4/1.2.3.4/tcp/8079" splits to ["", "ip4", "1.2.3.4", "tcp", "8079"]
+        int tcpIndex = parts.indexOf("tcp");
+        if (tcpIndex >= 0 && tcpIndex + 1 < parts.size()) {
+            int port = parts[tcpIndex + 1].toInt();
+            if (port > 0 && !ports.contains(port)) {
+                ports.append(port);
+            }
+        }
+    }
+
+    QString nat = m_config.object()["nat"].toString();
+
+    if (ports.isEmpty()) {
+        debug("No TCP ports found in announce addresses, considering node as not up");
+        if (nat == "upnp") {
+            emit nodeIsntUp("UPnP is configured but there is no announced addresses. "
+                            "Try going back and configure port forwarding manually on your router.");
+        } else {
+            emit nodeIsntUp("No announced addresses found. Your TCP port is propably incorrect. "
+                            "Try going back and check your port forwarding configuration.");
+        }
+
+        return;
+    }
+
+    debug(QString("Checking reachability for %1 port(s)...").arg(ports.size()));
+
+    // Check each port via the echo service, one by one.
+    bool foundReachable = false;
+    for (int port : ports) {
+        QNetworkAccessManager manager;
+        QNetworkRequest request(QUrl(QString("%1/port/%2").arg(ECHO_PROVIDER).arg(port)));
+        QNetworkReply* reply = manager.get(request);
+
+        QEventLoop loop;
+        connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+        loop.exec();
+
+        if (reply->error() == QNetworkReply::NoError) {
+            bool reachable = QJsonDocument::fromJson(reply->readAll()).object()["reachable"].toBool();
+            debug("Port " + QString::number(port) + (reachable ? " is reachable" : " is not reachable"));
+            if (reachable) {
+                foundReachable = true;
+            }
+        } else {
+            debug("Port check failed for port " + QString::number(port) + ": " + reply->errorString());
+        }
+
+        reply->deleteLater();
+    }
+
+    if (foundReachable) {
+        emit nodeIsUp();
+    } else {
+        if (nat == "upnp") {
+            emit nodeIsntUp("UPnP is configured but the node is not reachable from the internet. "
+                            "Try going back and configure port forwarding manually on your router.");
+        } else {
+            emit nodeIsntUp("No ports are reachable from the internet. "
+                            "Try going back and check your port forwarding configuration.");
+        }
+    }
 }
 
 void StorageBackend::status(StorageStatus status) { m_status = status; }
 
-QString StorageBackend::getUserConfigPath() { return QDir::homePath() + "/.logos_storage/config.json"; }
+void StorageBackend::loadUserConfig() {
+    qDebug() << "StorageBackend::loadUserConfig called.";
 
-QString StorageBackend::getUserConfig() {
-    QFile file(getUserConfigPath());
+    QFile file(USER_CONFIG_PATH);
+    LogosResult result;
+
     if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return QString::fromUtf8(file.readAll());
+        result = init(QString::fromUtf8(file.readAll()));
+    } else {
+        qWarning() << "StorageBackend::loadUserConfig Failed to read the user config file, fallback to default config";
+        result = init(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
     }
 
-    return "{}";
-}
-
-QString StorageBackend::defaultDataDir() {
-    QString home = QDir::homePath();
-#ifdef Q_OS_WIN
-    return home + "/AppData/Roaming/Storage";
-#elif defined(Q_OS_MACOS)
-    return home + "/Library/Application Support/Storage";
-#else
-    return home + "/.cache/storage";
-#endif
+    if (!result.success) {
+        qWarning() << "StorageBackend::loadUserConfig Failed to load the user config: " + result.getError();
+    } else {
+        debug("User config loaded successfully");
+    }
 }
