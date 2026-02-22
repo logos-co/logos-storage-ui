@@ -3,6 +3,8 @@ import QtQuick.Controls
 import QtQuick.Dialogs
 import QtQuick.Layouts
 import QtCore
+import Logos.Theme
+import Logos.Controls
 
 // qmllint disable unqualified
 LogosStorageLayout {
@@ -14,725 +16,104 @@ LogosStorageLayout {
     readonly property int running: 2
     readonly property int stopping: 3
     readonly property int destroyed: 4
-    property string peerId: ""
-    property string downloadDestination: ""
-    property url downloadCid: ""
-    property string logLevel: ""
-    property bool showDebug: false
+    property int peerCount: 0
     property var pendingDownloadManifest: null
-    property url uploadCid: root.backend.cid
-    property url configJson: root.backend.configJson
+    property bool showDebug: false
+
+    function isRunning() {
+        return backend.status === running
+    }
 
     function getStatusLabel() {
         switch (backend.status) {
         case stopped:
-            return "Logos Storage stopped."
+            return "Stopped"
         case starting:
-            return "Logos Storage is starting..."
+            return "Starting…"
         case running:
-            return "Logos Storage started."
+            return "Running"
         case stopping:
-            return "Logos Storage is stopping..."
+            return "Stopping…"
         case destroyed:
-            return "Logos Storage is not initialised."
+            return "Not initialised"
+        default:
+            return ""
         }
-    }
-
-    function startStopText() {
-        if (backend.status == running) {
-            return "Stop"
-        }
-        return "Start"
-    }
-
-    function canStartStop() {
-        return backend.status == running || backend.status == stopped
-    }
-
-    function isRunning() {
-        return backend.status == running
     }
 
     Component.onCompleted: root.backend.start()
 
+    HealthIndicator {
+        id: health
+        backend: root.backend
+    }
+
+    Connections {
+        target: root.backend
+        function onPeersUpdated(count) {
+            root._peerCount = count
+        }
+    }
+
+    // ── Clipboard helper (Qt6 has no Qt.copyToClipboard) ─────────────────────
+    TextEdit {
+        id: clipHelper
+        visible: false
+        function copyText(str) {
+            clipHelper.text = str
+            clipHelper.selectAll()
+            clipHelper.copy()
+        }
+    }
+
+    // ── Mock backend ──────────────────────────────────────────────────────────
     QtObject {
         id: mockBackend
-
         property var status: root.stopped
-        property var debugLogs: "Hello !"
+        property var debugLogs: "Hello!"
         property var configJson: "{}"
         property string uploadStatus: ""
         property int uploadProgress: 0
         property var manifests: []
-        property var quotaMaxBytes: 20 * 1024 * 1024 * 1024 // 20 GB default
+        property var quotaMaxBytes: 20 * 1024 * 1024 * 1024
         property var quotaUsedBytes: 0
-        property var quotaReservedBytes: 0
+        property string cid: ""
 
-        function start(newConfigJson) {
+        signal nodeIsUp
+        signal nodeIsntUp(string reason)
+        signal peersUpdated(int count)
+
+        function start() {
             status = root.running
         }
-
         function stop() {
             status = root.stopped
         }
-    }
-
-    function formatBytes(bytes) {
-        if (bytes <= 0)
-            return "0 B"
-        if (bytes < 1024)
-            return bytes + " B"
-        if (bytes < 1024 * 1024)
-            return (bytes / 1024).toFixed(1) + " KB"
-        if (bytes < 1024 * 1024 * 1024)
-            return (bytes / (1024 * 1024)).toFixed(1) + " MB"
-        return (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB"
-    }
-
-    HealthIndicator {
-        backend: root.backend
-        anchors.fill: parent
-    }
-
-    Text {
-        id: statusTextElement
-        objectName: "status"
-        text: root.getStatusLabel()
-        color: "white"
-        font.pointSize: 20
-        anchors.top: parent.top
-        anchors.topMargin: 20
-        anchors.horizontalCenter: parent.horizontalCenter
-    }
-
-    Button {
-        property var isStopped: root.backend.status == root.stopped
-
-        id: startStopButton
-        objectName: "startStopButton"
-        anchors.leftMargin: 50
-        text: root.startStopText()
-        enabled: root.canStartStop()
-        onClicked: isStopped ? root.backend.start(
-                                   jsonEditor.text) : root.backend.stop()
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: statusTextElement.bottom
-        anchors.topMargin: 10
-    }
-
-    TextEdit {
-        id: cidTextEdit
-        objectName: "cid"
-        color: "white"
-        font.pointSize: 14
-        readOnly: true
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: startStopButton.bottom
-        anchors.topMargin: 10
-        text: root.uploadCid
-    }
-
-    Button {
-        id: openFile
-        text: "Open file"
-        onClicked: fileDialog.open()
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: cidTextEdit.bottom
-        anchors.topMargin: 15
-        enabled: root.isRunning
-    }
-
-    Column {
-        id: uploadProgressColumn
-        anchors.top: openFile.bottom
-        anchors.topMargin: 10
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: 300
-        spacing: 5
-        visible: root.backend.uploadProgress > 0
-
-        ProgressBar {
-            width: parent.width
-            value: root.backend.uploadProgress / 100.0
-
-            background: Rectangle {
-                color: "#333333"
-                radius: 3
-                implicitWidth: 300
-                implicitHeight: 6
-            }
-
-            contentItem: Item {
-                implicitWidth: 300
-                implicitHeight: 6
-
-                Rectangle {
-                    width: parent.width * control.visualPosition
-                    height: parent.height
-                    radius: 3
-                    color: "#4CAF50"
-                }
-            }
+        function checkNodeIsUp() {}
+        function tryUploadFile(f) {}
+        function downloadManifest(c) {}
+        function remove(c) {}
+        function tryDownloadFile(c, d) {}
+        function space() {}
+        function tryDebug() {}
+        function showPeerId() {}
+        function dataDir() {}
+        function spr() {}
+        function version() {}
+        function saveUserConfig(j) {}
+        function reloadIfChanged(j) {}
+        function configJson() {
+            return "{}"
         }
-
-        Text {
-            text: root.backend.uploadStatus
-            color: "#888888"
-            font.pixelSize: 10
-            anchors.horizontalCenter: parent.horizontalCenter
+        function peerCount() {
+            return 0
         }
     }
 
-    // TextField {
-    //     id: peerIdField
-    //     placeholderText: "Enter the peer Id"
-    //     placeholderTextColor: "#999999"
-    //     color: "#000000"
-    //     selectByMouse: true
-    //     text: root.peerId
-    //     onTextChanged: root.peerId = text
-    //     anchors.top: uploadProgressColumn.bottom
-    //     anchors.topMargin: 50
-    //     anchors.horizontalCenter: parent.horizontalCenter
-    // }
-
-    // Button {
-    //     id: peerConnectButton
-    //     objectName: "peerConnectButton"
-    //     text: "Peer connect"
-    //     onClicked: root.backend.tryPeerConnect(root.peerId)
-    //     anchors.top: peerIdField.bottom
-    //     anchors.horizontalCenter: parent.horizontalCenter
-    //     enabled: root.isRunning
-    //     anchors.topMargin: 10
-    // }
-    Button {
-        id: debugButton
-        objectName: "debugButton"
-        text: "Debug"
-        onClicked: root.backend.tryDebug()
-        anchors.top: uploadProgressColumn.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        enabled: root.isRunning
-        anchors.topMargin: 50
-    }
-
-    Button {
-        id: peerIdButton
-        objectName: "peerIdButton"
-        text: "Peer Id"
-        onClicked: root.backend.showPeerId()
-        anchors.top: uploadProgressColumn.bottom
-        anchors.right: debugButton.left
-        enabled: root.isRunning
-        anchors.topMargin: 50
-    }
-
-    Button {
-        id: dataDirButton
-        objectName: "dataDirButton"
-        text: "Data dir"
-        onClicked: root.backend.dataDir()
-        anchors.top: uploadProgressColumn.bottom
-        anchors.right: peerIdButton.left
-        enabled: root.isRunning
-        anchors.topMargin: 50
-    }
-
-    Button {
-        id: sprButton
-        objectName: "sprButton"
-        text: "SPR"
-        onClicked: root.backend.spr()
-        anchors.top: uploadProgressColumn.bottom
-        anchors.left: debugButton.right
-        enabled: root.isRunning
-        anchors.topMargin: 50
-    }
-
-    Button {
-        id: versionButton
-        objectName: "versionButton"
-        text: "Version"
-        onClicked: root.backend.version()
-        anchors.top: uploadProgressColumn.bottom
-        anchors.left: sprButton.right
-        enabled: root.isRunning
-        anchors.topMargin: 50
-    }
-
-    // TextField {
-    //     id: cidDownloadField
-    //     placeholderTextColor: "#999999"
-    //     placeholderText: "Enter the cid to download"
-    //     color: "black"
-    //     //  text: root.downloadCid
-    //     onTextChanged: root.downloadCid = text
-    //     anchors.top: debugButton.bottom
-    //     anchors.topMargin: 50
-    //     anchors.horizontalCenter: parent.horizontalCenter
-    // }
-
-    // Button {
-    //     id: openFile2
-    //     text: "Open file"
-    //     onClicked: fileDialog2.open()
-    //     anchors.horizontalCenter: parent.horizontalCenter
-    //     anchors.top: cidDownloadField.bottom
-    //     anchors.topMargin: 15
-    //     enabled: root.isRunning
-    // }
-
-    // Button {
-    //     id: cidDownloadButton
-    //     objectName: "cidDownloadButton"
-    //     text: "Download"
-    //     onClicked: root.backend.tryDownloadFile(root.downloadCid,
-    //                                             root.downloadDestination)
-    //     anchors.top: openFile2.bottom
-    //     anchors.horizontalCenter: parent.horizontalCenter
-    //     enabled: root.isRunning
-    //     anchors.topMargin: 10
-    // }
-
-    // Button {
-    //     id: existsButton
-    //     objectName: "existsButton"
-    //     text: "Exists"
-    //     onClicked: root.backend.exists(root.downloadCid)
-    //     anchors.top: openFile2.bottom
-    //     anchors.left: cidDownloadButton.right
-    //     enabled: root.isRunning
-    //     anchors.topMargin: 10
-    // }
-
-    // Button {
-    //     id: fetchButton
-    //     objectName: "fetchButton"
-    //     text: "Fetch"
-    //     onClicked: root.backend.fetch(root.downloadCid)
-    //     anchors.top: openFile2.bottom
-    //     anchors.left: existsButton.right
-    //     enabled: root.isRunning
-    //     anchors.topMargin: 10
-    // }
-
-    // Button {
-    //     id: removeButton
-    //     objectName: "removeButton"
-    //     text: "Remove"
-    //     onClicked: root.backend.remove(root.downloadCid)
-    //     anchors.top: openFile2.bottom
-    //     anchors.right: cidDownloadButton.left
-    //     enabled: root.isRunning
-    //     anchors.topMargin: 10
-    // }
-
-    // Button {
-    //     id: downloadManifestButton
-    //     objectName: "downloadManifestButton"
-    //     text: "Download manifest"
-    //     onClicked: root.backend.downloadManifest(root.downloadCid)
-    //     anchors.top: openFile2.bottom
-    //     anchors.right: removeButton.left
-    //     enabled: root.isRunning
-    //     anchors.topMargin: 10
-    // }
-
-
-    /*Button {
-        id: downloadManifestsButton
-        objectName: "downloadManifestsButton"
-        text: "Manifests"
-        onClicked: root.backend.downloadManifests()
-        anchors.top: cidDownloadButton.bottom
-        anchors.horizontalCenter: parent.horizontalCenter
-        enabled: root.isRunning
-        anchors.topMargin: 10
-    }*/
-
-    // ── Manifests section ──────────────────────────────────────────────────
-    Text {
-        id: manifestsTitle
-        text: "Manifests"
-        color: "white"
-        font.pixelSize: 14
-        font.bold: true
-        anchors.top: versionButton.bottom
-        anchors.topMargin: 30
-        anchors.horizontalCenter: parent.horizontalCenter
-    }
-
-    // ── Disk space bar ────────────────────────────────────────────────────
-    Item {
-        id: spaceBarSection
-        anchors.top: manifestsTitle.bottom
-        anchors.topMargin: 10
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: parent.width - 40
-        height: root.backend.quotaMaxBytes > 0 ? 36 : 20
-
-        readonly property real total: root.backend.quotaMaxBytes
-        readonly property real used: root.backend.quotaUsedBytes
-        readonly property real reserved: root.backend.quotaReservedBytes
-
-        // No quota configured
-        Text {
-            anchors.centerIn: parent
-            text: "No quota configured"
-            color: "#555555"
-            font.pixelSize: 11
-            visible: spaceBarSection.total <= 0
-        }
-
-        // Background track
-        Rectangle {
-            id: spaceBarTrack
-            visible: spaceBarSection.total > 0
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            height: 14
-            radius: 7
-            color: "#2a2a2a"
-            border.color: "#3a3a3a"
-            border.width: 1
-            clip: true
-
-            // Used (green)
-            Rectangle {
-                width: Math.min(
-                           parent.width * (spaceBarSection.used / spaceBarSection.total),
-                           parent.width)
-                height: parent.height
-                radius: parent.radius
-                color: "#4CAF50"
-            }
-
-            // Reserved (orange), stacked after used
-            Rectangle {
-                x: parent.width * (spaceBarSection.used / spaceBarSection.total)
-                width: Math.min(
-                           parent.width * (spaceBarSection.reserved / spaceBarSection.total),
-                           parent.width - x)
-                height: parent.height
-                color: "#FF9800"
-            }
-        }
-
-        // Labels
-        Row {
-            visible: spaceBarSection.total > 0
-            anchors.top: spaceBarTrack.bottom
-            anchors.topMargin: 4
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: 16
-
-            Text {
-                text: "Used: " + root.formatBytes(spaceBarSection.used)
-                color: "#4CAF50"
-                font.pixelSize: 10
-            }
-            Text {
-                text: "Reserved: " + root.formatBytes(spaceBarSection.reserved)
-                color: "#FF9800"
-                font.pixelSize: 10
-            }
-            Text {
-                text: "Free: " + root.formatBytes(
-                          spaceBarSection.total - spaceBarSection.used - spaceBarSection.reserved)
-                color: "#888888"
-                font.pixelSize: 10
-            }
-            Text {
-                text: "Total: " + root.formatBytes(spaceBarSection.total)
-                color: "#555555"
-                font.pixelSize: 10
-            }
-        }
-    }
-
-    Row {
-        id: manifestInputRow
-        spacing: 8
-        anchors.top: spaceBarSection.bottom
-        anchors.topMargin: 16
-        anchors.horizontalCenter: parent.horizontalCenter
-
-        TextField {
-            id: manifestCidField
-            width: 380
-            placeholderText: "Enter CID to download manifest"
-            placeholderTextColor: "#999999"
-            color: "#000000"
-            selectByMouse: true
-        }
-
-        Button {
-            id: addManifestButton
-            text: "Download Manifest"
-            enabled: root.isRunning() && manifestCidField.text.length > 0
-            onClicked: {
-                root.backend.downloadManifest(manifestCidField.text)
-                manifestCidField.clear()
-            }
-        }
-    }
-
-    // Table header
-    Rectangle {
-        id: manifestTableHeader
-        anchors.top: manifestInputRow.bottom
-        anchors.topMargin: 8
-        anchors.horizontalCenter: parent.horizontalCenter
-        width: parent.width - 40
-        height: 28
-        color: "#222222"
-        radius: 2
-
-        Row {
-            anchors.fill: parent
-            anchors.leftMargin: 6
-
-            Text {
-                width: 150
-                text: "CID"
-                color: "#aaaaaa"
-                font.pixelSize: 11
-                font.bold: true
-                elide: Text.ElideRight
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            Text {
-                width: 120
-                text: "Filename"
-                color: "#aaaaaa"
-                font.pixelSize: 11
-                font.bold: true
-                elide: Text.ElideRight
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            Text {
-                width: 85
-                text: "MIME type"
-                color: "#aaaaaa"
-                font.pixelSize: 11
-                font.bold: true
-                elide: Text.ElideRight
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            Text {
-                width: 75
-                text: "Size (bytes)"
-                color: "#aaaaaa"
-                font.pixelSize: 11
-                font.bold: true
-                elide: Text.ElideRight
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            Text {
-                width: 110
-                text: ""
-                color: "#aaaaaa"
-                font.pixelSize: 11
-                font.bold: true
-                anchors.verticalCenter: parent.verticalCenter
-            }
-        }
-    }
-
-    Rectangle {
-        id: manifestTableContainer
-        anchors.top: manifestTableHeader.bottom
-        anchors.left: manifestTableHeader.left
-        anchors.right: manifestTableHeader.right
-        height: 280
-        color: "#111111"
-        border.color: "#333333"
-        border.width: 1
-        clip: true
-
-        ListView {
-            id: manifestListView
-            anchors.fill: parent
-            model: root.backend.manifests
-            clip: true
-
-            delegate: Rectangle {
-                width: manifestListView.width
-                height: 36
-                color: index % 2 === 0 ? "#181818" : "#1e1e1e"
-
-                Row {
-                    anchors.fill: parent
-                    anchors.leftMargin: 6
-                    anchors.rightMargin: 4
-                    spacing: 0
-
-                    Text {
-                        width: 150
-                        text: modelData["cid"] ?? ""
-                        color: "#dddddd"
-                        font.pixelSize: 11
-                        font.family: "monospace"
-                        elide: Text.ElideMiddle
-                        anchors.verticalCenter: parent.verticalCenter
-                        // ToolTip.visible: hovered
-                        ToolTip.text: modelData["cid"] ?? ""
-                        HoverHandler {}
-                    }
-                    Text {
-                        width: 120
-                        text: modelData["filename"] ?? ""
-                        color: "#dddddd"
-                        font.pixelSize: 11
-                        elide: Text.ElideRight
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    Text {
-                        width: 85
-                        text: modelData["mimetype"] ?? ""
-                        color: "#dddddd"
-                        font.pixelSize: 11
-                        elide: Text.ElideRight
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    Text {
-                        width: 75
-                        text: modelData["datasetSize"] ?? ""
-                        color: "#dddddd"
-                        font.pixelSize: 11
-                        elide: Text.ElideRight
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    Row {
-                        spacing: 4
-                        anchors.verticalCenter: parent.verticalCenter
-
-                        Button {
-                            width: 50
-                            height: 26
-                            text: "↓"
-                            enabled: root.isRunning()
-                            onClicked: {
-                                root.pendingDownloadManifest = modelData
-                                var filename = modelData["filename"]
-                                        || modelData["cid"] || "download"
-                                manifestSaveDialog.currentFile = StandardPaths.writableLocation(
-                                            StandardPaths.HomeLocation) + "/" + filename
-                                manifestSaveDialog.open()
-                            }
-                        }
-
-                        Button {
-                            width: 50
-                            height: 26
-                            text: "🗑"
-                            enabled: root.isRunning()
-                            onClicked: root.backend.remove(
-                                           modelData["cid"] ?? "")
-                        }
-                    }
-                }
-            }
-
-            Text {
-                anchors.centerIn: parent
-                text: "No manifests yet"
-                color: "#555555"
-                font.pixelSize: 12
-                visible: manifestListView.count === 0
-            }
-        }
-    }
-
-    Button {
-        id: spaceButton
-        objectName: "spaceButton"
-        text: "Space"
-        onClicked: root.backend.space()
-        anchors.top: manifestTableContainer.bottom
-        enabled: root.isRunning
-        anchors.topMargin: 10
-        anchors.horizontalCenter: parent.horizontalCenter
-    }
-
-    // ── Log level section ──────────────────────────────────────────────────
-    // TextField {
-    //     id: logLevelField
-    //     placeholderTextColor: "#999999"
-    //     placeholderText: "Enter the log level to download"
-    //     color: "black"
-    //     //  text: root.downloadCid
-    //     onTextChanged: root.logLevel = text
-    //     anchors.top: manifestTableContainer.bottom
-    //     anchors.topMargin: 30
-    //     anchors.horizontalCenter: parent.horizontalCenter
-    // }
-
-    // Button {
-    //     id: logLevelButton
-    //     objectName: "logLevelButton"
-    //     text: "Log level"
-    //     onClicked: root.backend.updateLogLevel(root.logLevel)
-    //     anchors.top: logLevelField.bottom
-    //     anchors.horizontalCenter: parent.horizontalCenter
-    //     enabled: root.isRunning
-    //     anchors.topMargin: 10
-    // }
-
-    // TextEdit {
-    //     id: selectableText
-    //     anchors.fill: parent
-    //     anchors.margins: 10
-    //     text: "This text is selectable. You can copy it, but not edit it."
-    //     readOnly: true // Makes the text non-editable
-    //     selectByMouse: true // Enables selection by mouse drag (often the default for desktop)
-    //     // Optional: Change cursor shape to IBeam when hovering
-    //     MouseArea {
-    //         anchors.fill: parent
-    //         cursorShape: Qt.IBeamCursor
-    //         acceptedButtons: Qt.NoButton // Allows TextEdit to handle mouse events
-    //     }
-    // }
-
-    // Button {
-    //     anchors.left: parent.left
-    //     anchors.bottom: parent.bottom
-    //     objectName: "uploadButton"
-    //     text: "Upload"
-    //     anchors.bottomMargin: 80
-    //     onClicked: root.backend.tryUpload()
-    // }
-
-    // Button {
-    //     anchors.left: parent.left
-    //     anchors.bottom: parent.bottom
-    //     objectName: "finalizeButton"
-    //     text: "Finalize"
-    //     onClicked: root.backend.tryUploadFinalize()
-    // }
-    // Button {
-    //     anchors.left: parent.left
-    //     anchors.bottom: parent.bottom
-    //     objectName: "uploadFileButton"
-    //     text: "Upload file"
-    //     onClicked: root.backend.tryUploadFile()
-    //     anchors.bottomMargin: 30
-    // }
+    // ── File dialogs ──────────────────────────────────────────────────────────
     FileDialog {
         id: fileDialog
         onAccepted: root.backend.tryUploadFile(fileDialog.selectedFile)
-    }
-
-    FileDialog {
-        id: fileDialog2
-        fileMode: FileDialog.SaveFile
-        onAccepted: {
-            root.downloadDestination = fileDialog2.selectedFile
-            console.log("Destination selected:",
-                        root.backend.downloadDestination)
-        }
     }
 
     FileDialog {
@@ -746,8 +127,327 @@ LogosStorageLayout {
                 root.pendingDownloadManifest = null
             }
         }
-        onRejected: {
-            root.pendingDownloadManifest = null
+        onRejected: root.pendingDownloadManifest = null
+    }
+
+    // ── Settings popup ────────────────────────────────────────────────────────
+    SettingsPopup {
+        id: settingsPopup
+        backend: root.backend
+    }
+
+    // ── Ctrl+D toggle ─────────────────────────────────────────────────────────
+    Shortcut {
+        sequence: "Ctrl+D"
+        onActivated: root.showDebug = !root.showDebug
+    }
+
+    // ── Main scrollable content ───────────────────────────────────────────────
+    ScrollView {
+        id: mainScroll
+        anchors.fill: parent
+        anchors.bottomMargin: root.showDebug ? debugPanel.height : 0
+        contentWidth: availableWidth
+        clip: true
+
+        ColumnLayout {
+            width: mainScroll.availableWidth
+            spacing: 0
+
+            // ══════════════════════════════════════════════════════════════════
+            // Header — node identity + settings + start/stop
+            // ══════════════════════════════════════════════════════════════════
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 24
+                Layout.rightMargin: 24
+                Layout.topMargin: 24
+                Layout.bottomMargin: 20
+                spacing: Theme.spacing.medium
+
+                StorageIcon {
+                    animated: root.backend.status === root.starting
+                              || root.backend.status === root.stopping
+                    dotColor: {
+                        if (root.backend.status === root.starting)
+                            return Theme.palette.warning
+                        if (!root.isRunning())
+                            return Theme.palette.textMuted
+                        return health.nodeIsUp ? Theme.palette.success : Theme.palette.error
+                    }
+                }
+
+                ColumnLayout {
+                    spacing: 6
+
+                    LogosText {
+                        text: "Logos Storage"
+                        font.pixelSize: Theme.typography.titleText
+                    }
+
+                    RowLayout {
+                        spacing: 7
+
+                        Rectangle {
+                            Layout.preferredWidth: 7
+                            Layout.preferredHeight: 7
+                            radius: 3.5
+                            Layout.alignment: Qt.AlignVCenter
+                            color: {
+                                if (root.backend.status === root.starting)
+                                    return Theme.palette.warning
+                                if (!root.isRunning())
+                                    return Theme.palette.textMuted
+                                return health.nodeIsUp ? Theme.palette.success : Theme.palette.error
+                            }
+                            opacity: root.isRunning(
+                                         ) ? (health.blinkOn ? 1.0 : 0.15) : 1.0
+                        }
+
+                        LogosText {
+                            text: root.getStatusLabel()
+                            font.pixelSize: Theme.typography.primaryText
+                            color: Theme.palette.textSecondary
+                            Layout.alignment: Qt.AlignVCenter
+                        }
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                Rectangle {
+                    Layout.preferredWidth: 44
+                    Layout.preferredHeight: 44
+                    radius: 8
+                    color: settingsHover.hovered ? Theme.palette.backgroundElevated : "transparent"
+                    border.color: Theme.palette.borderSecondary
+                    border.width: 1
+
+                    SettingsIcon {
+                        anchors.centerIn: parent
+                        dotColor: Theme.palette.text
+                        dotSize: 5
+                        dotSpacing: 2
+                    }
+
+                    HoverHandler {
+                        id: settingsHover
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: settingsPopup.open()
+                    }
+                }
+
+                Rectangle {
+                    Layout.preferredWidth: 44
+                    Layout.preferredHeight: 44
+                    radius: 8
+                    color: startStopHover.hovered ? Theme.palette.backgroundElevated : "transparent"
+                    border.color: Theme.palette.borderSecondary
+                    border.width: 1
+                    opacity: (root.backend.status === root.running
+                              || root.backend.status === root.stopped) ? 1.0 : 0.4
+
+                    PlayIcon {
+                        anchors.centerIn: parent
+                        dotColor: Theme.palette.text
+                        dotSize: 5
+                        dotSpacing: 2
+                        visible: root.backend.status !== root.running
+                    }
+                    StopIcon {
+                        anchors.centerIn: parent
+                        dotColor: Theme.palette.text
+                        dotSize: 5
+                        dotSpacing: 2
+                        visible: root.backend.status === root.running
+                    }
+
+                    HoverHandler {
+                        id: startStopHover
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: root.backend.status === root.running
+                                 || root.backend.status === root.stopped
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.backend.status
+                                   === root.running ? root.backend.stop(
+                                                          ) : root.backend.start()
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.leftMargin: 24
+                Layout.rightMargin: 24
+                Layout.preferredHeight: 1
+                color: Theme.palette.borderSecondary
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 24
+                Layout.rightMargin: 24
+                Layout.topMargin: 20
+                Layout.bottomMargin: 10
+                spacing: Theme.spacing.medium
+
+                UploadWidget {
+                    uploadProgress: root.backend.uploadProgress
+                    running: root.isRunning()
+                    onUploadRequested: fileDialog.open()
+                }
+
+                DiskWidget {
+                    total: root.backend.quotaMaxBytes
+                    used: root.backend.quotaUsedBytes
+                }
+
+                PeersWidget {
+                    peerCount: root.peerCount
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+            }
+
+            Item {
+                Layout.fillWidth: true
+                Layout.leftMargin: 24
+                Layout.rightMargin: 24
+                Layout.bottomMargin: 20
+                Layout.preferredHeight: 36
+
+                opacity: String(root.backend.cid).length > 0 ? 1.0 : 0.0
+
+                Behavior on opacity {
+                    NumberAnimation {
+                        duration: 200
+                    }
+                }
+
+                Rectangle {
+                    id: cidBadge
+                    height: 36
+                    width: cidBadgeRow.implicitWidth + 28
+                    radius: 6
+                    color: Theme.palette.backgroundSecondary
+                    border.color: Theme.palette.borderSecondary
+                    border.width: 1
+
+                    RowLayout {
+                        id: cidBadgeRow
+                        anchors.centerIn: parent
+                        spacing: 8
+
+                        LogosText {
+                            text: "CID"
+                            font.pixelSize: 10
+                            color: Theme.palette.textTertiary
+                        }
+
+                        LogosText {
+                            text: {
+                                var c = String(root.backend.cid)
+                                return c.length > 20 ? c.substring(
+                                                           0,
+                                                           8) + "…" + c.slice(
+                                                           -6) : c
+                            }
+                            font.pixelSize: 11
+                            font.family: "monospace"
+                            color: Theme.palette.text
+                        }
+
+                        LogosText {
+                            text: "COPY"
+                            font.pixelSize: 9
+                            color: Theme.palette.textTertiary
+                            font.letterSpacing: 0.8
+                        }
+                    }
+
+                    // ── Green flash on copy ───────────────────────────────────
+                    Rectangle {
+                        id: copyFlash
+                        anchors.fill: parent
+                        radius: parent.radius
+                        color: Theme.palette.success
+                        opacity: 0
+
+                        SequentialAnimation on opacity {
+                            id: copyFlashAnim
+                            running: false
+                            NumberAnimation {
+                                to: 0.18
+                                duration: 80
+                            }
+                            NumberAnimation {
+                                to: 0
+                                duration: 500
+                            }
+                        }
+                    }
+
+                    HoverHandler {
+                        id: cidBadgeHover
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        color: cidBadgeHover.hovered ? Qt.rgba(
+                                                           1, 1, 1,
+                                                           0.04) : "transparent"
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            clipHelper.copyText(String(root.backend.cid))
+                            copyFlashAnim.restart()
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.leftMargin: 24
+                Layout.rightMargin: 24
+                Layout.preferredHeight: 1
+                color: Theme.palette.borderSecondary
+            }
+
+            ManifestTable {
+                Layout.fillWidth: true
+                Layout.leftMargin: 24
+                Layout.rightMargin: 24
+                Layout.topMargin: 20
+                Layout.bottomMargin: 20
+                backend: root.backend
+                running: root.isRunning()
+                onDownloadRequested: function (manifest) {
+                    root.pendingDownloadManifest = manifest
+                    var filename = manifest["filename"] || manifest["cid"]
+                            || "download"
+                    manifestSaveDialog.currentFile = StandardPaths.writableLocation(
+                                StandardPaths.HomeLocation) + "/" + filename
+                    manifestSaveDialog.open()
+                }
+            }
+
+            Item {
+                Layout.preferredHeight: 20
+            }
         }
     }
 
@@ -756,133 +456,92 @@ LogosStorageLayout {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        height: 150
-        color: "#111111"
-        visible: root.showDebug // or: visible: showDebug
+        height: 220
+        color: Theme.palette.backgroundElevated
+        border.color: Theme.palette.borderSecondary
+        border.width: 1
+        visible: root.showDebug
 
-        TabBar {
-            id: bar
-            width: parent.width
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: 0
 
-            TabButton {
-                text: qsTr("Logs")
-            }
+            // Dev action buttons
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.leftMargin: 10
+                Layout.topMargin: 6
+                Layout.bottomMargin: 4
+                spacing: 6
 
-            TabButton {
-                text: qsTr("Config")
-            }
-        }
-
-        StackLayout {
-            id: stackLayout
-            currentIndex: bar.currentIndex
-            anchors.top: bar.bottom
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.bottom: parent.bottom
-
-            Item {
-                id: homeTab
-
-                Flickable {
-                    id: flick
-                    anchors.fill: parent
-                    clip: true
-
-                    contentWidth: width
-                    contentHeight: debugText.paintedHeight
-
-                    TextEdit {
-                        id: debugText
-                        width: flick.width
-                        text: root.backend.debugLogs
-                        color: "#dddddd"
-                        font.family: "monospace"
-                        font.pixelSize: 12
-                        wrapMode: Text.WrapAnywhere
-                        readOnly: true
-
-                        onTextChanged: Qt.callLater(function () {
-                            flick.contentY = Math.max(
-                                        0, flick.contentHeight - flick.height)
-                        })
-                    }
+                LogosStorageButton {
+                    text: "Space"
+                    enabled: root.isRunning()
+                    onClicked: root.backend.space()
+                }
+                LogosStorageButton {
+                    text: "Debug"
+                    enabled: root.isRunning()
+                    onClicked: root.backend.tryDebug()
+                }
+                LogosStorageButton {
+                    text: "Peer ID"
+                    enabled: root.isRunning()
+                    onClicked: root.backend.showPeerId()
+                }
+                LogosStorageButton {
+                    text: "Data dir"
+                    enabled: root.isRunning()
+                    onClicked: root.backend.dataDir()
+                }
+                LogosStorageButton {
+                    text: "SPR"
+                    enabled: root.isRunning()
+                    onClicked: root.backend.spr()
+                }
+                LogosStorageButton {
+                    text: "Version"
+                    enabled: root.isRunning()
+                    onClicked: root.backend.version()
+                }
+                Item {
+                    Layout.fillWidth: true
                 }
             }
+
             Rectangle {
-                id: discoverTab
+                Layout.fillWidth: true
+                Layout.preferredHeight: 1
+                color: Theme.palette.borderSecondary
+            }
 
-                ScrollView {
-                    anchors.fill: parent
+            // Logs
+            Flickable {
+                id: logFlick
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                contentWidth: width
+                contentHeight: debugText.paintedHeight
 
-                    TextArea {
-                        id: jsonEditor
-                        font.family: "monospace"
-                        font.pixelSize: 12
-                        color: "#d4d4d4"
-                        width: parent.width
-                        height: parent.height
-                        wrapMode: Text.WrapAnywhere
+                TextEdit {
+                    id: debugText
+                    width: logFlick.width
+                    text: root.backend.debugLogs
+                    color: Theme.palette.textSecondary
+                    font.family: "monospace"
+                    font.pixelSize: 11
+                    wrapMode: Text.WrapAnywhere
+                    readOnly: true
+                    padding: 8
+                    bottomPadding: 20
 
-                        background: Rectangle {
-                            color: "#1e1e1e"
-                            border.color: jsonEditor.isValid ? "#3a3a3a" : "#ff0000"
-                            border.width: 1
-                        }
-
-                        property bool isValid: true
-
-                        Connections {
-                            target: root.backend
-
-                            function onConfigJsonChanged() {
-                                jsonEditor.text = root.backend.configJson
-                                try {
-                                    const jsonData = JSON.parse(jsonEditor.text)
-                                    jsonEditor.isValid = true
-                                } catch (e) {
-                                    jsonEditor.isValid = false
-                                }
-                            }
-                        }
-
-                        Component.onCompleted: {
-                            text = root.backend.configJson
-
-                            try {
-                                const jsonData = JSON.parse(text)
-                                isValid = true
-                            } catch (e) {
-                                isValid = false
-                            }
-                        }
-
-                        onTextChanged: {
-
-                            // try {
-                            //     const jsonData = JSON.parse(text)
-                            //     isValid = true
-                            // } catch (e) {
-                            //     isValid = false
-                            // }
-                        }
-
-                        onEditingFinished: {
-                            try {
-                                const jsonData = JSON.parse(text)
-                                root.backend.saveUserConfig(text)
-                                isValid = true
-                            } catch (e) {
-                                isValid = false
-                            }
-                        }
-                    }
+                    onTextChanged: Qt.callLater(function () {
+                        logFlick.contentY = Math.max(
+                                    0, logFlick.contentHeight - logFlick.height)
+                    })
                 }
             }
-        }
-        Shortcut {
-            sequence: "Ctrl+D"
-            onActivated: root.showDebug = !root.showDebug
         }
     }
 }

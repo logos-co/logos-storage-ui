@@ -11,5 +11,5 @@
 	path = vendor/logos-storage-nim
 	url = https://github.com/logos-storage/logos-storage-nim
 [submodule "vendor/logos-design-system"]
-	path = logos-design-system
+	path = vendor/logos-design-system
 	url = https://github.com/logos-co/logos-design-system
