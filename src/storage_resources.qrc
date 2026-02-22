@@ -12,12 +12,29 @@
         <file alias="HealthIndicator.qml">qml/HealthIndicator.qml</file>
         <file alias="ModeSelector.qml">qml/ModeSelector.qml</file>
         <file alias="AdvancedSetup.qml">qml/AdvancedSetup.qml</file>
-        <file alias="DotIcon.qml">qml/DotIcon.qml</file>
-        <file alias="NodeStatusIcon.qml">qml/NodeStatusIcon.qml</file>
-        <file alias="GuideIcon.qml">qml/GuideIcon.qml</file>
-        <file alias="AdvancedIcon.qml">qml/AdvancedIcon.qml</file>
-        <file alias="UpnpIcon.qml">qml/UpnpIcon.qml</file>
-        <file alias="PortIcon.qml">qml/PortIcon.qml</file>
+        <file alias="ManifestTable.qml">qml/ManifestTable.qml</file>
+        <file alias="SettingsPopup.qml">qml/SettingsPopup.qml</file>
+        <file alias="JsonEditor.qml">qml/JsonEditor.qml</file>
+        <file alias="SpaceBar.qml">qml/SpaceBar.qml</file>
+        <file alias="DiskWidget.qml">qml/DiskWidget.qml</file>
+        <file alias="UploadWidget.qml">qml/UploadWidget.qml</file>
+        <file alias="PeersWidget.qml">qml/PeersWidget.qml</file>
+        <!-- Icons & arc -->
+        <file alias="DotIcon.qml">qml/icons/DotIcon.qml</file>
+        <file alias="NodeStatusIcon.qml">qml/icons/NodeStatusIcon.qml</file>
+        <file alias="GuideIcon.qml">qml/icons/GuideIcon.qml</file>
+        <file alias="AdvancedIcon.qml">qml/icons/AdvancedIcon.qml</file>
+        <file alias="UpnpIcon.qml">qml/icons/UpnpIcon.qml</file>
+        <file alias="PortIcon.qml">qml/icons/PortIcon.qml</file>
+        <file alias="StorageIcon.qml">qml/icons/StorageIcon.qml</file>
+        <file alias="PlayIcon.qml">qml/icons/PlayIcon.qml</file>
+        <file alias="StopIcon.qml">qml/icons/StopIcon.qml</file>
+        <file alias="SettingsIcon.qml">qml/icons/SettingsIcon.qml</file>
+        <file alias="UploadIcon.qml">qml/icons/UploadIcon.qml</file>
+        <file alias="DownloadIcon.qml">qml/icons/DownloadIcon.qml</file>
+        <file alias="DeleteIcon.qml">qml/icons/DeleteIcon.qml</file>
+        <file alias="ArcWidget.qml">qml/icons/ArcWidget.qml</file>
+        <!-- Assets -->
         <file>icons/storage.png</file>
     </qresource>
 </RCC>
