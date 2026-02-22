@@ -1,11 +1,7 @@
 import QtQuick
 import Logos.Theme
 
-// 7x7 animated dot grid for the StartNode screen.
-// States:
-//   starting=true           → white wave expanding from center
-//   starting=false, success → all dots green (Theme.palette.success)
-//   starting=false, !success → red X pattern (Theme.palette.error)
+// qmllint disable unqualified
 Item {
     id: root
 
@@ -42,8 +38,10 @@ Item {
                 radius: root.dotSize * 0.25
 
                 color: {
-                    if (root.success)   return Theme.palette.success
-                    if (!root.starting) return Theme.palette.error
+                    if (root.success)
+                        return Theme.palette.success
+                    if (!root.starting)
+                        return Theme.palette.error
                     return Theme.palette.text
                 }
 
@@ -55,12 +53,15 @@ Item {
                     if (root.starting) {
                         const wave = root.animPhase % root.columns
                         const diff = Math.abs(d - wave)
-                        if (diff === 0) return 0.9
-                        if (diff === 1) return 0.35
+                        if (diff === 0)
+                            return 0.9
+                        if (diff === 1)
+                            return 0.35
                         return 0.1
                     }
 
-                    if (root.success) return 0.85
+                    if (root.success)
+                        return 0.85
 
                     // Error — X pattern
                     return (col === row || col + row === 6) ? 0.9 : 0.1

@@ -27,6 +27,10 @@ Rectangle {
     border.color: root.isValid ? Theme.palette.borderSecondary : Theme.palette.error
     border.width: 1
 
+    function load(_text) {
+        text = _text
+    }
+
     function validate() {
         try {
             JSON.parse(jsonArea.text)

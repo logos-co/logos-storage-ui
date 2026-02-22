@@ -1,12 +1,6 @@
 import QtQuick
 
-// X / delete icon
+// qmllint disable unqualified
 DotIcon {
-    pattern: [
-        1, 0, 0, 0, 1,
-        0, 1, 0, 1, 0,
-        0, 0, 1, 0, 0,
-        0, 1, 0, 1, 0,
-        1, 0, 0, 0, 1
-    ]
+    pattern: [1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1]
 }

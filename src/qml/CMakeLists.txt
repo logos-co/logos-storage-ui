@@ -138,12 +138,29 @@ qt_add_qml_module(appqml
         HealthIndicator.qml
         ModeSelector.qml
         AdvancedSetup.qml
-        DotIcon.qml
-        NodeStatusIcon.qml
-        GuideIcon.qml
-        AdvancedIcon.qml
-        UpnpIcon.qml
-        PortIcon.qml
+        icons/DotIcon.qml
+        icons/NodeStatusIcon.qml
+        icons/GuideIcon.qml
+        icons/AdvancedIcon.qml
+        icons/UpnpIcon.qml
+        icons/PortIcon.qml
+        icons/StorageIcon.qml
+        icons/PlayIcon.qml
+        icons/StopIcon.qml
+        icons/SettingsIcon.qml
+        icons/UploadIcon.qml
+        icons/DownloadIcon.qml
+        icons/DeleteIcon.qml
+        icons/ArcWidget.qml
+        DiskWidget.qml
+        UploadWidget.qml
+        PeersWidget.qml
+        JsonEditor.qml
+        SettingsPopup.qml
+        ManifestTable.qml
+        NodeHeader.qml
+        StatusWidgets.qml
+        DebugPanel.qml
 )
 
 # Set up QML module directory for runtime

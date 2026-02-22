@@ -1,8 +1,6 @@
 import QtQuick
 
-// Generic Nothing OS style dot grid icon.
-// Static mode  : set `pattern` (flat array of 0/1) and leave `animated: false`
-// Animated mode: set `animated: true` — wave expands from center automatically
+// qmllint disable unqualified
 Item {
     id: root
 
@@ -53,8 +51,8 @@ Item {
 
                 opacity: {
                     if (!root.animated) {
-                        return (index < root.pattern.length && root.pattern[index])
-                               ? root.activeOpacity : root.inactiveOpacity
+                        return (index < root.pattern.length
+                                && root.pattern[index]) ? root.activeOpacity : root.inactiveOpacity
                     }
                     // Wave from center
                     const cx = Math.floor(root.columns / 2)
@@ -64,8 +62,10 @@ Item {
                     const d = Math.abs(col - cx) + Math.abs(row - cy)
                     const wave = root.animPhase % root.columns
                     const diff = Math.abs(d - wave)
-                    if (diff === 0) return root.activeOpacity
-                    if (diff === 1) return 0.35
+                    if (diff === 0)
+                        return root.activeOpacity
+                    if (diff === 1)
+                        return 0.35
                     return root.inactiveOpacity
                 }
             }

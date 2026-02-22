@@ -33,19 +33,21 @@ LogosStorageLayout {
             Layout.fillWidth: true
         }
 
-        Item { height: Theme.spacing.medium }
+        Item {
+            Layout.preferredHeight: Theme.spacing.medium
+        }
 
         Row {
             spacing: Theme.spacing.medium
             Layout.alignment: Qt.AlignHCenter
 
-            // ── UPnP card ────────────────────────────────────────────────
             Rectangle {
                 width: 190
                 height: 230
                 radius: 14
                 color: root.selectedMode === 0 ? Theme.palette.overlayLight : "transparent"
-                border.color: root.selectedMode === 0 ? Theme.palette.text : Theme.palette.borderTertiaryMuted
+                border.color: root.selectedMode
+                              === 0 ? Theme.palette.text : Theme.palette.borderTertiaryMuted
                 border.width: root.selectedMode === 0 ? 2 : 1
 
                 ColumnLayout {
@@ -83,13 +85,13 @@ LogosStorageLayout {
                 }
             }
 
-            // ── Port Forwarding card ─────────────────────────────────────
             Rectangle {
                 width: 190
                 height: 230
                 radius: 14
                 color: root.selectedMode === 1 ? Theme.palette.overlayLight : "transparent"
-                border.color: root.selectedMode === 1 ? Theme.palette.text : Theme.palette.borderTertiaryMuted
+                border.color: root.selectedMode
+                              === 1 ? Theme.palette.text : Theme.palette.borderTertiaryMuted
                 border.width: root.selectedMode === 1 ? 2 : 1
 
                 ColumnLayout {
@@ -128,7 +130,9 @@ LogosStorageLayout {
             }
         }
 
-        Item { height: Theme.spacing.small }
+        Item {
+            Layout.preferredHeight: Theme.spacing.small
+        }
 
         RowLayout {
             Layout.alignment: Qt.AlignHCenter

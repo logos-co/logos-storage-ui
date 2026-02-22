@@ -80,7 +80,10 @@ LogosResult StorageBackend::init(const QString& configJson) {
                 setStatus(Running);
                 debug("Storage module started.");
                 //  QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
-                // QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
+
+                QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
+                QMetaObject::invokeMethod(this, &StorageBackend::tryDebug, Qt::QueuedConnection);
+                QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
                 emit startCompleted();
             }
         })) {
@@ -102,20 +105,6 @@ LogosResult StorageBackend::init(const QString& configJson) {
             emit stopCompleted();
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageStop events";
-    }
-
-    if (!m_logos->storage_module.on("storageConnect", [this](const QVariantList& data) {
-            bool success = data[0].toBool();
-
-            if (!success) {
-                QString message = data[1].toString();
-                debug("Failed to connect: " + message);
-            } else {
-                // TODO add the peer id
-                debug("Successfully connected to peer.");
-            }
-        })) {
-        qWarning() << "StorageWidget: failed to subscribe to storageConnect events";
     }
 
     if (!m_logos->storage_module.on("storageUploadProgress", [this](const QVariantList& data) {
@@ -161,17 +150,17 @@ LogosResult StorageBackend::init(const QString& configJson) {
                 emit uploadStatusChanged();
             } else {
                 QString sessionId = data[1].toString();
-                m_cid = data[2].toString();
-                emit cidChanged();
-                debug("Upload completed for session " + sessionId + " with CID " + m_cid);
+                QString cid = data[2].toString();
+                debug("Upload completed for session " + sessionId + " with CID " + cid);
 
                 // Complète la progress bar
                 m_uploadProgress = 100;
                 m_uploadStatus = "Upload completed!";
                 emit uploadProgressChanged();
                 emit uploadStatusChanged();
-
+                emit uploadCompleted(cid);
                 QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
+                QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
             }
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageUploadProgress events";
@@ -200,9 +189,11 @@ LogosResult StorageBackend::init(const QString& configJson) {
                 debug("Failed to download: " + message);
             } else {
                 QString sessionId = data[1].toString();
-                m_cid = data[2].toString();
-                emit cidChanged();
-                debug("Download completed for session " + sessionId + " with CID " + m_cid);
+                QString cid = data[2].toString();
+                emit downloadCompleted(data[2].toString());
+
+                QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
+                debug("Download completed for session " + sessionId + " with CID " + cid);
             }
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageDownloadProgress events";
@@ -321,8 +312,32 @@ void StorageBackend::debug(const QString& log) {
 void StorageBackend::tryDebug() {
     auto result = m_logos->storage_module.debug();
 
-    debug("Debug " + result.getString());
+    debug("Peer ID: " + result.getString("id"));
+    debug("SPR: " + result.getString("spr"));
+
+    QStringList addrs = result.getValue<QStringList>("addrs");
+    for (const QString& addr : addrs) {
+        debug("Listen address: " + addr);
+    }
+
+    QStringList announceAddresses = result.getValue<QStringList>("announceAddresses");
+    for (const QString& addr : announceAddresses) {
+        debug("Announce address: " + addr);
+    }
+
+    QVariantMap table = result.getValue<QVariantMap>("table");
+    QVariantList nodes = table["nodes"].toList();
+
+    for (const QVariant& nodeVar : nodes) {
+        QVariantMap node = nodeVar.toMap();
+        QString peerId = node["peerId"].toString();
+        bool seen = node["seen"].toBool();
+        debug("Peer found, peerId=" + peerId + ", seen=" + (seen ? "true" : "false"));
+    }
+
+    emit peersUpdated(nodes.size());
 }
+
 void StorageBackend::tryPeerConnect(const QString& peerId) {
     qDebug().noquote() << "StorageBackend: tryPeerConnect called with peerId=" << peerId;
 
@@ -565,25 +580,29 @@ void StorageBackend::exists(const QString& cid) {
 }
 
 void StorageBackend::remove(const QString& cid) {
-    qDebug() << "StorageBackend::remove called";
+    qDebug() << "StorageBackend::remove called with cid=" << cid;
 
-    LogosResult result = m_logos->storage_module.remove(cid);
+    LogosResult result = m_logos->storage_module.exists(cid);
 
     if (!result.success) {
-        // Log but continue — manifest might not have local data, remove it from the list anyway
-        debug("StorageBackend::remove: storage returned error=" + result.getError() + " (removing from list regardless)");
-    } else {
-        debug("Cid " + cid + " removed from storage.");
+        debug("StorageBackend::remove failed to check exists: " + result.getError());
+        emit error("Failed to check exists " + cid + ": " + result.getError());
+        return;
     }
 
-    // Always remove from manifests list
-    for (int i = 0; i < m_manifests.size(); ++i) {
-        if (m_manifests[i].toMap().value("cid").toString() == cid) {
-            m_manifests.removeAt(i);
-            emit manifestsChanged();
-            break;
-        }
+    if (!result.getBool()) {
+        debug("StorageBackend::remove blocks don't exist in store.");
+        return;
     }
+
+    result = m_logos->storage_module.remove(cid);
+    if (!result.success) {
+        debug("StorageBackend::remove failed: " + result.getError());
+        emit error("Failed to remove " + cid + ": " + result.getError());
+        return;
+    }
+
+    debug("Cid " + cid + " removed from local storage.");
 
     QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
 }
@@ -675,20 +694,14 @@ void StorageBackend::downloadManifest(const QString& cid) {
     debug("Manifest filename: " + filename);
     debug("Manifest mimetype: " + mimetype);
 
-    // Add to manifests list
     QVariantMap manifest;
-    manifest["cid"] = cid;
-    manifest["treeCid"] = treeCid;
-    manifest["filename"] = filename;
-    manifest["mimetype"] = mimetype;
+    manifest["cid"]         = cid;
+    manifest["treeCid"]     = treeCid;
+    manifest["filename"]    = filename;
+    manifest["mimetype"]    = mimetype;
     manifest["datasetSize"] = datasetSize;
-    manifest["blockSize"] = blockSize;
-
-    m_manifests.append(manifest);
-    emit manifestsChanged();
+    manifest["blockSize"]   = blockSize;
 }
-
-QVariantList StorageBackend::manifests() const { return m_manifests; }
 
 void StorageBackend::downloadManifests() {
     qDebug() << "StorageBackend::downloadManifests called";
@@ -700,27 +713,9 @@ void StorageBackend::downloadManifests() {
         return;
     }
 
-    QVariantList manifestsList = result.getList();
-    int count = manifestsList.size();
-    debug(QString("Found %1 manifests").arg(count));
+    qDebug() << "StorageBackend::downloadManifests called, size=" << result.getList().size();
 
-    m_manifests.clear();
-
-    for (const QVariant& manifestVariant : manifestsList) {
-        QVariantMap src = manifestVariant.toMap();
-
-        QVariantMap manifest;
-        manifest["cid"]         = src.value("cid").toString();
-        manifest["treeCid"]     = src.value("treeCid").toString();
-        manifest["filename"]    = src.value("filename").toString();
-        manifest["mimetype"]    = src.value("mimetype").toString();
-        manifest["datasetSize"] = src.value("datasetSize").toLongLong();
-        manifest["blockSize"]   = src.value("blockSize").toLongLong();
-
-        m_manifests.append(manifest);
-    }
-
-    emit manifestsChanged();
+    emit manifestsUpdated(result.getList());
 }
 
 void StorageBackend::space() {
@@ -729,31 +724,18 @@ void StorageBackend::space() {
     LogosResult result = m_logos->storage_module.space();
 
     if (!result.success) {
-        debug("StorageBackend::space failed with error=" + result.getError());
+        debug("Space failed with error=" + result.getError());
         return;
     }
 
-    qDebug() << "StorageBackend::space raw value:" << result.value;
+    const qlonglong total = result.getValue<qlonglong>("quotaMaxBytes");
+    const qlonglong used =
+        result.getValue<qlonglong>("quotaUsedBytes") + result.getValue<qlonglong>("quotaReservedBytes");
 
-    static constexpr qint64 DEFAULT_QUOTA = 20LL * 1024 * 1024 * 1024; // 20 GB
-
-    // Check config for a quota-max-bytes override
-    qint64 configQuota = m_config.object().value("quota-max-bytes").toVariant().toLongLong();
-    qint64 apiQuota = result.getInt("quotaMaxBytes");
-    m_quotaMaxBytes      = apiQuota > 0 ? apiQuota : (configQuota > 0 ? configQuota : DEFAULT_QUOTA);
-    m_quotaUsedBytes     = result.getInt("quotaUsedBytes");
-    m_quotaReservedBytes = result.getInt("quotaReservedBytes");
-    emit quotaChanged();
-
-    debug(QString("Space totalBlocks %1").arg(result.getInt("totalBlocks")));
-    debug(QString("Space quotaMaxBytes %1").arg(m_quotaMaxBytes));
-    debug(QString("Space quotaUsedBytes %1").arg(m_quotaUsedBytes));
-    debug(QString("Space quotaReservedBytes %1").arg(m_quotaReservedBytes));
+    emit spaceUpdated(total, used);
 }
 
-qint64 StorageBackend::quotaMaxBytes()      const { return m_quotaMaxBytes; }
-qint64 StorageBackend::quotaUsedBytes()     const { return m_quotaUsedBytes; }
-qint64 StorageBackend::quotaReservedBytes() const { return m_quotaReservedBytes; }
+QString StorageBackend::configJson() const { return QString::fromUtf8(m_config.toJson(QJsonDocument::Indented)); }
 
 void StorageBackend::updateLogLevel(const QString& logLevel) {
     qDebug() << "StorageBackend::updateLogLevel called with logLevel=" << logLevel;
@@ -769,8 +751,6 @@ void StorageBackend::updateLogLevel(const QString& logLevel) {
 }
 
 StorageBackend::StorageStatus StorageBackend::status() const { return m_status; }
-
-QString StorageBackend::cid() const { return m_cid; }
 
 int StorageBackend::uploadProgress() const { return m_uploadProgress; }
 
@@ -822,7 +802,7 @@ void StorageBackend::reloadIfChanged(const QString& configJson) {
 
 void StorageBackend::saveCurrentConfig() {
     qDebug() << "StorageBackend::saveUserConfig";
-    saveUserConfig(QString::fromUtf8(m_config.toJson(QJsonDocument::Indented)));
+    saveUserConfig(configJson());
 }
 
 void StorageBackend::saveUserConfig(const QString& configJson) {
@@ -929,58 +909,56 @@ void StorageBackend::checkNodeIsUp() {
 
     debug("DHT seems okay, found peers");
 
-    // Extract TCP ports from announceAddresses.
+    // Extract IP+port pairs from announceAddresses.
     // Format: "/ip4/1.2.3.4/tcp/PORT"
     QVariantList announceAddresses = result.getValue<QVariantList>("announceAddresses");
-    QList<int> ports;
+    QList<QPair<QString, int>> endpoints;
     for (const QVariant& addr : announceAddresses) {
-        QStringList parts = addr.toString().split("/");
-        // "/ip4/1.2.3.4/tcp/8079" splits to ["", "ip4", "1.2.3.4", "tcp", "8079"]
-        int tcpIndex = parts.indexOf("tcp");
-        if (tcpIndex >= 0 && tcpIndex + 1 < parts.size()) {
-            int port = parts[tcpIndex + 1].toInt();
-            if (port > 0 && !ports.contains(port)) {
-                ports.append(port);
-            }
+        const QStringList parts = addr.toString().split("/");
+        // ["", "ip4", "1.2.3.4", "tcp", "8079"]
+        const int tcpIndex = parts.indexOf("tcp");
+        if (tcpIndex >= 1 && tcpIndex + 1 < parts.size()) {
+            const QString ip   = parts[tcpIndex - 1];
+            const int     port = parts[tcpIndex + 1].toInt();
+            if (port > 0 && !ip.isEmpty())
+                endpoints.append({ ip, port });
         }
     }
 
     QString nat = m_config.object()["nat"].toString();
 
-    if (ports.isEmpty()) {
-        debug("No TCP ports found in announce addresses, considering node as not up");
+    if (endpoints.isEmpty()) {
+        debug("No TCP endpoints found in announce addresses");
         if (nat == "upnp") {
             emit nodeIsntUp("UPnP is configured but there is no announced addresses. "
                             "Try going back and configure port forwarding manually on your router.");
         } else {
-            emit nodeIsntUp("No announced addresses found. Your TCP port is propably incorrect. "
+            emit nodeIsntUp("No announced addresses found. Your TCP port is probably incorrect. "
                             "Try going back and check your port forwarding configuration.");
         }
-
         return;
     }
 
-    debug(QString("Checking reachability for %1 port(s)...").arg(ports.size()));
+    debug(QString("Checking reachability for %1 endpoint(s)...").arg(endpoints.size()));
 
-    // Check each port via the echo service, one by one.
     bool foundReachable = false;
-    for (int port : ports) {
+    for (const auto& [ip, port] : endpoints) {
         QNetworkAccessManager manager;
-        QNetworkRequest request(QUrl(QString("%1/port/%2").arg(ECHO_PROVIDER).arg(port)));
-        QNetworkReply* reply = manager.get(request);
+        const QUrl url(QString("%1/%2/%3").arg(PORT_CHECKER_PROVIDER).arg(ip).arg(port));
+        QNetworkReply* reply = manager.get(QNetworkRequest(url));
 
         QEventLoop loop;
         connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
         loop.exec();
 
         if (reply->error() == QNetworkReply::NoError) {
-            bool reachable = QJsonDocument::fromJson(reply->readAll()).object()["reachable"].toBool();
-            debug("Port " + QString::number(port) + (reachable ? " is reachable" : " is not reachable"));
+            const bool reachable = reply->readAll() == "True";
+            debug(QString("%1:%2 is %3").arg(ip).arg(port).arg(reachable ? "reachable" : "not reachable"));
             if (reachable) {
                 foundReachable = true;
             }
         } else {
-            debug("Port check failed for port " + QString::number(port) + ": " + reply->errorString());
+            debug(QString("Port check failed for %1:%2 : %3").arg(ip).arg(port).arg(reply->errorString()));
         }
 
         reply->deleteLater();

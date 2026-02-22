@@ -28,18 +28,6 @@ Item {
     Connections {
         target: root.backend
 
-        // The node is stopped during the onboarding
-        // when the user try to change his settings
-        // and click on "Back",
-        // In that case, we pop the navigation after
-        // the node is stopped.
-        // function onStopCompleted() {
-        //     if (!settings.onboardingCompleted) {
-
-        //         //    stackView.pop()
-        //     }
-        // }
-
         // When the onboarding is completed,
         // the user should have a config save in his
         // home folder.

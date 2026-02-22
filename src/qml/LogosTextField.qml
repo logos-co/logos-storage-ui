@@ -2,15 +2,19 @@ import QtQuick
 import QtQuick.Controls
 import Logos.Theme
 
+// qmllint disable unqualified
 TextField {
     id: root
 
     property bool isValid: acceptableInput && text.length > 0
 
+    height: 60
     placeholderTextColor: Theme.palette.textPlaceholder
     color: isValid ? Theme.palette.text : Theme.palette.error
     selectByMouse: true
     background: Rectangle {
+        height: 60
+
         Rectangle {
             anchors.fill: parent
             color: Theme.palette.backgroundSecondary

@@ -1,28 +1,56 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
+import QtCore
 import Logos.Theme
 import Logos.Controls
 
+// qmllint disable unqualified
 ColumnLayout {
     id: root
 
     property var backend
     property bool running: false
-
-    signal downloadRequested(var manifest)
+    property var manifests: []
 
     spacing: Theme.spacing.small
 
+    FileDialog {
+        id: saveDialog
+
+        property var pendingManifest: null
+
+        fileMode: FileDialog.SaveFile
+        onAccepted: {
+            if (pendingManifest) {
+                root.backend.tryDownloadFile(pendingManifest.cid, selectedFile)
+                pendingManifest = null
+            }
+        }
+        onRejected: pendingManifest = null
+    }
+
     function formatBytes(bytes) {
-        if (bytes <= 0) return "0 B"
-        if (bytes < 1024) return bytes + " B"
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB"
-        if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + " MB"
+        if (bytes <= 0)
+            return "0 B"
+        if (bytes < 1024)
+            return bytes + " B"
+        if (bytes < 1024 * 1024)
+            return (bytes / 1024).toFixed(1) + " KB"
+        if (bytes < 1024 * 1024 * 1024)
+            return (bytes / (1024 * 1024)).toFixed(1) + " MB"
         return (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB"
     }
 
-    // ── Section title ─────────────────────────────────────────────────────────
+    Connections {
+        target: root.backend
+
+        onManifestsUpdated: function (manifests) {
+            root.manifests = manifests
+        }
+    }
+
     LogosText {
         text: "MANIFESTS"
         font.pixelSize: 11
@@ -30,7 +58,6 @@ ColumnLayout {
         font.letterSpacing: 1.5
     }
 
-    // ── CID input + fetch button ──────────────────────────────────────────────
     RowLayout {
         Layout.fillWidth: true
         spacing: Theme.spacing.small
@@ -38,11 +65,12 @@ ColumnLayout {
         LogosTextField {
             id: cidInput
             Layout.fillWidth: true
-            placeholderText: "Enter CID to fetch manifest…"
+            placeholderText: "Enter CID to download manifest…"
+            isValid: true
         }
 
         LogosStorageButton {
-            text: "↓  Fetch"
+            text: "GET MANIFEST"
             enabled: root.running && cidInput.text.length > 0
             onClicked: {
                 root.backend.downloadManifest(cidInput.text)
@@ -51,10 +79,9 @@ ColumnLayout {
         }
     }
 
-    // ── Table header ──────────────────────────────────────────────────────────
     Rectangle {
         Layout.fillWidth: true
-        height: 30
+        Layout.preferredHeight: 30
         color: Theme.palette.backgroundElevated
         radius: 4
 
@@ -62,17 +89,48 @@ ColumnLayout {
             anchors.fill: parent
             anchors.leftMargin: 10
 
-            Text { width: 160; text: "CID";      color: Theme.palette.textSecondary; font.pixelSize: 11; font.bold: true; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
-            Text { width: 130; text: "Filename"; color: Theme.palette.textSecondary; font.pixelSize: 11; font.bold: true; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
-            Text { width: 90;  text: "MIME";     color: Theme.palette.textSecondary; font.pixelSize: 11; font.bold: true; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
-            Text { width: 80;  text: "Size";     color: Theme.palette.textSecondary; font.pixelSize: 11; font.bold: true; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
+            Text {
+                width: 160
+                text: "CID"
+                color: Theme.palette.textSecondary
+                font.pixelSize: 11
+                font.bold: true
+                elide: Text.ElideRight
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Text {
+                width: 130
+                text: "Filename"
+                color: Theme.palette.textSecondary
+                font.pixelSize: 11
+                font.bold: true
+                elide: Text.ElideRight
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Text {
+                width: 90
+                text: "MIME"
+                color: Theme.palette.textSecondary
+                font.pixelSize: 11
+                font.bold: true
+                elide: Text.ElideRight
+                anchors.verticalCenter: parent.verticalCenter
+            }
+            Text {
+                width: 80
+                text: "Size"
+                color: Theme.palette.textSecondary
+                font.pixelSize: 11
+                font.bold: true
+                elide: Text.ElideRight
+                anchors.verticalCenter: parent.verticalCenter
+            }
         }
     }
 
-    // ── Table body ────────────────────────────────────────────────────────────
     Rectangle {
         Layout.fillWidth: true
-        height: 240
+        Layout.preferredHeight: 240
         color: Theme.palette.background
         border.color: Theme.palette.borderSecondary
         border.width: 1
@@ -82,13 +140,15 @@ ColumnLayout {
         ListView {
             id: manifestList
             anchors.fill: parent
-            model: root.backend ? root.backend.manifests : []
+            model: root.manifests
             clip: true
 
             delegate: Rectangle {
+                id: delegateItem
                 width: manifestList.width
                 height: 36
-                color: index % 2 === 0 ? Theme.palette.background : Theme.palette.backgroundSecondary
+                color: index % 2
+                       === 0 ? Theme.palette.background : Theme.palette.backgroundSecondary
 
                 Row {
                     anchors.fill: parent
@@ -97,19 +157,21 @@ ColumnLayout {
 
                     Text {
                         width: 160
-                        text: modelData["cid"] ?? ""
+                        text: modelData.cid
                         color: Theme.palette.text
                         font.pixelSize: 11
                         font.family: "monospace"
                         elide: Text.ElideMiddle
                         anchors.verticalCenter: parent.verticalCenter
                         ToolTip.visible: cidHover.hovered
-                        ToolTip.text: modelData["cid"] ?? ""
-                        HoverHandler { id: cidHover }
+                        ToolTip.text: modelData.cid
+                        HoverHandler {
+                            id: cidHover
+                        }
                     }
                     Text {
                         width: 130
-                        text: modelData["filename"] ?? ""
+                        text: modelData.filename
                         color: Theme.palette.textSecondary
                         font.pixelSize: 11
                         elide: Text.ElideRight
@@ -117,7 +179,7 @@ ColumnLayout {
                     }
                     Text {
                         width: 90
-                        text: modelData["mimetype"] ?? ""
+                        text: modelData.mimetype
                         color: Theme.palette.textSecondary
                         font.pixelSize: 11
                         elide: Text.ElideRight
@@ -125,82 +187,92 @@ ColumnLayout {
                     }
                     Text {
                         width: 80
-                        text: root.formatBytes(parseInt(modelData["datasetSize"] ?? "0"))
+                        text: root.formatBytes(parseInt(modelData.datasetSize))
                         color: Theme.palette.textSecondary
                         font.pixelSize: 11
                         elide: Text.ElideRight
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
-                    // ── Action buttons ────────────────────────────────────────
                     Row {
                         spacing: 6
                         anchors.verticalCenter: parent.verticalCenter
 
-                        // Download
                         Rectangle {
-                            width: 28; height: 28; radius: 4
+                            width: 28
+                            height: 28
+                            radius: 4
                             color: dlHover.hovered ? Theme.palette.backgroundElevated : "transparent"
                             border.color: Theme.palette.borderSecondary
                             border.width: 1
                             opacity: root.running ? 1.0 : 0.35
 
-                            Text {
+                            DownloadIcon {
                                 anchors.centerIn: parent
-                                text: "↓"
-                                color: Theme.palette.text
-                                font.pixelSize: 14
+                                dotColor: Theme.palette.text
+                                dotSize: 3
+                                dotSpacing: 1
                             }
-                            HoverHandler { id: dlHover }
+                            HoverHandler {
+                                id: dlHover
+                            }
                             MouseArea {
                                 anchors.fill: parent
                                 enabled: root.running
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: root.downloadRequested(modelData)
+                                onClicked: {
+                                    saveDialog.pendingManifest = modelData
+                                    saveDialog.currentFile = StandardPaths.writableLocation(
+                                                StandardPaths.HomeLocation)
+                                            + "/" + (modelData.filename
+                                                     || modelData.cid
+                                                     || "download")
+                                    saveDialog.open()
+                                }
                             }
                         }
 
-                        // Delete
                         Rectangle {
-                            width: 28; height: 28; radius: 4
+                            width: 28
+                            height: 28
+                            radius: 4
                             color: rmHover.hovered ? Theme.palette.backgroundElevated : "transparent"
                             border.color: Theme.palette.borderSecondary
                             border.width: 1
                             opacity: root.running ? 1.0 : 0.35
 
-                            Text {
+                            DeleteIcon {
                                 anchors.centerIn: parent
-                                text: "×"
-                                color: Theme.palette.error
-                                font.pixelSize: 16
-                                font.bold: true
+                                dotColor: Theme.palette.error
+                                dotSize: 3
+                                dotSpacing: 1
                             }
-                            HoverHandler { id: rmHover }
+                            HoverHandler {
+                                id: rmHover
+                            }
                             MouseArea {
                                 anchors.fill: parent
                                 enabled: root.running
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: root.backend.remove(modelData["cid"] ?? "")
+                                onClicked: {
+                                    if (modelData.cid.length > 0) {
+                                        root.backend.remove(modelData.cid)
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // ── Empty state ───────────────────────────────────────────────────
+            // Empty state
             ColumnLayout {
                 anchors.centerIn: parent
                 spacing: 10
                 visible: manifestList.count === 0
 
                 DotIcon {
-                    pattern: [
-                        0, 0, 1, 0, 0,
-                        0, 1, 0, 1, 0,
-                        1, 0, 0, 0, 1,
-                        0, 1, 0, 1, 0,
-                        0, 0, 1, 0, 0
-                    ]
+                    pattern: [0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0]
                     dotColor: Theme.palette.textMuted
                     activeOpacity: 0.25
                     Layout.alignment: Qt.AlignHCenter

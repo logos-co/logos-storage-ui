@@ -32,50 +32,13 @@ LogosStorageLayout {
             Layout.fillWidth: true
         }
 
-        // ── JSON editor ──────────────────────────────────────────────────
-        Rectangle {
+        JsonEditor {
+            id: jsonEditor
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: Theme.palette.backgroundElevated
-            radius: 8
-            border.color: jsonArea.isValid ? Theme.palette.borderSecondary : Theme.palette.error
-            border.width: 1
-
-            ScrollView {
-                anchors.fill: parent
-                anchors.margins: 2
-
-                TextArea {
-                    id: jsonArea
-                    font.family: "monospace"
-                    font.pixelSize: 12
-                    color: Theme.palette.text
-                    wrapMode: Text.WrapAnywhere
-                    background: Item {}
-
-                    property bool isValid: true
-
-                    Component.onCompleted: {
-                        text = (root.backend
-                                && root.backend.configJson) ? root.backend.configJson : "{}"
-                        validate()
-                    }
-
-                    function validate() {
-                        try {
-                            JSON.parse(text)
-                            isValid = true
-                        } catch (e) {
-                            isValid = false
-                        }
-                    }
-
-                    onTextChanged: validate()
-                }
-            }
+            Component.onCompleted: load(root.backend.configJson() || "{}")
         }
 
-        // ── Buttons ──────────────────────────────────────────────────────
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: Theme.spacing.medium
@@ -88,10 +51,9 @@ LogosStorageLayout {
             LogosStorageButton {
                 text: "Validate"
                 variant: "success"
-                enabled: jsonArea.isValid
+                enabled: jsonEditor.isValid
                 onClicked: {
-                    root.backend.saveUserConfig(jsonArea.text)
-                    root.backend.reloadIfChanged(jsonArea.text)
+                    root.backend.saveUserConfig(jsonEditor.text)
                     root.completed()
                 }
             }

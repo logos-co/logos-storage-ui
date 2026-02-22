@@ -16,6 +16,9 @@ Popup {
     padding: 24
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
+    // Reload the live config every time the popup opens
+    onOpened: jsonEditor.load(root.backend.configJson() || "{}")
+
     background: Rectangle {
         color: Theme.palette.backgroundSecondary
         border.color: Theme.palette.borderSecondary
@@ -43,54 +46,12 @@ Popup {
             Layout.fillWidth: true
         }
 
-        // ── JSON editor ───────────────────────────────────────────────────────
-        Rectangle {
+        JsonEditor {
+            id: jsonEditor
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: Theme.palette.backgroundElevated
-            radius: 8
-            border.color: jsonArea.isValid
-                ? Theme.palette.borderSecondary : Theme.palette.error
-            border.width: 1
-
-            ScrollView {
-                anchors.fill: parent
-                anchors.margins: 2
-
-                TextArea {
-                    id: jsonArea
-                    font.family: "monospace"
-                    font.pixelSize: 12
-                    color: Theme.palette.text
-                    wrapMode: Text.WrapAnywhere
-                    background: Item {}
-
-                    property bool isValid: true
-
-                    function validate() {
-                        try { JSON.parse(text); isValid = true }
-                        catch (e) { isValid = false }
-                    }
-
-                    onTextChanged: validate()
-
-                    Component.onCompleted: {
-                        text = (root.backend && root.backend.configJson)
-                               ? root.backend.configJson : "{}"
-                        validate()
-                    }
-
-                    Connections {
-                        target: root.backend
-                        function onConfigJsonChanged() {
-                            jsonArea.text = root.backend.configJson
-                        }
-                    }
-                }
-            }
         }
 
-        // ── Buttons ───────────────────────────────────────────────────────────
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: Theme.spacing.medium
@@ -103,10 +64,10 @@ Popup {
             LogosStorageButton {
                 text: "Save"
                 variant: "success"
-                enabled: jsonArea.isValid
+                enabled: jsonEditor.isValid
                 onClicked: {
-                    root.backend.saveUserConfig(jsonArea.text)
-                    root.backend.reloadIfChanged(jsonArea.text)
+                    root.backend.saveUserConfig(jsonEditor.text)
+                    root.backend.reloadIfChanged(jsonEditor.text)
                     root.close()
                 }
             }
