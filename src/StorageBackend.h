@@ -70,10 +70,7 @@ class StorageBackend : public QObject {
     LogosResult start(const QString& configJson = "");
     void destroy();
     void stop();
-    void tryPeerConnect(const QString& peerId);
     void tryDebug();
-    void tryUpload();
-    void tryUploadFinalize();
     void exists(const QString& cid);
     void remove(const QString& cid);
     void fetch(const QString& cid);
@@ -87,7 +84,6 @@ class StorageBackend : public QObject {
     void downloadManifests();
     void space();
     LogosResult init(const QString& configJson);
-    void updateLogLevel(const QString& logLevel);
     void status(StorageStatus status);
 
     // Save the user config passed in parameter

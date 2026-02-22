@@ -229,7 +229,7 @@ LogosResult StorageBackend::start(const QString& newConfigJson) {
     setStatus(Starting);
     debug("Starting Storage module...");
 
-    // TODO trach the start attempts in a file
+    // TODO trace the start attempts in a file
 
     auto result = m_logos->storage_module.start();
 
@@ -333,72 +333,6 @@ void StorageBackend::tryDebug() {
     }
 
     emit peersUpdated(nodes.size());
-}
-
-void StorageBackend::tryPeerConnect(const QString& peerId) {
-    qDebug().noquote() << "StorageBackend: tryPeerConnect called with peerId=" << peerId;
-
-    // LogosResult result2 = m_logos->storage_module.space();
-    // QVariantMap space = result2.getValue<QVariantMap>();
-    // int quotaMaxBytes = space["quotaMaxBytes"].toInt();
-    // int quotaUsedBytes = space["quotaUsedBytes"].toInt();
-    // int quotaReservedBytes = space["quotaReservedBytes"].toInt();
-
-    // int totalBlocks = result2.getValue<int>("totalBlocks");
-
-    // debug("totalBlocks " + QString::number(totalBlocks));
-    // debug("quotaMaxBytes " + QString::number(quotaMaxBytes));
-    // debug("quotaUsedBytes " + QString::number(quotaUsedBytes));
-    // debug("quotaReservedBytes " + QString::number(quotaReservedBytes));
-
-    // LogosResult result = m_logos->storage_module.dataDir();
-    // QString myDataDir = result.getString();
-    // qDebug() << "StorageBackend: tryPeerConnect dataDir=" << myDataDir;
-
-    // QString peerId = m_logos->storage_module.peerId();
-
-    // if (peerId.isEmpty()) {
-    //     qDebug() << "StorageBackend: Peer ID is empty.";
-    //     return;
-    // }
-    auto result = m_logos->storage_module.connect(peerId, QStringList());
-
-    qDebug() << "StorageBackend: peerConnect result =" << result.value;
-    // auto result = m_logos->storage_module.debug();
-
-    // debug("Debug " + result.getString());
-    // QString filename = "test.txt";
-    // QString sessionId = m_logos->storage_module.uploadInit(filename);
-
-    // qDebug() << "StorageBackend: uploadInit sessionId =" << sessionId;
-
-    // bool result = m_logos->storage_module.uploadCancel(sessionId);
-
-    // qDebug() << "StorageBackend: uploadCancel result =" << result;
-}
-
-void StorageBackend::tryUpload() {
-    qDebug() << "StorageBackend: tryUpload called";
-
-    // QString filename = "test.txt";
-    // m_sessionId = m_logos->storage_module.uploadInit(filename);
-
-    // qDebug() << "StorageBackend: uploadInit sessionId =" << m_sessionId;
-
-    // QByteArray chunk = "Sample data chunk for upload.";
-    // bool result = m_logos->storage_module.uploadChunk(m_sessionId, chunk);
-
-    // qDebug() << "StorageBackend: uploadChunk result =" << result;
-}
-
-void StorageBackend::tryUploadFinalize() {
-    qDebug() << "StorageBackend: tryFinalize called";
-
-    // m_cid = m_logos->storage_module.uploadFinalize(m_sessionId);
-
-    // qDebug() << "StorageBackend: uploadFinalize result =" << m_cid;
-
-    // emit cidChanged();
 }
 
 void StorageBackend::tryUploadFile(const QUrl& url) {
@@ -623,19 +557,6 @@ void StorageBackend::space() {
 
 QString StorageBackend::configJson() const { return QString::fromUtf8(m_config.toJson(QJsonDocument::Indented)); }
 
-void StorageBackend::updateLogLevel(const QString& logLevel) {
-    qDebug() << "StorageBackend::updateLogLevel called with logLevel=" << logLevel;
-
-    LogosResult result = m_logos->storage_module.updateLogLevel(logLevel);
-
-    if (!result.success) {
-        debug("StorageBackend::updateLogLevel failed with error=" + result.getError());
-        return;
-    }
-
-    debug("Log level updated to " + logLevel);
-}
-
 StorageBackend::StorageStatus StorageBackend::status() const { return m_status; }
 
 int StorageBackend::uploadProgress() const { return m_uploadProgress; }
@@ -750,7 +671,6 @@ void StorageBackend::enableNatExtConfig(int tcpPort) {
     obj["listen-addrs"] = listenAddrs;
 
     // Fetch the public IP asynchronously so we can set nat=extip:IP in the config.
-    // If the request fails, we proceed without the IP (node will still start, just without extip NAT).
     debug("Retrieving public IP...");
 
     QNetworkAccessManager* manager = new QNetworkAccessManager(this);

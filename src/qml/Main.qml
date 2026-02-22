@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import QtCore
 import Logos.Theme
 
@@ -22,6 +23,8 @@ Item {
     id: root
     implicitWidth: 800
     implicitHeight: 800
+    Layout.fillWidth: true
+    Layout.fillHeight: true
 
     property var backend: mockBackend
 
