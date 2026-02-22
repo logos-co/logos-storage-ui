@@ -8,12 +8,10 @@ TextField {
 
     property bool isValid: acceptableInput && text.length > 0
 
-    height: 60
     placeholderTextColor: Theme.palette.textPlaceholder
     color: isValid ? Theme.palette.text : Theme.palette.error
     selectByMouse: true
     background: Rectangle {
-        height: 60
 
         Rectangle {
             anchors.fill: parent

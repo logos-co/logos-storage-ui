@@ -79,11 +79,9 @@ LogosResult StorageBackend::init(const QString& configJson) {
             } else {
                 setStatus(Running);
                 debug("Storage module started.");
-                //  QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
 
-                QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
-                QMetaObject::invokeMethod(this, &StorageBackend::tryDebug, Qt::QueuedConnection);
-                QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
+                StorageBackend::fetchWidgetsData();
+
                 emit startCompleted();
             }
         })) {
@@ -121,7 +119,6 @@ LogosResult StorageBackend::init(const QString& configJson) {
 
                 m_uploadedBytes += len;
 
-                // Calcule le pourcentage
                 if (m_uploadTotalBytes > 0) {
                     m_uploadProgress = (m_uploadedBytes * 100) / m_uploadTotalBytes;
                 }
@@ -406,9 +403,6 @@ void StorageBackend::tryUploadFinalize() {
 
 void StorageBackend::tryUploadFile(const QUrl& url) {
     qDebug() << "StorageBackend: tryUploadFile called";
-    qDebug() << "  URL toString():" << url.toString();
-    qDebug() << "  URL toLocalFile():" << url.toLocalFile();
-    qDebug() << "  URL path():" << url.path();
 
     if (!url.isLocalFile()) {
         qWarning() << "Not a local file";
@@ -426,33 +420,6 @@ void StorageBackend::tryUploadFile(const QUrl& url) {
 
     debug(QString("Starting upload of file: %1 bytes").arg(m_uploadTotalBytes));
 
-    // QString filename = url.toLocalFile();
-
-    // // QString filename = "/home/arnaud/Work/logos/logos-storage-ui/README.md";
-    // QString sessionId = m_logos->storage_module.uploadInit(filename);
-
-    // qDebug() << "StorageBackend: uploadInit sessionId =" << sessionId;
-
-    // QtConcurrent::run([this, url]() {
-    //     LogosResult result = m_logos->storage_module.uploadUrl(url);
-
-    // Go back to the main thread
-    //     // Better to use signal
-    //     QMetaObject::invokeMethod(
-    //         this,
-    //         [this, result]() {
-    //             if (!result.success) {
-    //                 setStatus(m_status, result.getString());
-    //                 return;
-    //             }
-
-    //             QString sessionId = result.value.value<QString>();
-
-    //             qDebug() << "StorageBackend: uploadFromPath result =" << sessionId;
-    //         },
-    //         Qt::QueuedConnection);
-    // });
-    // QTimer::singleShot(0, this, [this, url]() {
     LogosResult result = m_logos->storage_module.uploadUrl(url);
 
     if (!result.success) {
@@ -461,82 +428,9 @@ void StorageBackend::tryUploadFile(const QUrl& url) {
     }
 
     QString sessionId = result.value.value<QString>();
-    //});
+
     qDebug() << "StorageBackend: tryUploadFile result =" << sessionId;
 }
-
-// void StorageBackend::tryUploadFile(const QUrl& url) {
-//     qDebug() << "StorageBackend:tryUploadFile called";
-
-//     if (!url.isLocalFile()) {
-//         qWarning() << "Not a local file";
-//         m_statusText = "The provided URL is not a local file.";
-//         emit statusChanged();
-//         return;
-//     }
-
-//     QString localPath = url.toLocalFile();
-//     qDebug() << "  Uploading from:" << localPath;
-
-//     QFile file(localPath);
-//     if (!file.open(QIODevice::ReadOnly)) {
-//         qWarning() << "Cannot open file for reading:" << localPath;
-//         m_statusText = "Cannot open file for reading: " + localPath;
-//         emit statusChanged();
-//         return;
-//     }
-
-//     const qint64 chunkSize = 1024 * 64; // 64KB
-//     qint64 totalSize = file.size();
-//     qint64 bytesRead = 0;
-
-//     QFileInfo fileInfo(localPath);
-//     QString filename = fileInfo.fileName();
-
-//     LogosResult result = m_logos->storage_module.uploadInit("test.txt", chunkSize);
-
-//     if (!result.success) {
-//         debug(result.getString());
-//         file.close();
-//         return;
-//     }
-
-//     QString sessionId = result.getString();
-
-//     while (!file.atEnd()) {
-//         QByteArray chunk = file.read(chunkSize);
-//         bytesRead += chunk.size();
-
-//         qDebug() << "  Read chunk:" << chunk.size() << "bytes"
-//                  << "Progress:" << bytesRead << "/" << totalSize;
-
-//         result = m_logos->storage_module.uploadChunk(sessionId, chunk);
-
-//         if (!result.success) {
-//             qWarning("StorageBackend:tryUploadFile failed to send uploadChunk command");
-//             file.close();
-//             return;
-//         }
-
-//         // Calculate progress percentage
-//         int progress = (bytesRead * 100) / totalSize;
-//         qDebug() << "  Progress:" << progress << "%";
-//     }
-
-//     file.close();
-
-//     result = m_logos->storage_module.uploadFinalize(sessionId);
-
-//     if (!result.success) {
-//         qWarning("StorageBackend:tryUploadFile failed to send uploadFinalize command");
-//         file.close();
-//         return;
-//     }
-
-//     qDebug() << "Upload complete, CID:" << result.getString();
-
-//     file.close();
-// }
 
 void StorageBackend::tryDownloadFile(const QString& cid, const QUrl& url) {
     qDebug() << "StorageBackend: tryDownloadFile called";
@@ -546,13 +440,6 @@ void StorageBackend::tryDownloadFile(const QString& cid, const QUrl& url) {
         debug("The provided URL is not a local file.");
         return;
     }
-
-    // QString filename = url.toLocalFile();
-
-    // // QString filename = "/home/arnaud/Work/logos/logos-storage-ui/README.md";
-    // QString sessionId = m_logos->storage_module.uploadInit(filename);
-
-    // qDebug() << "StorageBackend: uploadInit sessionId =" << sessionId;
 
     LogosResult result = m_logos->storage_module.downloadToUrl(cid, url, false);
 
@@ -701,6 +588,7 @@ void StorageBackend::downloadManifest(const QString& cid) {
     manifest["mimetype"]    = mimetype;
     manifest["datasetSize"] = datasetSize;
     manifest["blockSize"]   = blockSize;
+
 }
 
 void StorageBackend::downloadManifests() {
@@ -712,8 +600,6 @@ void StorageBackend::downloadManifests() {
         debug("StorageBackend::downloadManifests failed with error=" + result.getError());
         return;
     }
-
-    qDebug() << "StorageBackend::downloadManifests called, size=" << result.getList().size();
 
     emit manifestsUpdated(result.getList());
 }
@@ -818,6 +704,14 @@ void StorageBackend::saveUserConfig(const QString& configJson) {
     } else {
         debug("Failed to save config to " + USER_CONFIG_PATH);
     }
+
+    QJsonDocument config = QJsonDocument::fromJson(configJson.toUtf8());
+    if (config.isNull()) {
+        qDebug() << "StorageBackend::saveUserConfig invalid json config" << configJson;
+        return;
+    }
+
+    m_config = config;
 }
 
 QJsonDocument StorageBackend::defaultConfig() {
@@ -975,6 +869,12 @@ void StorageBackend::checkNodeIsUp() {
                             "Try going back and check your port forwarding configuration.");
         }
     }
+}
+
+void StorageBackend::fetchWidgetsData() {
+    QMetaObject::invokeMethod(this, &StorageBackend::tryDebug, Qt::QueuedConnection);
+    QMetaObject::invokeMethod(this, &StorageBackend::space, Qt::QueuedConnection);
+    QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
 }
 
 void StorageBackend::status(StorageStatus status) { m_status = status; }

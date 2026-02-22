@@ -68,7 +68,7 @@ Rectangle {
             Layout.fillHeight: true
             clip: true
             contentWidth: width
-            contentHeight: debugText.paintedHeight
+            contentHeight: debugText.implicitHeight
 
             TextEdit {
                 id: debugText

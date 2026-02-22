@@ -11,7 +11,8 @@
 
 static const int RET_OK = 0;
 static const int RET_PROGRESS = 3;
-static const QString ECHO_PROVIDER = "https://echo.codex.storage/";
+// static const QString ECHO_PROVIDER = "https://echo.codex.storage/";
+static const QString ECHO_PROVIDER = "https://ipv4.icanhazip.com";
 static const QString PORT_CHECKER_PROVIDER = "https://portchecker.io/api/";
 static const QString APP_HOME = QDir::homePath() + "/.logos_storage";
 static const QString DEFAULT_DATA_DIR = APP_HOME + "/data";
@@ -137,6 +138,8 @@ class StorageBackend : public QObject {
     // Emit nodeIsntUp(error) on failure
     void checkNodeIsUp();
 
+    void fetchWidgetsData();
+
   signals:
     void ready();
     void startCompleted();
@@ -176,9 +179,14 @@ class StorageBackend : public QObject {
     LogosModules* m_logos;
     StorageStatus m_status;
     QString m_debugLogs;
+
+    // TODO: double check if we need all of this parameters
+    // We could just have the progress passed using event and
+    // the error using reportError
     int m_uploadProgress = 0;
     QString m_uploadStatus = "";
     qint64 m_uploadTotalBytes = 0;
     qint64 m_uploadedBytes = 0;
+
     QJsonDocument m_config;
 };

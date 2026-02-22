@@ -59,7 +59,7 @@ ArcWidget {
         }
 
         LogosText {
-            text: "STORAGE"
+            text: root.total > 0 ? "/ " + root.formatBytes(root.total) : "STORAGE"
             font.pixelSize: 9
             color: Theme.palette.textTertiary
             font.letterSpacing: 1.3

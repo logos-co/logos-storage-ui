@@ -67,7 +67,6 @@ Popup {
                 enabled: jsonEditor.isValid
                 onClicked: {
                     root.backend.saveUserConfig(jsonEditor.text)
-                    root.backend.reloadIfChanged(jsonEditor.text)
                     root.close()
                 }
             }

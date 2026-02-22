@@ -50,6 +50,7 @@ LogosStorageLayout {
 
         LogosTextField {
             Layout.fillWidth: true
+            height: 60
             id: tcpPortTextField
             placeholderText: "Enter the TCP port"
             text: root.tcpPort

@@ -15,7 +15,13 @@ LogosStorageLayout {
         return backend.status === 2 // StorageBackend.Running
     }
 
-    Component.onCompleted: root.backend.start()
+    Component.onCompleted: function () {
+        if (isRunning()) {
+            root.backend.fetchWidgetsData()
+        } else {
+            root.backend.start()
+        }
+    }
 
     HealthIndicator {
         id: health
@@ -35,8 +41,12 @@ LogosStorageLayout {
         signal uploadCompleted(string cid)
         signal downloadCompleted(string cid)
 
-        function start() { status = 2 }
-        function stop() { status = 0 }
+        function start() {
+            status = 2
+        }
+        function stop() {
+            status = 0
+        }
         function checkNodeIsUp() {}
         function tryUploadFile(f) {}
         function downloadManifest(c) {}
@@ -49,7 +59,10 @@ LogosStorageLayout {
         function version() {}
         function saveUserConfig(j) {}
         function reloadIfChanged(j) {}
-        function configJson() { return "{}" }
+        function configJson() {
+            return "{}"
+        }
+        function fetchWidgetsData() {}
     }
 
     SettingsPopup {

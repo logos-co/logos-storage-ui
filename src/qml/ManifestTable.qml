@@ -65,11 +65,13 @@ ColumnLayout {
         LogosTextField {
             id: cidInput
             Layout.fillWidth: true
+            height: getManifestBtn.implicitHeight
             placeholderText: "Enter CID to download manifest…"
             isValid: true
         }
 
         LogosStorageButton {
+            id: getManifestBtn
             text: "GET MANIFEST"
             enabled: root.running && cidInput.text.length > 0
             onClicked: {
