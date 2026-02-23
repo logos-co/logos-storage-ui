@@ -159,7 +159,7 @@ qt_add_qml_module(appqml
         SettingsPopup.qml
         ManifestTable.qml
         NodeHeader.qml
-        StatusWidgets.qml
+        Widgets.qml
         DebugPanel.qml
 )
 

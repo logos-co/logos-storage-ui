@@ -106,7 +106,7 @@ LogosStorageLayout {
                 color: Theme.palette.borderSecondary
             }
 
-            StatusWidgets {
+            Widgets {
                 Layout.fillWidth: true
                 Layout.leftMargin: 24
                 Layout.rightMargin: 24
