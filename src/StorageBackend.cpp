@@ -387,19 +387,8 @@ void StorageBackend::exists(const QString& cid) {
 void StorageBackend::remove(const QString& cid) {
     qDebug() << "StorageBackend::remove called with cid=" << cid;
 
-    LogosResult result = m_logos->storage_module.exists(cid);
+    LogosResult result = m_logos->storage_module.remove(cid);
 
-    if (!result.success) {
-        reportError("Failed to check exists: " + result.getError());
-        return;
-    }
-
-    if (!result.getBool()) {
-        debug("Blocks don't exist in store.");
-        return;
-    }
-
-    result = m_logos->storage_module.remove(cid);
     if (!result.success) {
         reportError("Failed to remove " + cid + ": " + result.getError());
         return;
@@ -409,6 +398,8 @@ void StorageBackend::remove(const QString& cid) {
 
     // Refresh space data for Disk widget
     QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace, Qt::QueuedConnection);
+    // Update manifests list
+    QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
 }
 
 void StorageBackend::fetch(const QString& cid) {
