@@ -28,27 +28,27 @@ Rectangle {
             LogosStorageButton {
                 text: "Debug"
                 enabled: root.running
-                onClicked: root.backend.tryDebug()
+                onClicked: root.backend.logDebugInfo()
             }
             LogosStorageButton {
                 text: "Peer ID"
                 enabled: root.running
-                onClicked: root.backend.showPeerId()
+                onClicked: root.backend.logPeerId()
             }
             LogosStorageButton {
                 text: "Data dir"
                 enabled: root.running
-                onClicked: root.backend.dataDir()
+                onClicked: root.backend.logDataDir()
             }
             LogosStorageButton {
                 text: "SPR"
                 enabled: root.running
-                onClicked: root.backend.spr()
+                onClicked: root.backend.logSpr()
             }
             LogosStorageButton {
                 text: "Version"
                 enabled: root.running
-                onClicked: root.backend.version()
+                onClicked: root.backend.logVersion()
             }
 
             Item {
@@ -83,7 +83,8 @@ Rectangle {
                 bottomPadding: 20
 
                 onTextChanged: Qt.callLater(function () {
-                    logFlick.contentY = Math.max(0, logFlick.contentHeight - logFlick.height)
+                    logFlick.contentY = Math.max(
+                                0, logFlick.contentHeight - logFlick.height)
                 })
             }
         }

@@ -167,8 +167,6 @@ Item {
 
         signal startCompleted
         signal startFailed
-        signal stopCompleted
-        signal initCompleted
         signal ready
         signal error
         signal natExtConfigCompleted

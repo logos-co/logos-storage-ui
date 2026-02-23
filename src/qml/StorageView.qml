@@ -48,15 +48,15 @@ LogosStorageLayout {
             status = 0
         }
         function checkNodeIsUp() {}
-        function tryUploadFile(f) {}
+        function uploadFile(f) {}
         function downloadManifest(c) {}
         function remove(c) {}
-        function tryDownloadFile(c, d) {}
-        function tryDebug() {}
-        function showPeerId() {}
-        function dataDir() {}
-        function spr() {}
-        function version() {}
+        function downloadFile(c, d) {}
+        function logDebugInfo() {}
+        function logPeerId() {}
+        function logDataDir() {}
+        function logSpr() {}
+        function logVersion() {}
         function saveUserConfig(j) {}
         function reloadIfChanged(j) {}
         function configJson() {

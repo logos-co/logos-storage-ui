@@ -24,7 +24,7 @@ ColumnLayout {
         fileMode: FileDialog.SaveFile
         onAccepted: {
             if (pendingManifest) {
-                root.backend.tryDownloadFile(pendingManifest.cid, selectedFile)
+                root.backend.downloadFile(pendingManifest.cid, selectedFile)
                 pendingManifest = null
             }
         }

@@ -11,6 +11,7 @@ ColumnLayout {
 
     property var backend
     property bool running: false
+    property string _lastUploadedCid: ""
 
     spacing: 0
 
@@ -26,16 +27,17 @@ ColumnLayout {
 
     FileDialog {
         id: uploadDialog
-        onAccepted: root.backend.tryUploadFile(selectedFile)
+        onAccepted: root.backend.uploadFile(selectedFile)
     }
 
     Connections {
         target: root.backend
-        function onUploadCompleted(cid) { root._lastCid = cid }
-        function onDownloadCompleted(cid) { root._lastCid = cid }
-    }
+        function onUploadCompleted(cid) {
+            root._lastUploadedCid = cid
+        }
 
-    property string _lastCid: ""
+        function onDownloadCompleted() {}
+    }
 
     RowLayout {
         Layout.fillWidth: true
@@ -66,7 +68,7 @@ ColumnLayout {
         Layout.bottomMargin: 10
         Layout.preferredHeight: 36
 
-        opacity: root._lastCid.length > 0 ? 1.0 : 0.0
+        opacity: root._lastUploadedCid.length > 0 ? 1.0 : 0.0
 
         Behavior on opacity {
             NumberAnimation {
@@ -95,7 +97,7 @@ ColumnLayout {
 
                 LogosText {
                     text: {
-                        var c = root._lastCid
+                        var c = root._lastUploadedCid
                         return c.length > 20 ? c.substring(0, 8) + "…" + c.slice(-6) : c
                     }
                     font.pixelSize: 11
@@ -139,14 +141,15 @@ ColumnLayout {
             Rectangle {
                 anchors.fill: parent
                 radius: parent.radius
-                color: cidBadgeHover.hovered ? Qt.rgba(1, 1, 1, 0.04) : "transparent"
+                color: cidBadgeHover.hovered ? Qt.rgba(1, 1, 1,
+                                                       0.04) : "transparent"
             }
 
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                    clipHelper.copyText(root._lastCid)
+                    clipHelper.copyText(root._lastUploadedCid)
                     copyFlashAnim.restart()
                 }
             }

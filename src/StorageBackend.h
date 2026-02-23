@@ -35,7 +35,7 @@ class StorageBackend : public QObject {
     Q_OBJECT
     QML_ELEMENT
     Q_PROPERTY(QString debugLogs READ debugLogs NOTIFY debugLogsChanged)
-    Q_PROPERTY(StorageStatus status READ status WRITE status NOTIFY statusChanged)
+    Q_PROPERTY(StorageStatus status READ status NOTIFY statusChanged)
     Q_PROPERTY(int uploadProgress READ uploadProgress NOTIFY uploadProgressChanged)
     Q_PROPERTY(QString uploadStatus READ uploadStatus NOTIFY uploadStatusChanged)
   public:
@@ -61,30 +61,71 @@ class StorageBackend : public QObject {
     QString uploadStatus() const;
     Q_INVOKABLE QString configJson() const;
 
+    // Provide a default config for onboarding
     static QJsonDocument defaultConfig();
 
     explicit StorageBackend(LogosAPI* logosAPI = nullptr, QObject* parent = nullptr);
     ~StorageBackend();
 
   public slots:
+    // Init the Storage Module using the config json
+    // passed in parameter.
+    // It subscribes to events:
+    // 1- storageStart
+    // 2- storageStop
+    // 3- storageUploadProgress
+    // 4- storageUploadDone
+    // 5- storageDownloadProgress
+    // 6- storageDownloadProgress
+    LogosResult init(const QString& configJson);
+
+    // Start the node
+    // If a configuration is passed (not empty string),
+    // the configuration will be reloaded before trying
+    // to start.
     LogosResult start(const QString& configJson = "");
+
+    // Destroy the Storage Module
     void destroy();
+
+    // Emit stopCompleted() on completion of it the module is not started
     void stop();
-    void tryDebug();
+
+    // Log debug info
+    // Emit peersUpdated(int peers)
+    void logDebugInfo();
+
+    // Other log methods for debug
+    void logDataDir();
+    void logVersion();
+    void logSpr();
+    void logPeerId();
+
     void exists(const QString& cid);
     void remove(const QString& cid);
+
+    // Fetch a cid in background
     void fetch(const QString& cid);
-    void tryUploadFile(const QUrl& url);
-    void tryDownloadFile(const QString& cid, const QUrl& url);
-    void dataDir();
-    void version();
-    void spr();
-    void showPeerId();
+
+    // Upload a file from the url
+    // Emit uploadProgressChanged and uploadStatusChanged on storageUploadProgress
+    // Emit uploadProgressChanged, uploadStatusChanged and uploadCompleted(cid)  on storageUploadDone
+    void uploadFile(const QUrl& url);
+
+    // Upload a file from the url
+    // Emit downloadCompleted(cid)  on storageDownloadDone
+    void downloadFile(const QString& cid, const QUrl& url);
+
+    // Emit manifestsUpdated
     void downloadManifest(const QString& cid);
+
+    // Download all the manifests and notify
+    // Emit manifestsUpdated
     void downloadManifests();
-    void space();
-    LogosResult init(const QString& configJson);
-    void status(StorageStatus status);
+
+    // Call space from the Storage Module
+    // Emit spaceUpdated to refresh the widget
+    void refreshSpace();
 
     // Save the user config passed in parameter
     // into the user config json.
@@ -108,8 +149,6 @@ class StorageBackend : public QObject {
     //
     // On success, the status will be set to Stopped.
     //
-    // Emit initCompleted on success.
-    // Emit initFailed on failure.
     void reloadIfChanged(const QString& configJson);
 
     // Enables the upnp in the config
@@ -118,6 +157,7 @@ class StorageBackend : public QObject {
 
     // Enables the net external in the config
     // and re-create a context with the new configuration
+    // Emit natExtConfigCompleted
     void enableNatExtConfig(int tcpPort);
 
     // This method will ensure that the node is ready to be used.
@@ -134,25 +174,48 @@ class StorageBackend : public QObject {
     // Emit nodeIsntUp(error) on failure
     void checkNodeIsUp();
 
+    // Fetch multiple data for the widgets: manifests, debug..
     void fetchWidgetsData();
 
   signals:
+    // Used to start the Storage Module
+    // if the onboarding is already done
     void ready();
+
+    // Used in StartNode component to detect
+    // success in the onboarding.
     void startCompleted();
+
+    // Used in StartNode component to detect
+    // failure in the onboarding.
     void startFailed(const QString& error);
+
+    // Refresh the node state indicator
     void statusChanged();
+
+    // Refresh the debug logs panel.
     void debugLogsChanged();
+
+    // Used in the shutdown process
     void stopCompleted();
+
+    // Used to refresh the disk widgets
+    void spaceUpdated(qlonglong total, qlonglong used);
+
     void uploadProgressChanged();
     void uploadStatusChanged();
+
+    // Used to refresh the Manifests table
     void manifestsUpdated(const QVariantList& manifests);
-    void quotaChanged();
-    void initCompleted();
+
+    // Used in the on boarding to detect success
     void natExtConfigCompleted();
+
     void uploadCompleted(const QString& cid);
     void downloadCompleted(const QString& cid);
+
+    // Display a toast message on error
     void error(const QString& message);
-    void spaceUpdated(qlonglong total, qlonglong used);
 
     // Emitted when the node port is reachable from the internet
     void nodeIsUp();
@@ -166,14 +229,29 @@ class StorageBackend : public QObject {
   private slots:
 
   private:
+    // Update the status
+    // Emit statusUpdated if the status was different from the previous status
     void setStatus(StorageStatus newStatus);
-    void peerConnect(const QString& peerId);
-    void debug(const QString& log);
+
+    // Display debug (or message) in the terminal and
+    // add it to the debugLogs to make it accessible
+    // from the debug panel.
+    // Default level is debug, can be "warning" to display warning
+    // messages.
+    void debug(const QString& log, const QString& level = "debug");
+
+    // Display log and add it to debugLogs
+    // Emit error(message)
     void reportError(const QString& message);
 
+    // Logos related variables
     LogosAPI* m_logosAPI;
     LogosModules* m_logos;
+
+    // Status of the Storage Module
     StorageStatus m_status;
+
+    // List of debug logs displayed to the application.
     QString m_debugLogs;
 
     // TODO: double check if we need all of this parameters
@@ -184,5 +262,7 @@ class StorageBackend : public QObject {
     qint64 m_uploadTotalBytes = 0;
     qint64 m_uploadedBytes = 0;
 
+    // Internal configuration object. It can be updated by
+    // upnp or port forwarning methods.
     QJsonDocument m_config;
 };
