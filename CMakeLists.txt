@@ -176,6 +176,8 @@ if(_cpp_sdk_is_source)
         ${LOGOS_CPP_SDK_ROOT}/cpp/token_manager.h
         ${LOGOS_CPP_SDK_ROOT}/cpp/module_proxy.cpp
         ${LOGOS_CPP_SDK_ROOT}/cpp/module_proxy.h
+        ${LOGOS_CPP_SDK_ROOT}/cpp/logos_types.cpp
+        ${LOGOS_CPP_SDK_ROOT}/cpp/logos_types.h
     )
 endif()
 
