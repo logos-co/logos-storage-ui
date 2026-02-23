@@ -44,7 +44,7 @@ ColumnLayout {
         spacing: Theme.spacing.medium
 
         UploadWidget {
-            uploadProgress: root.backend.uploadProgress
+            backend: root.backend
             running: root.running
             onUploadRequested: uploadDialog.open()
         }

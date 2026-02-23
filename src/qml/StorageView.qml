@@ -32,12 +32,12 @@ LogosStorageLayout {
         id: mockBackend
         property var status: 0
         property var debugLogs: "Hello!"
-        property string uploadStatus: ""
-        property int uploadProgress: 0
         property var manifests: []
         signal nodeIsUp
         signal nodeIsntUp(string reason)
         signal peersUpdated(int count)
+        signal uploadStarted(real totalBytes)
+        signal uploadChunk(real len)
         signal uploadCompleted(string cid)
         signal downloadCompleted(string cid)
 

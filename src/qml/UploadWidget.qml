@@ -6,14 +6,40 @@ import Logos.Controls
 ArcWidget {
     id: root
 
-    property int uploadProgress: 0 // 0–100
+    property var backend
     property bool running: false
+    property real totalBytes: 0
+    property real uploadedBytes: 0
+
+    readonly property int uploadProgress: {
+        if (totalBytes <= 0) {
+            return 0
+        }
+        return Math.min(Math.round(uploadedBytes / totalBytes * 100), 100)
+    }
+
+    signal uploadRequested
 
     readonly property bool isUploading: uploadProgress > 0
                                         && uploadProgress < 100
     readonly property bool isDone: uploadProgress >= 100
 
-    signal uploadRequested
+    Connections {
+        target: root.backend
+
+        function onUploadStarted(totalBytes) {
+            root._totalBytes = totalBytes
+            root._uploadedBytes = 0
+        }
+
+        function onUploadChunk(len) {
+            root.uploadedBytes += len
+        }
+
+        function onUploadCompleted(cid) {
+            root._uploadedBytes = root.totalBytes // force 100%
+        }
+    }
 
     fraction: root.uploadProgress / 100.0
     fillColor: root.isDone ? Theme.palette.success : Theme.palette.text

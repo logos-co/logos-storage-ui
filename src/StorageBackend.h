@@ -36,8 +36,6 @@ class StorageBackend : public QObject {
     QML_ELEMENT
     Q_PROPERTY(QString debugLogs READ debugLogs NOTIFY debugLogsChanged)
     Q_PROPERTY(StorageStatus status READ status NOTIFY statusChanged)
-    Q_PROPERTY(int uploadProgress READ uploadProgress NOTIFY uploadProgressChanged)
-    Q_PROPERTY(QString uploadStatus READ uploadStatus NOTIFY uploadStatusChanged)
   public:
     enum StorageStatus {
         // Stopped means that the context is created but the module is not started
@@ -57,8 +55,6 @@ class StorageBackend : public QObject {
 
     QString debugLogs() const;
     StorageStatus status() const;
-    int uploadProgress() const;
-    QString uploadStatus() const;
     Q_INVOKABLE QString configJson() const;
 
     // Provide a default config for onboarding
@@ -108,8 +104,9 @@ class StorageBackend : public QObject {
     void fetch(const QString& cid);
 
     // Upload a file from the url
-    // Emit uploadProgressChanged and uploadStatusChanged on storageUploadProgress
-    // Emit uploadProgressChanged, uploadStatusChanged and uploadCompleted(cid)  on storageUploadDone
+    // Emit uploadStarted(totalBytes) when the upload begins
+    // Emit uploadChunk(len) on each storageUploadProgress event
+    // Emit uploadCompleted(cid) on storageUploadDone
     void uploadFile(const QUrl& url);
 
     // Upload a file from the url
@@ -202,8 +199,11 @@ class StorageBackend : public QObject {
     // Used to refresh the disk widgets
     void spaceUpdated(qlonglong total, qlonglong used);
 
-    void uploadProgressChanged();
-    void uploadStatusChanged();
+    // Emitted when an upload starts, with the total file size
+    void uploadStarted(qint64 totalBytes);
+
+    // Emitted for each chunk received during upload
+    void uploadChunk(qint64 len);
 
     // Used to refresh the Manifests table
     void manifestsUpdated(const QVariantList& manifests);
@@ -253,14 +253,6 @@ class StorageBackend : public QObject {
 
     // List of debug logs displayed to the application.
     QString m_debugLogs;
-
-    // TODO: double check if we need all of this parameters
-    // We could just have the progress passed using event and
-    // the error using reportError
-    int m_uploadProgress = 0;
-    QString m_uploadStatus = "";
-    qint64 m_uploadTotalBytes = 0;
-    qint64 m_uploadedBytes = 0;
 
     // Internal configuration object. It can be updated by
     // upnp or port forwarning methods.

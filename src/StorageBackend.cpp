@@ -145,26 +145,9 @@ LogosResult StorageBackend::init(const QString& configJson) {
             if (!success) {
                 QString message = data[1].toString();
                 reportError("Failure during upload progress: " + message);
-
-                m_uploadStatus = "Error: " + message;
-                emit uploadStatusChanged();
             } else {
-                QString sessionId = data[1].toString();
                 qint64 len = data[2].toLongLong();
-
-                m_uploadedBytes += len;
-
-                if (m_uploadTotalBytes > 0) {
-                    m_uploadProgress = (m_uploadedBytes * 100) / m_uploadTotalBytes;
-                }
-
-                m_uploadStatus = QString("Uploading: %1 / %2 bytes (%3%)")
-                    .arg(m_uploadedBytes)
-                    .arg(m_uploadTotalBytes)
-                    .arg(m_uploadProgress);
-
-                emit uploadProgressChanged();
-                emit uploadStatusChanged();
+                emit uploadChunk(len);
             }
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageUploadProgress events";
@@ -175,20 +158,11 @@ LogosResult StorageBackend::init(const QString& configJson) {
 
             if (!success) {
                 QString message = data[1].toString();
-                debug("Failed to upload: " + message);
-                m_uploadProgress = 0;
-                m_uploadStatus = "Upload failed";
-                emit uploadProgressChanged();
-                emit uploadStatusChanged();
+                reportError("Failed to upload: " + message);
             } else {
                 QString sessionId = data[1].toString();
                 QString cid = data[2].toString();
                 debug("Upload completed for session " + sessionId + " with CID " + cid);
-
-                m_uploadProgress = 100;
-                m_uploadStatus = "Upload completed!";
-                emit uploadProgressChanged();
-                emit uploadStatusChanged();
                 emit uploadCompleted(cid);
                 QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace, Qt::QueuedConnection);
                 QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
@@ -361,16 +335,9 @@ void StorageBackend::uploadFile(const QUrl& url) {
         return;
     }
 
-    // Reset and initialize progress tracking
-    m_uploadProgress = 0;
-    m_uploadedBytes = 0;
-    m_uploadTotalBytes = QFileInfo(url.toLocalFile()).size();
-    m_uploadStatus = "Starting upload...";
-
-    emit uploadProgressChanged();
-    emit uploadStatusChanged();
-
-    debug(QString("Starting upload of file: %1 bytes").arg(m_uploadTotalBytes));
+    qint64 totalBytes = QFileInfo(url.toLocalFile()).size();
+    debug(QString("Starting upload of file: %1 bytes").arg(totalBytes));
+    emit uploadStarted(totalBytes);
 
     LogosResult result = m_logos->storage_module.uploadUrl(url);
 
@@ -836,6 +803,3 @@ QString StorageBackend::configJson() const { return QString::fromUtf8(m_config.t
 
 StorageBackend::StorageStatus StorageBackend::status() const { return m_status; }
 
-int StorageBackend::uploadProgress() const { return m_uploadProgress; }
-
-QString StorageBackend::uploadStatus() const { return m_uploadStatus; }
