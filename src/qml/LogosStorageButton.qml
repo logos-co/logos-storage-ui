@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import Logos.Theme
 
+// qmllint disable unqualified
 Button {
     id: control
     padding: Theme.spacing.small
@@ -27,18 +28,22 @@ Button {
 
     background: Rectangle {
         color: {
-            if (!control.enabled)
+            if (!control.enabled) {
                 return Theme.palette.backgroundElevated
-            if (control.isSuccess)
+            }
+            if (control.isSuccess) {
                 return Theme.palette.success
+            }
             return Theme.palette.backgroundSecondary
         }
         border.width: 1
         border.color: {
-            if (!control.enabled)
+            if (!control.enabled) {
                 return Theme.palette.border
-            if (control.isSuccess)
+            }
+            if (control.isSuccess) {
                 return Theme.palette.success
+            }
             return Theme.palette.border
         }
         radius: Theme.spacing.tiny

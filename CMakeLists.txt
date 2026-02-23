@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
+set(LOGOS_STORAGE_UI_USE_VENDOR OFF)
 
 ########### DEPENDENCIES SECTION ###########
 
@@ -176,6 +177,8 @@ if(_cpp_sdk_is_source)
         ${LOGOS_CPP_SDK_ROOT}/cpp/token_manager.h
         ${LOGOS_CPP_SDK_ROOT}/cpp/module_proxy.cpp
         ${LOGOS_CPP_SDK_ROOT}/cpp/module_proxy.h
+        ${LOGOS_CPP_SDK_ROOT}/cpp/logos_types.cpp
+        ${LOGOS_CPP_SDK_ROOT}/cpp/logos_types.h
     )
 endif()
 

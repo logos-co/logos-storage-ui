@@ -4,28 +4,42 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-LogosStorageLayout {
+Popup {
     id: root
 
     property var backend: MockBackend
 
-    signal back
-    signal completed
+    modal: true
+    width: 520
+    height: 400
+    anchors.centerIn: Overlay.overlay
+    padding: 24
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+    // Reload the live config every time the popup opens
+    onOpened: jsonEditor.load(root.backend.configJson() || "{}")
+
+    background: Rectangle {
+        color: Theme.palette.backgroundSecondary
+        border.color: Theme.palette.borderSecondary
+        border.width: 1
+        radius: 14
+    }
 
     ColumnLayout {
         anchors.fill: parent
-        anchors.margins: 40
-        spacing: Theme.spacing.medium
+        spacing: Theme.spacing.small
 
         LogosText {
-            text: "Advanced Configuration"
+            text: "Configuration"
             font.pixelSize: Theme.typography.titleText
             Layout.alignment: Qt.AlignHCenter
         }
 
         LogosText {
-            text: "Edit the JSON configuration below, then click Validate."
+            text: "Edit the JSON configuration below, then click Save."
             font.pixelSize: Theme.typography.primaryText
+            color: Theme.palette.textSecondary
             Layout.alignment: Qt.AlignHCenter
             horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
@@ -36,7 +50,6 @@ LogosStorageLayout {
             id: jsonEditor
             Layout.fillWidth: true
             Layout.fillHeight: true
-            Component.onCompleted: load(root.backend.configJson() || "{}")
         }
 
         RowLayout {
@@ -44,17 +57,17 @@ LogosStorageLayout {
             spacing: Theme.spacing.medium
 
             LogosStorageButton {
-                text: "Back"
-                onClicked: root.back()
+                text: "Cancel"
+                onClicked: root.close()
             }
 
             LogosStorageButton {
-                text: "Validate"
+                text: "Save"
                 variant: "success"
                 enabled: jsonEditor.isValid
                 onClicked: {
                     root.backend.saveUserConfig(jsonEditor.text)
-                    root.completed()
+                    root.close()
                 }
             }
         }

@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import QtCore
 import Logos.Theme
 
@@ -22,23 +23,13 @@ Item {
     id: root
     implicitWidth: 800
     implicitHeight: 800
+    Layout.fillWidth: true
+    Layout.fillHeight: true
 
-    property var backend: mockBackend
+    property var backend: MockBackend
 
     Connections {
         target: root.backend
-
-        // The node is stopped during the onboarding
-        // when the user try to change his settings
-        // and click on "Back",
-        // In that case, we pop the navigation after
-        // the node is stopped.
-        // function onStopCompleted() {
-        //     if (!settings.onboardingCompleted) {
-
-        //         //    stackView.pop()
-        //     }
-        // }
 
         // When the onboarding is completed,
         // the user should have a config save in his
@@ -168,46 +159,4 @@ Item {
         anchors.bottomMargin: Theme.spacing.medium
     }
 
-    QtObject {
-        id: mockBackend
-
-        readonly property bool isMock: true
-        property int status
-
-        signal startCompleted
-        signal startFailed
-        signal stopCompleted
-        signal initCompleted
-        signal ready
-        signal error
-        signal natExtConfigCompleted
-        signal nodeIsUp
-        signal nodeIsntUp
-
-        function start() {
-            console.log("mock start called")
-        }
-
-        function saveUserConfig() {}
-
-        function loadUserConfig() {}
-
-        function reloadIfChanged() {}
-
-        function enableUpnpConfig() {}
-
-        function enableNatExtConfig() {
-            natExtConfigCompleted()
-        }
-
-        function saveCurrentConfig() {}
-
-        function stop() {}
-
-        function checkNodeIsUp() {}
-
-        function guessResolution() {
-            return ""
-        }
-    }
 }

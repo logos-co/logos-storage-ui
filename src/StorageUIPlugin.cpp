@@ -26,19 +26,6 @@ QWidget* StorageUIPlugin::createWidget(LogosAPI* logosAPI) {
 
     qDebug() << "StorageUIPlugin: Loading settings...";
 
-    // Default constructor uses QCoreApplication org/domain/app — same path as QML QtCore.Settings
-    // QSettings settings;
-    // int discoveryPort = settings.value("Storage/discoveryPort", 8090).toInt();
-    // int tcpPort = settings.value("Storage/tcpPort", 0).toInt();
-    // QString dataDir = settings.value("Storage/dataDir", "").toString();
-    // bool onboardingCompleted = settings.value("Storage/onboardingCompleted", false).toBool();
-
-    // qDebug() << "StorageUIPlugin: Settings file:" << settings.fileName();
-    // qDebug() << "StorageUIPlugin: onboardingCompleted=" << onboardingCompleted;
-    // qDebug() << "StorageUIPlugin: dataDir=" << dataDir;
-    // qDebug() << "StorageUIPlugin: discoveryPort=" << discoveryPort;
-    // qDebug() << "StorageUIPlugin: tcpPort=" << tcpPort;
-
     // Always load Main.qml — QML handles navigation (onboarding vs startNode)
     StorageBackend* backend = new StorageBackend(logosAPI, quickWidget);
 
@@ -54,18 +41,10 @@ QWidget* StorageUIPlugin::createWidget(LogosAPI* logosAPI) {
 
     root->setProperty("backend", QVariant::fromValue(static_cast<QObject*>(backend)));
 
+    // Here we emit an event ready because
+    // if the onboarding is already done,
+    // the backend can be init using onReady subscription
     backend->ready();
-    // Storage init is done in the QML
-    // Build config from settings if onboarding was done, otherwise use empty config
-    // QString configJson = StorageBackend::getUserConfig();
-    // qDebug() << "UserConfig" << StorageBackend::getUserConfigPath();
-    // qDebug() << "configJson" << configJson;
-
-    // LogosResult result = backend->init(configJson);
-
-    // if (!result.success) {
-    //     qWarning() << "StorageUIPlugin: Failed to init backend:" << result.getError();
-    // }
 
     return quickWidget;
 }

@@ -1,0 +1,12 @@
+import QtQuick
+
+// Right-pointing triangle — play / start
+DotIcon {
+    pattern: [
+        1, 0, 0, 0, 0,
+        1, 1, 0, 0, 0,
+        1, 1, 1, 0, 0,
+        1, 1, 0, 0, 0,
+        1, 0, 0, 0, 0
+    ]
+}

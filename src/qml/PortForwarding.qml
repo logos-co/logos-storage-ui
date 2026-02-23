@@ -8,7 +8,7 @@ LogosStorageLayout {
 
     property var tcpPort: 0
     property bool loading: false
-    property var backend: mockBackend
+    property var backend: MockBackend
 
     signal back
     signal completed(int port)
@@ -50,6 +50,7 @@ LogosStorageLayout {
 
         LogosTextField {
             Layout.fillWidth: true
+            height: 60
             id: tcpPortTextField
             placeholderText: "Enter the TCP port"
             text: root.tcpPort
@@ -95,9 +96,4 @@ LogosStorageLayout {
         }
     }
 
-    QtObject {
-        id: mockBackend
-
-        function enableNatExtConfig(port) {}
-    }
 }
