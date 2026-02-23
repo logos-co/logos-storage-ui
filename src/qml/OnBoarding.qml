@@ -6,7 +6,7 @@ import Logos.Controls
 LogosStorageLayout {
     id: root
 
-    property var backend: mockBackend
+    property var backend: MockBackend
 
     signal back
     signal completed(bool upnpEnabled)
@@ -156,9 +156,4 @@ LogosStorageLayout {
         }
     }
 
-    QtObject {
-        id: mockBackend
-
-        function enableUpnpConfig() {}
-    }
 }

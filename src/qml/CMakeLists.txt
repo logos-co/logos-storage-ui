@@ -119,6 +119,8 @@ target_link_libraries(appqml PRIVATE
 )
 
 # Define the qml module and the StorageBackend sources.
+set_source_files_properties(MockBackend.qml PROPERTIES QML_SINGLETON TRUE)
+
 qt_add_qml_module(appqml
     URI StorageBackend
     VERSION 1.0
@@ -162,6 +164,7 @@ qt_add_qml_module(appqml
         Widgets.qml
         DebugPanel.qml
         Utils.js
+        MockBackend.qml
 )
 
 # Set up QML module directory for runtime

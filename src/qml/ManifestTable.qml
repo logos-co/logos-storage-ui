@@ -11,7 +11,7 @@ import "Utils.js" as Utils
 ColumnLayout {
     id: root
 
-    property var backend
+    property var backend: MockBackend
     property bool running: false
     property var manifests: []
 

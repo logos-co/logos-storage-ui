@@ -9,7 +9,7 @@ import Logos.Controls
 ColumnLayout {
     id: root
 
-    property var backend
+    property var backend: MockBackend
     property bool running: false
     property string _lastUploadedCid: ""
 

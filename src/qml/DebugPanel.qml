@@ -7,7 +7,7 @@ import Logos.Controls
 Rectangle {
     id: root
 
-    property var backend
+    property var backend: MockBackend
     property bool running: false
 
     color: Theme.palette.backgroundElevated

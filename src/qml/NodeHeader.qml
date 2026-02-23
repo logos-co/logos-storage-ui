@@ -7,7 +7,7 @@ import Logos.Controls
 RowLayout {
     id: root
 
-    property var backend
+    property var backend: MockBackend
     property bool nodeIsUp: false
     property bool blinkOn: false
 

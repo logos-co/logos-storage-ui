@@ -7,7 +7,7 @@ import Logos.Controls
 Popup {
     id: root
 
-    property var backend
+    property var backend: MockBackend
 
     modal: true
     width: 520

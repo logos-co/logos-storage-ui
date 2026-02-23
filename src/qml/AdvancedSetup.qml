@@ -7,7 +7,7 @@ import Logos.Controls
 LogosStorageLayout {
     id: root
 
-    property var backend: null
+    property var backend: MockBackend
 
     signal back
     signal completed

@@ -7,7 +7,7 @@ import "Utils.js" as Utils
 ArcWidget {
     id: root
 
-    property var backend: mockBackend
+    property var backend: MockBackend
     property double total: 0
     property double used: 0
 
@@ -48,17 +48,5 @@ ArcWidget {
         }
     }
 
-    QtObject {
-        id: mockBackend
 
-        signal spaceUpdated(double total, double used)
-        signal uploadCompleted
-
-        function space() {
-            return {
-                "total": 0,
-                "used": 0
-            }
-        }
-    }
 }

@@ -6,7 +6,7 @@ import Logos.Controls
 ArcWidget {
     id: root
 
-    property var backend
+    property var backend: MockBackend
     property int peers: 0
     property int maxPeers: 20
 

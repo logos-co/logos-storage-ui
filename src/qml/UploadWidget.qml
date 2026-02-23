@@ -6,7 +6,7 @@ import Logos.Controls
 ArcWidget {
     id: root
 
-    property var backend
+    property var backend: MockBackend
     property bool running: false
     property real totalBytes: 0
     property real uploadedBytes: 0
@@ -28,8 +28,8 @@ ArcWidget {
         target: root.backend
 
         function onUploadStarted(totalBytes) {
-            root._totalBytes = totalBytes
-            root._uploadedBytes = 0
+            root.totalBytes = totalBytes
+            root.uploadedBytes = 0
         }
 
         function onUploadChunk(len) {
@@ -37,7 +37,7 @@ ArcWidget {
         }
 
         function onUploadCompleted(cid) {
-            root._uploadedBytes = root.totalBytes // force 100%
+            root.uploadedBytes = root.totalBytes // force 100%
         }
     }
 

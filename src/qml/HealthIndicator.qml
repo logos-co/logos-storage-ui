@@ -3,7 +3,7 @@ import QtQuick
 QtObject {
     id: root
 
-    property var backend
+    property var backend: MockBackend
     property bool nodeIsUp: false
     property bool blinkOn: true
     readonly property int threeMinutes: 180000

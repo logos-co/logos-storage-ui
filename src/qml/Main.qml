@@ -26,7 +26,7 @@ Item {
     Layout.fillWidth: true
     Layout.fillHeight: true
 
-    property var backend: mockBackend
+    property var backend: MockBackend
 
     Connections {
         target: root.backend
@@ -159,44 +159,4 @@ Item {
         anchors.bottomMargin: Theme.spacing.medium
     }
 
-    QtObject {
-        id: mockBackend
-
-        readonly property bool isMock: true
-        property int status
-
-        signal startCompleted
-        signal startFailed
-        signal ready
-        signal error
-        signal natExtConfigCompleted
-        signal nodeIsUp
-        signal nodeIsntUp
-
-        function start() {
-            console.log("mock start called")
-        }
-
-        function saveUserConfig() {}
-
-        function loadUserConfig() {}
-
-        function reloadIfChanged() {}
-
-        function enableUpnpConfig() {}
-
-        function enableNatExtConfig() {
-            natExtConfigCompleted()
-        }
-
-        function saveCurrentConfig() {}
-
-        function stop() {}
-
-        function checkNodeIsUp() {}
-
-        function guessResolution() {
-            return ""
-        }
-    }
 }

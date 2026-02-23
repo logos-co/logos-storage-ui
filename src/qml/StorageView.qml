@@ -8,7 +8,7 @@ import Logos.Controls
 LogosStorageLayout {
     id: root
 
-    property var backend: mockBackend
+    property var backend: MockBackend
     property bool showDebug: false
 
     function isRunning() {
@@ -26,43 +26,6 @@ LogosStorageLayout {
     HealthIndicator {
         id: health
         backend: root.backend
-    }
-
-    QtObject {
-        id: mockBackend
-        property var status: 0
-        property var debugLogs: "Hello!"
-        property var manifests: []
-        signal nodeIsUp
-        signal nodeIsntUp(string reason)
-        signal peersUpdated(int count)
-        signal uploadStarted(real totalBytes)
-        signal uploadChunk(real len)
-        signal uploadCompleted(string cid)
-        signal downloadCompleted(string cid)
-
-        function start() {
-            status = 2
-        }
-        function stop() {
-            status = 0
-        }
-        function checkNodeIsUp() {}
-        function uploadFile(f) {}
-        function downloadManifest(c) {}
-        function remove(c) {}
-        function downloadFile(c, d) {}
-        function logDebugInfo() {}
-        function logPeerId() {}
-        function logDataDir() {}
-        function logSpr() {}
-        function logVersion() {}
-        function saveUserConfig(j) {}
-        function reloadIfChanged(j) {}
-        function configJson() {
-            return "{}"
-        }
-        function fetchWidgetsData() {}
     }
 
     SettingsPopup {

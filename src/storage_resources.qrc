@@ -36,6 +36,7 @@
         <file alias="DeleteIcon.qml">qml/icons/DeleteIcon.qml</file>
         <file alias="ArcWidget.qml">qml/icons/ArcWidget.qml</file>
         <file alias="Utils.js">qml/Utils.js</file>
+        <file alias="MockBackend.qml">qml/MockBackend.qml</file>
         <file>icons/storage.png</file>
     </qresource>
 </RCC>

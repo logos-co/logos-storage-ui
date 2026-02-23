@@ -6,7 +6,7 @@ import Logos.Theme
 LogosStorageLayout {
     id: root
 
-    property var backend: mockBackend
+    property var backend: MockBackend
     property string status: ""
     property string title: "Starting your node"
     property string resolution: ""
@@ -131,19 +131,4 @@ LogosStorageLayout {
         onTriggered: root.onNodeStarted()
     }
 
-    QtObject {
-        id: mockBackend
-
-        readonly property bool isMock: true
-
-        signal startCompleted
-        signal startFailed(string error)
-        signal nodeIsUp
-        signal nodeIsntUp(string reason)
-
-        function checkNodeIsUp() {}
-        function stop() {}
-        function saveCurrentConfig() {}
-        function start() {}
-    }
 }
