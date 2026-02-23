@@ -18,12 +18,10 @@ ArcWidget {
     fraction: root.uploadProgress / 100.0
     fillColor: root.isDone ? Theme.palette.success : Theme.palette.text
 
-    // ── Center content ────────────────────────────────────────────────────────
     ColumnLayout {
         anchors.centerIn: parent
         spacing: 2
 
-        // Idle or done: upload icon
         UploadIcon {
             dotColor: Theme.palette.textSecondary
             dotSize: 4

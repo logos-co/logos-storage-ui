@@ -161,6 +161,7 @@ qt_add_qml_module(appqml
         NodeHeader.qml
         Widgets.qml
         DebugPanel.qml
+        Utils.js
 )
 
 # Set up QML module directory for runtime
