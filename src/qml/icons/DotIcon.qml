@@ -1,4 +1,5 @@
 import QtQuick
+import Logos.Theme
 
 // qmllint disable unqualified
 Item {
@@ -13,7 +14,7 @@ Item {
     property int dotSpacing: 4
 
     // Appearance
-    property color dotColor: "white"
+    property color dotColor: Theme.palette.primary
     property real inactiveOpacity: 0.1
     property real activeOpacity: 0.9
 

@@ -165,6 +165,15 @@ qt_add_qml_module(appqml
         DebugPanel.qml
         Utils.js
         MockBackend.qml
+        OnBoardingLayout.qml
+        OnBoardingHeader.qml
+        OnBoardingProgress.qml
+        assets/bg.png
+        assets/badge_alpha.png
+        assets/alpha.png
+        RESOURCES
+        QML_FILES OnBoardingCard.qml
+
 )
 
 # Set up QML module directory for runtime
