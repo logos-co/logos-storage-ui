@@ -30,12 +30,7 @@ bool Logos::init()
     logos_core_start();
     std::cout << "Logos Core started successfully!" << std::endl;
 
-    if (!logos_core_load_plugin("capability_module")) {
-        std::cerr << "Failed to load capability_module plugin" << std::endl;
-        return false;
-    }
-    std::cout << "Successfully loaded capability_module plugin" << std::endl;
-
+    // capability_module is loaded automatically by logos_core_start()
     if (!logos_core_load_plugin("storage_module")) {
         std::cerr << "Failed to load storage_module plugin" << std::endl;
         return false;
