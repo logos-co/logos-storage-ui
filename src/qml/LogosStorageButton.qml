@@ -7,10 +7,9 @@ import Logos.Theme
 Button {
     id: control
     implicitHeight: 48
-    leftPadding: Theme.spacing.xxlarge
-    rightPadding: Theme.spacing.xxlarge
-    topPadding: Theme.spacing.small
-    bottomPadding: Theme.spacing.small
+    implicitWidth: 200
+    leftPadding: Theme.spacing.large
+    rightPadding: Theme.spacing.large
 
     // "default" | "primary"
     property string variant: "default"
@@ -20,11 +19,13 @@ Button {
     property string iconPosition: "left" // "left" | "right"
 
     contentItem: RowLayout {
+        width: control.availableWidth
         spacing: Theme.spacing.small
 
         Image {
             source: control.iconSource
-            visible: control.iconSource !== "" && control.iconPosition === "left"
+            visible: control.iconSource !== ""
+                     && control.iconPosition === "left"
             fillMode: Image.PreserveAspectFit
             Layout.preferredWidth: 24
             Layout.preferredHeight: 24
@@ -42,7 +43,8 @@ Button {
 
         Image {
             source: control.iconSource
-            visible: control.iconSource !== "" && control.iconPosition === "right"
+            visible: control.iconSource !== ""
+                     && control.iconPosition === "right"
             fillMode: Image.PreserveAspectFit
             Layout.preferredWidth: 24
             Layout.preferredHeight: 24

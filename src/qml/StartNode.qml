@@ -3,15 +3,16 @@ import QtQuick.Layouts
 import Logos.Controls
 import Logos.Theme
 
-LogosStorageLayout {
+OnBoardingLayout {
     id: root
 
     property var backend: MockBackend
-    property string status: ""
-    property string title: "Starting your node"
+    property string status: "Starting your node..."
+    property string title: "Checking connectivity"
     property string resolution: ""
     property bool starting: true
     property bool success: false
+    property bool started: false
 
     signal back
     signal next
@@ -36,12 +37,14 @@ LogosStorageLayout {
         target: root.backend
 
         function onStartCompleted() {
+            root.started = true
             root.title = "Checking connectivity"
             root.status = "Node started, verifying reachability..."
             nodeCheckTimer.start()
         }
 
         function onStartFailed(error) {
+            root.started = false
             root.starting = false
             root.title = "Failed to start"
             root.status = "Your node failed to start: " + error
@@ -59,31 +62,62 @@ LogosStorageLayout {
         }
     }
 
-    ColumnLayout {
-        anchors.centerIn: parent
-        width: 400
+    OnBoardingContainer {
         spacing: Theme.spacing.medium
 
-        LogosText {
-            font.pixelSize: Theme.typography.titleText
-            text: root.title
-            Layout.alignment: Qt.AlignHCenter
-        }
-
-        NodeStatusIcon {
-            starting: root.starting
-            success: root.success
-            Layout.alignment: Qt.AlignHCenter
-        }
-
-        LogosText {
-            font.pixelSize: Theme.typography.primaryText
-            text: root.status
-            visible: root.status !== ""
-            Layout.alignment: Qt.AlignHCenter
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.WordWrap
+        OnBoardingProgress {
             Layout.fillWidth: true
+            currentStep: root.started ? 3 : 2
+            Layout.topMargin: Theme.spacing.small
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: 10
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                LogosText {
+                    text: root.title
+                    font.pixelSize: Theme.typography.titleText
+                    font.weight: Font.Bold
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                LogosText {
+                    text: "3 / 5"
+                    font.pixelSize: Theme.typography.primaryText
+                    color: Theme.palette.primary
+                    font.family: "monospace"
+                }
+            }
+
+            LogosText {
+                text: root.status
+                font.pixelSize: Theme.typography.primaryText * 1.8
+            }
+        }
+
+        Rectangle {
+            property bool selected: false
+            property Component icon
+
+            Layout.fillWidth: true
+            Layout.preferredHeight: 230
+            radius: Theme.spacing.radiusLarge
+            color: Theme.palette.backgroundSecondary
+            border.color: selected ? Theme.palette.primary : Theme.palette.textMuted
+            border.width: 1
+
+            NodeStatusIcon {
+                anchors.centerIn: parent
+                starting: root.starting
+                success: root.success
+            }
         }
 
         LogosText {
@@ -96,31 +130,36 @@ LogosStorageLayout {
             horizontalAlignment: Text.AlignHCenter
             Layout.alignment: Qt.AlignHCenter
         }
-    }
 
-    LogosStorageButton {
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.bottomMargin: 10
-        anchors.leftMargin: 10
-        text: "Back"
-        enabled: !root.starting
-        onClicked: {
-            root.backend.stop()
-            root.back()
-        }
-    }
+        RowLayout {
+            Layout.alignment: Qt.AlignHCenter
+            spacing: Theme.spacing.small
 
-    LogosStorageButton {
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-        anchors.bottomMargin: 10
-        anchors.rightMargin: 10
-        text: "Next"
-        enabled: root.success
-        onClicked: {
-            root.backend.saveCurrentConfig()
-            root.next()
+            LogosStorageButton {
+                iconSource: "assets/arrow-left.png"
+                iconPosition: "left"
+                text: "Back"
+                enabled: !root.starting
+                onClicked: {
+                    root.backend.stop()
+                    root.back()
+                }
+            }
+
+            Item {
+                Layout.fillWidth: true
+            }
+
+            LogosStorageButton {
+                iconSource: "assets/arrow-right.png"
+                iconPosition: "right"
+                text: "Continue"
+                enabled: root.success
+                onClicked: {
+                    root.backend.saveCurrentConfig()
+                    root.next()
+                }
+            }
         }
     }
 
@@ -130,5 +169,4 @@ LogosStorageLayout {
         repeat: false
         onTriggered: root.onNodeStarted()
     }
-
 }

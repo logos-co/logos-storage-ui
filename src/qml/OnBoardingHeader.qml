@@ -6,8 +6,6 @@ import Logos.Controls
 ColumnLayout {
     id: root
 
-    property int step: 1
-
     Layout.fillWidth: true
     spacing: Theme.spacing.small
 
@@ -58,11 +56,5 @@ ColumnLayout {
         Image {
             source: "assets/badge_alpha.png"
         }
-    }
-
-    OnBoardingProgress {
-        Layout.fillWidth: true
-        currentStep: root.step
-        Layout.topMargin: Theme.spacing.small
     }
 }

@@ -169,10 +169,12 @@ qt_add_qml_module(appqml
         OnBoardingHeader.qml
         OnBoardingProgress.qml
         OnBoardingCard.qml
+        OnBoardingContainer.qml
         assets/bg.png
         assets/badge_alpha.png
         assets/alpha.png
         assets/arrow-right.png
+        assets/arrow-left.png
         RESOURCES
 
 )

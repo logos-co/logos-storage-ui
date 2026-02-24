@@ -9,6 +9,5 @@ Rectangle {
         id: bgImage
         anchors.fill: parent
         source: "assets/bg.png"
-        opacity: 0.9
     }
 }

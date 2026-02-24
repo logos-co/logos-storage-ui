@@ -35,7 +35,7 @@ Rectangle {
             Text {
                 text: root.title
                 color: Theme.palette.text
-                font.pixelSize: Theme.typography.titleText
+                font.pixelSize: Theme.typography.titleText * 0.8
                 Layout.leftMargin: Theme.spacing.medium
             }
 
@@ -43,6 +43,7 @@ Rectangle {
                 Layout.preferredWidth: 280
                 Layout.leftMargin: Theme.spacing.medium
                 Layout.bottomMargin: Theme.spacing.large
+                Layout.preferredHeight: 30
 
                 text: root.description
                 font.pixelSize: Theme.typography.secondaryText

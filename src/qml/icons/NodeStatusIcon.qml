@@ -38,11 +38,15 @@ Item {
                 radius: root.dotSize * 0.25
 
                 color: {
-                    if (root.success)
+                    if (root.success) {
                         return Theme.palette.success
-                    if (!root.starting)
+                    }
+
+                    if (!root.starting) {
                         return Theme.palette.error
-                    return Theme.palette.text
+                    }
+
+                    return Theme.palette.primary
                 }
 
                 opacity: {

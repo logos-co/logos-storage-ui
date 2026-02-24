@@ -21,6 +21,11 @@
         <file alias="DiskWidget.qml">qml/DiskWidget.qml</file>
         <file alias="UploadWidget.qml">qml/UploadWidget.qml</file>
         <file alias="PeersWidget.qml">qml/PeersWidget.qml</file>
+        <file alias="OnBoardingLayout.qml">qml/OnBoardingLayout.qml</file>
+        <file alias="OnBoardingContainer.qml">qml/OnBoardingContainer.qml</file>
+        <file alias="OnBoardingHeader.qml">qml/OnBoardingHeader.qml</file>
+        <file alias="OnBoardingProgress.qml">qml/OnBoardingProgress.qml</file>
+        <file alias="OnBoardingCard.qml">qml/OnBoardingCard.qml</file>
         <file alias="DotIcon.qml">qml/icons/DotIcon.qml</file>
         <file alias="NodeStatusIcon.qml">qml/icons/NodeStatusIcon.qml</file>
         <file alias="GuideIcon.qml">qml/icons/GuideIcon.qml</file>
@@ -35,8 +40,14 @@
         <file alias="DownloadIcon.qml">qml/icons/DownloadIcon.qml</file>
         <file alias="DeleteIcon.qml">qml/icons/DeleteIcon.qml</file>
         <file alias="ArcWidget.qml">qml/icons/ArcWidget.qml</file>
+        <file alias="ArcGauge.qml">qml/icons/ArcGauge.qml</file>
         <file alias="Utils.js">qml/Utils.js</file>
         <file alias="MockBackend.qml">qml/MockBackend.qml</file>
         <file>icons/storage.png</file>
+        <file alias="assets/bg.png">qml/assets/bg.png</file>
+        <file alias="assets/badge_alpha.png">qml/assets/badge_alpha.png</file>
+        <file alias="assets/alpha.png">qml/assets/alpha.png</file>
+        <file alias="assets/arrow-right.png">qml/assets/arrow-right.png</file>
+        <file alias="assets/arrow-left.png">qml/assets/arrow-left.png</file>
     </qresource>
 </RCC>

@@ -5,22 +5,12 @@ import Logos.Controls
 
 OnBoardingLayout {
     id: root
-    color: "#999999"
 
     signal completed(bool isGuide)
 
     property int selectedMode: 0
 
-    ColumnLayout {
-        anchors.centerIn: parent
-        spacing: Theme.spacing.medium
-        width: 830
-
-        //anchors.fill: parent
-        OnBoardingHeader {
-            Layout.fillWidth: true
-            step: 1
-        }
+    OnBoardingContainer {
 
         Column {
             LogosText {
@@ -31,7 +21,7 @@ OnBoardingLayout {
 
             LogosText {
                 text: "How would you like to set up your node?"
-                font.pixelSize: Theme.typography.primaryText
+                font.pixelSize: Theme.typography.primaryText * 1.8
             }
         }
 

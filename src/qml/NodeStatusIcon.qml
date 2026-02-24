@@ -42,7 +42,7 @@ Item {
                         return Theme.palette.success
                     if (!root.starting)
                         return Theme.palette.error
-                    return Theme.palette.text
+                    return Theme.palette.primary
                 }
 
                 opacity: {
