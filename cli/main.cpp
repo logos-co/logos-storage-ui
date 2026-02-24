@@ -33,6 +33,8 @@ int main(int argc, char* argv[]) {
         std::cerr << "Failed to get storage version: " << result.getError().toStdString() << std::endl;
     }
 
+    logos.cleanup();
+
     // logos destructor calls cleanup() automatically
     return 0;
 }
