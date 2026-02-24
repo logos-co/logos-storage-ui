@@ -1,0 +1,67 @@
+#include "logos_manager.h"
+
+#include <QDebug>
+#include <iostream>
+
+extern "C" {
+void logos_core_set_plugins_dir(const char* plugins_dir);
+void logos_core_start();
+void logos_core_cleanup();
+char** logos_core_get_loaded_plugins();
+int logos_core_load_plugin(const char* plugin_name);
+}
+
+Logos::Logos(const QString& pluginsDir)
+    : m_pluginsDir(pluginsDir)
+{}
+
+Logos::~Logos()
+{
+    if (m_initialized) {
+        cleanup();
+    }
+}
+
+bool Logos::init()
+{
+    std::cout << "Setting plugins directory to: " << m_pluginsDir.toStdString() << std::endl;
+    logos_core_set_plugins_dir(m_pluginsDir.toUtf8().constData());
+
+    logos_core_start();
+    std::cout << "Logos Core started successfully!" << std::endl;
+
+    if (!logos_core_load_plugin("capability_module")) {
+        std::cerr << "Failed to load capability_module plugin" << std::endl;
+        return false;
+    }
+    std::cout << "Successfully loaded capability_module plugin" << std::endl;
+
+    if (!logos_core_load_plugin("storage_module")) {
+        std::cerr << "Failed to load storage_module plugin" << std::endl;
+        return false;
+    }
+    std::cout << "Successfully loaded storage_module plugin" << std::endl;
+
+    m_api = std::make_unique<LogosAPI>("cli");
+    m_initialized = true;
+    return true;
+}
+
+void Logos::cleanup()
+{
+    if (!m_initialized) {
+        return;
+    }
+
+    qDebug() << "Logos: cleanup...";
+
+    m_api.reset();
+    logos_core_cleanup();
+
+    m_initialized = false;
+}
+
+LogosAPI* Logos::api() const
+{
+    return m_api.get();
+}

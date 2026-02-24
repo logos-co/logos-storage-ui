@@ -48,12 +48,18 @@
             logosStorageUI = lib;
           };
 
+          # CLI package
+          cli = import ./nix/cli.nix {
+            inherit pkgs common src logosLiblogos logosSdk logosStorageModule logosCapabilityModule;
+          };
+
         in
         {
           # Individual outputs
           lib = lib;
           app = app;
-          
+          cli = cli;
+
           # Default package
           default = app;
         }
