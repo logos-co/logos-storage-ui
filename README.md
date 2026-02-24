@@ -27,6 +27,24 @@ nix build '.#lib'
 nix build '.#app'
 ```
 
+Troubleshooting:
+
+If you encounter the following error during the build process:
+
+```
+error: Failed to fetch git repository https://boringssl.googlesource.com/boringssl : error: RPC failed; HTTP 500 curl 22 The requested URL returned error: 500
+fatal: unable to write request to remote: Broken pipe
+```
+
+This is typically due to Git's HTTP request size limits being too low for large repositories. To resolve this, increase the limits by running the following commands:
+
+```
+git config --global http.postBuffer 524288000
+git config --global http.maxRequestBuffer 100M
+```
+
+After setting these values, retry to build.
+
 #### Development Shell
 
 ```bash
@@ -207,6 +225,8 @@ To import the project into Qt Creator, click on `File -> Open File or Project` a
 Enable CMake debug logging, add `--log-level=DEBUG` in `Projects` -> `Imported Kits` -> `Build` -> `Additional CMake options`.
 
 Ensure that `clangd` is enabled for your project. Go to `Projects` on the left, then click on `Manage Kits` at the top. Select the `C++` tab and open the last tab, `Clangd`. Check `Use clangd` and, if needed, configure it to use the `clangd` installed on your system.
+
+Then go to `Projects `-> `qml` -> `Build` -> `Build Environment`. Click Add to create a new variable, set the name to `QML_IMPORT_TYPE`, and set the value to the absolute path of your QML build directory (for example, /path/to/your/project/src/qml/build/qml).
 
 That’s it. The configuration defined in `CMakeLists.txt` should allow the project to build correctly.
 
