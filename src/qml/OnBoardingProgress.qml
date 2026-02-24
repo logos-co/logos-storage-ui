@@ -9,7 +9,7 @@ RowLayout {
     property int totalSteps: 5
 
     Repeater {
-        model: totalSteps
+        model: root.totalSteps
 
         Rectangle {
             Layout.fillWidth: true

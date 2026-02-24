@@ -9,7 +9,7 @@ ColumnLayout {
     property int step: 1
 
     Layout.fillWidth: true
-    spacing: Theme.spacing.tiny
+    spacing: Theme.spacing.small
 
     RowLayout {
         Layout.fillWidth: true
@@ -19,7 +19,7 @@ ColumnLayout {
 
         LogosText {
             text: "Logos Storage"
-            font.pixelSize: Theme.typography.primaryText
+            font.pixelSize: Theme.typography.primaryText * 1.2
             Layout.alignment: Qt.AlignTop
         }
 
@@ -38,6 +38,8 @@ ColumnLayout {
             LogosText {
                 text: "V. 0.1.3"
                 font.pixelSize: Theme.typography.secondaryText
+                font.family: "monospace"
+                color: Theme.palette.textMuted
             }
         }
     }
@@ -47,7 +49,7 @@ ColumnLayout {
         spacing: Theme.spacing.small
 
         LogosText {
-            text: "Vault"
+            text: "Vault."
             font.pixelSize: Theme.typography.titleText
             color: Theme.palette.primary
             font.weight: Font.Bold
