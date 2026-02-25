@@ -396,7 +396,11 @@ void StorageBackend::remove(const QString& cid) {
     debug("Cid " + cid + " removed from local storage.");
 
     // Refresh space data for Disk widget
-    QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace, Qt::QueuedConnection);
+    QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace,
+                              Qt::QueuedConnection);
+    // Update manifests list
+    QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
+
 }
 
 void StorageBackend::fetch(const QString& cid) {
