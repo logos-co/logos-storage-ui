@@ -73,5 +73,5 @@ void MainWindow::setupUi() {
 
     // Set window title and size
     setWindowTitle("Logos Storage UI App");
-    resize(1200, 800);
+    resize(1400, 1000);
 }

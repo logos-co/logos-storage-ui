@@ -85,8 +85,7 @@ Button {
             }
 
             if (control.variant === "secondary") {
-                // TODO: Logos Design System
-                return "#2F2F2F"
+                return Theme.palette.textTertiary
             }
 
             return Theme.palette.border

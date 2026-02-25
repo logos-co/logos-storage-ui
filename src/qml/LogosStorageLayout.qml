@@ -6,5 +6,5 @@ Rectangle {
     id: root
     color: Theme.palette.background
     implicitWidth: 1500
-    implicitHeight: 800
+    implicitHeight: 1000
 }

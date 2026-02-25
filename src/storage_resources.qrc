@@ -44,6 +44,7 @@
         <file alias="Utils.js">qml/Utils.js</file>
         <file alias="MockBackend.qml">qml/MockBackend.qml</file>
         <file alias="VaultText.qml">qml/VaultText.qml</file>
+        <file alias="ManifestWidget.qml">qml/ManifestWidget.qml</file>
         <file>icons/storage.png</file>
         <file alias="assets/bg.png">qml/assets/bg.png</file>
         <file alias="assets/badge_alpha.png">qml/assets/badge_alpha.png</file>
@@ -59,5 +60,7 @@
         <file alias="assets/settings.png">qml/assets/settings.png</file>
         <file alias="assets/error.png">qml/assets/error.png</file>
         <file alias="assets/success.png">qml/assets/success.png</file>
+        <file alias="assets/download.png">qml/assets/download.png</file>
+        <file alias="assets/delete.png">qml/assets/delete.png</file>
     </qresource>
 </RCC>

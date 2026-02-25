@@ -14,7 +14,7 @@ Card {
     property bool running: false
     property real totalBytes: 0
     property real uploadedBytes: 0
-    property string uploadedCid: "bafy2bzaced7nv3bxl3x7"
+    property string uploadedCid: ""
     readonly property bool isUploading: uploadProgress > 0
                                         && uploadProgress < 100
     readonly property bool isDone: uploadProgress >= 100
@@ -183,7 +183,7 @@ Card {
                 text: "CID"
                 font.pixelSize: Theme.typography.primaryText
                 color: Theme.palette.text
-                visible: root.isDone
+                visible: root.uploadedCid != ""
             }
 
             Item {

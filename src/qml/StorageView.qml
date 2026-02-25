@@ -1,9 +1,7 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
 import Logos.Theme
-import Logos.Controls
 
 // qmllint disable unqualified
 LogosStorageLayout {
@@ -31,10 +29,13 @@ LogosStorageLayout {
 
     ColumnLayout {
         anchors.fill: parent
+        anchors.margins: Theme.spacing.medium
+        spacing: Theme.spacing.medium
 
         RowLayout {
-            Layout.alignment: Qt.AlignTop
             Layout.fillWidth: true
+            Layout.preferredHeight: 370
+            spacing: Theme.spacing.medium
 
             DiskWidget {
                 Layout.fillWidth: true
@@ -47,22 +48,26 @@ LogosStorageLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.preferredWidth: 0
+                spacing: Theme.spacing.medium
 
                 Card {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 100
-                }
-
-                Card {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 100
+                    Layout.fillHeight: true
+                    Layout.preferredHeight: 50
                 }
 
                 UploadWidget {
                     Layout.fillWidth: true
+                    Layout.fillHeight: true
                     backend: root.backend
                     running: root.isRunning()
                     onUploadRequested: uploadDialog.open()
+                }
+
+                ManifestWidget {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    backend: root.backend
                 }
             }
 
@@ -71,6 +76,7 @@ LogosStorageLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 Layout.preferredWidth: 0
+                spacing: Theme.spacing.medium
 
                 NodeWidget {
                     Layout.fillWidth: true
@@ -90,10 +96,8 @@ LogosStorageLayout {
 
         ManifestTable {
             Layout.fillWidth: true
-            Layout.leftMargin: 24
-            Layout.rightMargin: 24
-            Layout.topMargin: 20
-            Layout.bottomMargin: 20
+            Layout.fillHeight: true
+            Layout.minimumHeight: 0
             backend: root.backend
             running: root.isRunning()
         }

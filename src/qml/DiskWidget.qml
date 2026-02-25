@@ -176,5 +176,17 @@ Card {
                 }
             }
         }
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 1
+            color: Theme.palette.borderSecondary
+        }
+
+        LogosText {
+            text: "Space"
+            font.pixelSize: Theme.typography.titleText * 0.8
+            color: Theme.palette.text
+        }
     }
 }

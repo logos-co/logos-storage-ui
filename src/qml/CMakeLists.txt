@@ -171,6 +171,7 @@ qt_add_qml_module(appqml
         OnBoardingCard.qml
         OnBoardingContainer.qml
         VaultText.qml
+        ManifestWidget.qml
 
         assets/bg.png
         assets/badge-alpha.png
@@ -186,8 +187,8 @@ qt_add_qml_module(appqml
         assets/settings.png
         assets/error.png
         assets/success.png
-        RESOURCES
-
+        assets/download.png
+        assets/delete.png
 )
 
 # Set up QML module directory for runtime

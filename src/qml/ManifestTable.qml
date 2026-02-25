@@ -8,202 +8,207 @@ import Logos.Controls
 import "Utils.js" as Utils
 
 // qmllint disable unqualified
-ColumnLayout {
+Card {
     id: root
 
     property var backend: MockBackend
     property bool running: false
-    property var manifests: []
+    property var manifests: [{
+            "cid": "1234",
+            "filename": "Claude.jpg",
+            "mimetype": "image/jpg",
+            "size": 12222
+        }]
 
-    spacing: Theme.spacing.small
+    implicitWidth: 1200
+    implicitHeight: 400
 
-    FileDialog {
-        id: saveDialog
-
-        property var pendingManifest: null
-
-        fileMode: FileDialog.SaveFile
-        onAccepted: {
-            if (pendingManifest) {
-                root.backend.downloadFile(pendingManifest.cid, selectedFile)
-                pendingManifest = null
-            }
-        }
-        onRejected: pendingManifest = null
-    }
-
-
-    Connections {
-        target: root.backend
-
-        onManifestsUpdated: function (manifests) {
-            root.manifests = manifests
-        }
-    }
-
-    LogosText {
-        text: "MANIFESTS"
-        font.pixelSize: 11
-        color: Theme.palette.textTertiary
-        font.letterSpacing: 1.5
-    }
-
-    RowLayout {
-        Layout.fillWidth: true
+    ColumnLayout {
+        anchors.fill: parent
         spacing: Theme.spacing.small
 
-        LogosTextField {
-            id: cidInput
+        Connections {
+            target: root.backend
+
+            onManifestsUpdated: function (manifests) {
+                root.manifests = manifests
+            }
+        }
+
+        LogosText {
+            text: "Manifests"
+            font.pixelSize: Theme.typography.titleText
+            color: Theme.palette.text
+        }
+
+        Rectangle {
+            id: header
             Layout.fillWidth: true
-            height: getManifestBtn.implicitHeight
-            placeholderText: "Enter CID to download manifest…"
-            isValid: true
-        }
+            Layout.preferredHeight: 30
+            // TODO: Logos Design System
+            color: "#141414"
+            radius: Theme.spacing.radiusSmall
 
-        LogosStorageButton {
-            id: getManifestBtn
-            text: "GET MANIFEST"
-            enabled: root.running && cidInput.text.length > 0
-            onClicked: {
-                root.backend.downloadManifest(cidInput.text)
-                cidInput.clear()
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: Theme.spacing.medium
+                anchors.rightMargin: Theme.spacing.medium
+
+                Text {
+                    text: "CID"
+                    color: Theme.palette.textMuted
+                    font.pixelSize: Theme.typography.secondaryText
+                    Layout.fillWidth: true
+                }
+
+                Text {
+                    text: "Filename"
+                    color: Theme.palette.textSecondary
+                    font.pixelSize: Theme.typography.secondaryText
+                    Layout.preferredWidth: 140
+                }
+
+                Text {
+                    text: "Mimetype"
+                    color: Theme.palette.textSecondary
+                    font.pixelSize: Theme.typography.secondaryText
+                    Layout.preferredWidth: 100
+                }
+
+                Text {
+                    text: "Size"
+                    color: Theme.palette.textSecondary
+                    font.pixelSize: Theme.typography.secondaryText
+                    Layout.preferredWidth: 80
+                }
+
+                Text {
+                    text: "Actions"
+                    color: Theme.palette.textSecondary
+                    font.pixelSize: Theme.typography.secondaryText
+                    Layout.preferredWidth: 92
+                }
             }
         }
-    }
-
-    Rectangle {
-        Layout.fillWidth: true
-        Layout.preferredHeight: 30
-        color: Theme.palette.backgroundElevated
-        radius: 4
-
-        Row {
-            anchors.fill: parent
-            anchors.leftMargin: 10
-
-            Text {
-                width: 160
-                text: "CID"
-                color: Theme.palette.textSecondary
-                font.pixelSize: 11
-                font.bold: true
-                elide: Text.ElideRight
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            Text {
-                width: 130
-                text: "Filename"
-                color: Theme.palette.textSecondary
-                font.pixelSize: 11
-                font.bold: true
-                elide: Text.ElideRight
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            Text {
-                width: 90
-                text: "MIME"
-                color: Theme.palette.textSecondary
-                font.pixelSize: 11
-                font.bold: true
-                elide: Text.ElideRight
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            Text {
-                width: 80
-                text: "Size"
-                color: Theme.palette.textSecondary
-                font.pixelSize: 11
-                font.bold: true
-                elide: Text.ElideRight
-                anchors.verticalCenter: parent.verticalCenter
-            }
-        }
-    }
-
-    Rectangle {
-        Layout.fillWidth: true
-        Layout.preferredHeight: 240
-        color: Theme.palette.background
-        border.color: Theme.palette.borderSecondary
-        border.width: 1
-        radius: 4
-        clip: true
 
         ListView {
             id: manifestList
-            anchors.fill: parent
+            Layout.fillWidth: true
+            Layout.fillHeight: true
             model: root.manifests
-            clip: true
 
             delegate: Rectangle {
-                id: delegateItem
                 width: manifestList.width
-                height: 36
-                color: index % 2
-                       === 0 ? Theme.palette.background : Theme.palette.backgroundSecondary
+                height: 52
+                color: Theme.palette.backgroundSecondary
 
-                Row {
+                RowLayout {
                     anchors.fill: parent
-                    anchors.leftMargin: 10
-                    anchors.rightMargin: 8
+                    anchors.leftMargin: Theme.spacing.medium
+                    anchors.rightMargin: Theme.spacing.medium
 
-                    Text {
-                        width: 160
-                        text: modelData.cid
-                        color: Theme.palette.text
-                        font.pixelSize: 11
-                        font.family: "monospace"
-                        elide: Text.ElideMiddle
-                        anchors.verticalCenter: parent.verticalCenter
-                        ToolTip.visible: cidHover.hovered
-                        ToolTip.text: modelData.cid
-                        HoverHandler {
-                            id: cidHover
+                    // CID cell with copy button on the far right
+                    Item {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+
+                        Text {
+                            anchors.left: parent.left
+                            anchors.right: copyBtn.left
+                            anchors.rightMargin: 6
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: modelData.cid
+                            color: Theme.palette.text
+                            font.pixelSize: Theme.typography.secondaryText
+                            elide: Text.ElideRight
+                            ToolTip.visible: cidHover.hovered
+                            ToolTip.text: modelData.cid
+                            HoverHandler {
+                                id: cidHover
+                            }
+                        }
+
+                        Rectangle {
+                            id: copyBtn
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 28
+                            height: 28
+                            radius: 14
+                            color: copyHover.hovered ? Theme.palette.backgroundElevated : "transparent"
+                            border.color: Theme.palette.borderSecondary
+                            border.width: 1
+
+                            Image {
+                                anchors.centerIn: parent
+                                source: "assets/file-copy.png"
+                                width: 16
+                                height: 16
+                                fillMode: Image.PreserveAspectFit
+                            }
+                            HoverHandler {
+                                id: copyHover
+                            }
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    clipboardHelper.text = modelData.cid
+                                    clipboardHelper.selectAll()
+                                    clipboardHelper.copy()
+                                }
+                            }
+                        }
+
+                        TextEdit {
+                            id: clipboardHelper
+                            visible: false
                         }
                     }
+
                     Text {
-                        width: 130
                         text: modelData.filename
-                        color: Theme.palette.textSecondary
-                        font.pixelSize: 11
+                        color: Theme.palette.text
+                        font.pixelSize: Theme.typography.secondaryText
                         elide: Text.ElideRight
-                        anchors.verticalCenter: parent.verticalCenter
+                        Layout.preferredWidth: 140
                     }
+
                     Text {
-                        width: 90
                         text: modelData.mimetype
-                        color: Theme.palette.textSecondary
-                        font.pixelSize: 11
+                        color: Theme.palette.text
+                        font.pixelSize: Theme.typography.secondaryText
                         elide: Text.ElideRight
-                        anchors.verticalCenter: parent.verticalCenter
+                        Layout.preferredWidth: 100
                     }
+
                     Text {
-                        width: 80
                         text: Utils.formatBytes(parseInt(modelData.datasetSize))
-                        color: Theme.palette.textSecondary
-                        font.pixelSize: 11
-                        elide: Text.ElideRight
-                        anchors.verticalCenter: parent.verticalCenter
+                        color: Theme.palette.text
+                        font.pixelSize: Theme.typography.secondaryText
+                        Layout.preferredWidth: 80
                     }
 
                     Row {
                         spacing: 6
-                        anchors.verticalCenter: parent.verticalCenter
+                        Layout.preferredWidth: 92
+                        Layout.alignment: Qt.AlignVCenter
 
                         Rectangle {
-                            width: 28
-                            height: 28
-                            radius: 4
+                            width: 40
+                            height: 40
+                            radius: 20
                             color: dlHover.hovered ? Theme.palette.backgroundElevated : "transparent"
                             border.color: Theme.palette.borderSecondary
                             border.width: 1
                             opacity: root.running ? 1.0 : 0.35
 
-                            DownloadIcon {
+                            Image {
                                 anchors.centerIn: parent
-                                dotColor: Theme.palette.text
-                                dotSize: 3
-                                dotSpacing: 1
+                                source: "assets/download.png"
+                                width: 20
+                                height: 20
+                                fillMode: Image.PreserveAspectFit
                             }
                             HoverHandler {
                                 id: dlHover
@@ -225,19 +230,20 @@ ColumnLayout {
                         }
 
                         Rectangle {
-                            width: 28
-                            height: 28
-                            radius: 4
+                            width: 40
+                            height: 40
+                            radius: 20
                             color: rmHover.hovered ? Theme.palette.backgroundElevated : "transparent"
                             border.color: Theme.palette.borderSecondary
                             border.width: 1
                             opacity: root.running ? 1.0 : 0.35
 
-                            DeleteIcon {
+                            Image {
                                 anchors.centerIn: parent
-                                dotColor: Theme.palette.error
-                                dotSize: 3
-                                dotSpacing: 1
+                                source: "assets/delete.png"
+                                width: 20
+                                height: 20
+                                fillMode: Image.PreserveAspectFit
                             }
                             HoverHandler {
                                 id: rmHover
@@ -278,5 +284,20 @@ ColumnLayout {
                 }
             }
         }
+    }
+
+    FileDialog {
+        id: saveDialog
+
+        property var pendingManifest: null
+
+        fileMode: FileDialog.SaveFile
+        onAccepted: {
+            if (pendingManifest) {
+                root.backend.downloadFile(pendingManifest.cid, selectedFile)
+                pendingManifest = null
+            }
+        }
+        onRejected: pendingManifest = null
     }
 }
