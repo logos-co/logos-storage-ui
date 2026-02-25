@@ -179,9 +179,9 @@ LogosResult StorageBackend::init(const QString& configJson) {
                 reportError("Failure during download progress: " + message);
             } else {
                 QString sessionId = data[1].toString();
-                int len = data[2].toInt();
+                qint64 len = data[2].toLongLong();
                 debug("Downloaded " + QString::number(len) + " bytes for session " + sessionId);
-                // TODO display progress here
+                emit downloadChunk(len);
             }
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageDownloadProgress events";
@@ -351,13 +351,19 @@ void StorageBackend::uploadFile(const QUrl& url) {
     qDebug() << "StorageBackend: uploadFile result =" << sessionId;
 }
 
-void StorageBackend::downloadFile(const QString& cid, const QUrl& url) {
+void StorageBackend::downloadFile(const QString& cid, const QUrl& url, qint64 totalBytes) {
     qDebug() << "StorageBackend: downloadFile called";
 
     if (!url.isLocalFile()) {
         reportError("The provided URL is not a local file.");
         return;
     }
+
+    QString filename = QFileInfo(url.toLocalFile()).fileName();
+    debug(QString("Starting download of cid: %1, filename: %2, total: %3 bytes")
+              .arg(cid, filename)
+              .arg(totalBytes));
+    emit downloadStarted(cid, filename, totalBytes);
 
     LogosResult result = m_logos->storage_module.downloadToUrl(cid, url, false);
 

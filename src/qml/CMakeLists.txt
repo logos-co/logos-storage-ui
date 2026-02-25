@@ -172,6 +172,7 @@ qt_add_qml_module(appqml
         OnBoardingContainer.qml
         VaultText.qml
         ManifestWidget.qml
+        DownloadWidget.qml
 
         assets/bg.png
         assets/badge-alpha.png

@@ -50,10 +50,11 @@ LogosStorageLayout {
                 Layout.preferredWidth: 0
                 spacing: Theme.spacing.medium
 
-                Card {
+                DownloadWidget {
+                    id: downloadWidget
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    Layout.preferredHeight: 50
+                    backend: root.backend
                 }
 
                 UploadWidget {

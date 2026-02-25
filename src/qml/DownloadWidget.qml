@@ -77,8 +77,8 @@ Card {
             root.initBlocks()
         }
 
-        function onDownloadChunk(bytes) {
-            root.downloadedBytes += bytes
+        function onDownloadChunk(len) {
+            root.downloadedBytes += len
         }
 
         function onDownloadCompleted(cid) {

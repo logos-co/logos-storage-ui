@@ -45,6 +45,7 @@
         <file alias="MockBackend.qml">qml/MockBackend.qml</file>
         <file alias="VaultText.qml">qml/VaultText.qml</file>
         <file alias="ManifestWidget.qml">qml/ManifestWidget.qml</file>
+        <file alias="DownloadWidget.qml">qml/DownloadWidget.qml</file>
         <file>icons/storage.png</file>
         <file alias="assets/bg.png">qml/assets/bg.png</file>
         <file alias="assets/badge_alpha.png">qml/assets/badge_alpha.png</file>

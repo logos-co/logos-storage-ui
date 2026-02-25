@@ -17,6 +17,8 @@ QtObject {
     signal uploadStarted(real totalBytes)
     signal uploadChunk(real len)
     signal uploadCompleted(string cid)
+    signal downloadStarted(string cid, string filename, real totalBytes)
+    signal downloadChunk(real len)
     signal downloadCompleted(string cid)
     signal spaceUpdated(real total, real used)
     signal manifestsUpdated(var manifests)
@@ -28,7 +30,7 @@ QtObject {
     function checkNodeIsUp() {}
     function fetchWidgetsData() {}
     function uploadFile(url) {}
-    function downloadFile(cid, url) {}
+    function downloadFile(cid, url, totalBytes) {}
     function downloadManifest(cid) {}
     function downloadManifests() {}
     function remove(cid) {}

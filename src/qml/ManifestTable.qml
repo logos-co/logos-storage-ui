@@ -22,6 +22,8 @@ Card {
 
     implicitWidth: 1200
     implicitHeight: 400
+    Layout.minimumHeight: 0
+
 
     ColumnLayout {
         anchors.fill: parent
@@ -294,7 +296,8 @@ Card {
         fileMode: FileDialog.SaveFile
         onAccepted: {
             if (pendingManifest) {
-                root.backend.downloadFile(pendingManifest.cid, selectedFile)
+                root.backend.downloadFile(pendingManifest.cid, selectedFile,
+                                          parseInt(pendingManifest.datasetSize) || 0)
                 pendingManifest = null
             }
         }
