@@ -48,7 +48,7 @@
         <file alias="DownloadWidget.qml">qml/DownloadWidget.qml</file>
         <file>icons/storage.png</file>
         <file alias="assets/bg.png">qml/assets/bg.png</file>
-        <file alias="assets/badge_alpha.png">qml/assets/badge_alpha.png</file>
+        <file alias="assets/badge-alpha.png">qml/assets/badge-alpha.png</file>
         <file alias="assets/alpha.png">qml/assets/alpha.png</file>
         <file alias="assets/arrow-right.png">qml/assets/arrow-right.png</file>
         <file alias="assets/arrow-left.png">qml/assets/arrow-left.png</file>

@@ -22,7 +22,7 @@ import Logos.Theme
 Item {
     id: root
     implicitWidth: 800
-    implicitHeight: 800
+    implicitHeight: 600
     Layout.fillWidth: true
     Layout.fillHeight: true
 

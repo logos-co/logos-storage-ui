@@ -22,7 +22,6 @@ Card {
 
     implicitWidth: 1200
     implicitHeight: 400
-    Layout.minimumHeight: 0
 
 
     ColumnLayout {
