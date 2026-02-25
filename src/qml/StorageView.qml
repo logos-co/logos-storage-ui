@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import Logos.Theme
 import Logos.Controls
 
@@ -23,93 +24,162 @@ LogosStorageLayout {
         }
     }
 
-    HealthIndicator {
-        id: health
-        backend: root.backend
+    FileDialog {
+        id: uploadDialog
+        onAccepted: root.backend.uploadFile(selectedFile)
     }
 
-    SettingsPopup {
-        id: settingsPopup
-        backend: root.backend
-    }
-
-    Shortcut {
-        sequence: "Ctrl+D"
-        onActivated: root.showDebug = !root.showDebug
-    }
-
-    ScrollView {
-        id: mainScroll
+    ColumnLayout {
         anchors.fill: parent
-        anchors.bottomMargin: root.showDebug ? debugPanel.height : 0
-        contentWidth: availableWidth
-        clip: true
 
-        ColumnLayout {
-            width: mainScroll.availableWidth
-            spacing: 0
+        RowLayout {
+            Layout.alignment: Qt.AlignTop
+            Layout.fillWidth: true
 
-            NodeHeader {
+            DiskWidget {
                 Layout.fillWidth: true
-                Layout.leftMargin: 24
-                Layout.rightMargin: 24
-                Layout.topMargin: 24
-                Layout.bottomMargin: 20
+                Layout.fillHeight: true
+                Layout.preferredWidth: 0
                 backend: root.backend
-                nodeIsUp: health.nodeIsUp
-                blinkOn: health.blinkOn
-                onSettingsRequested: settingsPopup.open()
             }
 
-            Rectangle {
+            ColumnLayout {
                 Layout.fillWidth: true
-                Layout.leftMargin: 24
-                Layout.rightMargin: 24
-                Layout.preferredHeight: 1
-                color: Theme.palette.borderSecondary
+                Layout.fillHeight: true
+                Layout.preferredWidth: 0
+
+                Card {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 100
+                }
+
+                Card {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 100
+                }
+
+                UploadWidget {
+                    Layout.fillWidth: true
+                    backend: root.backend
+                    running: root.isRunning()
+                    onUploadRequested: uploadDialog.open()
+                }
             }
 
-            Widgets {
+            ColumnLayout {
+                id: thirdCol
                 Layout.fillWidth: true
-                Layout.leftMargin: 24
-                Layout.rightMargin: 24
-                Layout.topMargin: 20
-                backend: root.backend
-                running: root.isRunning()
-            }
+                Layout.fillHeight: true
+                Layout.preferredWidth: 0
 
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.leftMargin: 24
-                Layout.rightMargin: 24
-                Layout.preferredHeight: 1
-                color: Theme.palette.borderSecondary
-            }
+                NodeWidget {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: (thirdCol.height - thirdCol.spacing) / 3
+                    backend: root.backend
+                    nodeIsUp: health.nodeIsUp
+                    blinkOn: health.blinkOn
+                }
 
-            ManifestTable {
-                Layout.fillWidth: true
-                Layout.leftMargin: 24
-                Layout.rightMargin: 24
-                Layout.topMargin: 20
-                Layout.bottomMargin: 20
-                backend: root.backend
-                running: root.isRunning()
-            }
-
-            Item {
-                Layout.preferredHeight: 20
+                PeersWidget {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: (thirdCol.height - thirdCol.spacing) * 2 / 3
+                    backend: root.backend
+                }
             }
         }
-    }
 
-    DebugPanel {
-        id: debugPanel
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        height: 220
-        visible: root.showDebug
-        backend: root.backend
-        running: root.isRunning()
+        ManifestTable {
+            Layout.fillWidth: true
+            Layout.leftMargin: 24
+            Layout.rightMargin: 24
+            Layout.topMargin: 20
+            Layout.bottomMargin: 20
+            backend: root.backend
+            running: root.isRunning()
+        }
+
+        HealthIndicator {
+            id: health
+            backend: root.backend
+        }
+
+        Shortcut {
+            sequence: "Ctrl+D"
+            onActivated: root.showDebug = !root.showDebug
+        }
+
+        // ScrollView {
+        //     id: mainScroll
+        //     anchors.fill: parent
+        //     anchors.bottomMargin: root.showDebug ? debugPanel.height : 0
+        //     contentWidth: availableWidth
+        //     clip: true
+
+        //     ColumnLayout {
+        //         width: mainScroll.availableWidth
+        //         spacing: 0
+
+        //         NodeHeader {
+        //             Layout.fillWidth: true
+        //             Layout.leftMargin: 24
+        //             Layout.rightMargin: 24
+        //             Layout.topMargin: 24
+        //             Layout.bottomMargin: 20
+        //             backend: root.backend
+        //             nodeIsUp: health.nodeIsUp
+        //             blinkOn: health.blinkOn
+        //             onSettingsRequested: settingsPopup.open()
+        //         }
+
+        //         Rectangle {
+        //             Layout.fillWidth: true
+        //             Layout.leftMargin: 24
+        //             Layout.rightMargin: 24
+        //             Layout.preferredHeight: 1
+        //             color: Theme.palette.borderSecondary
+        //         }
+
+        //         Widgets {
+        //             Layout.fillWidth: true
+        //             Layout.leftMargin: 24
+        //             Layout.rightMargin: 24
+        //             Layout.topMargin: 20
+        //             backend: root.backend
+        //             running: root.isRunning()
+        //         }
+
+        //         Rectangle {
+        //             Layout.fillWidth: true
+        //             Layout.leftMargin: 24
+        //             Layout.rightMargin: 24
+        //             Layout.preferredHeight: 1
+        //             color: Theme.palette.borderSecondary
+        //         }
+
+        //         ManifestTable {
+        //             Layout.fillWidth: true
+        //             Layout.leftMargin: 24
+        //             Layout.rightMargin: 24
+        //             Layout.topMargin: 20
+        //             Layout.bottomMargin: 20
+        //             backend: root.backend
+        //             running: root.isRunning()
+        //         }
+
+        //         Item {
+        //             Layout.preferredHeight: 20
+        //         }
+        //     }
+        // }
+        DebugPanel {
+            id: debugPanel
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            height: 220
+            visible: root.showDebug
+            backend: root.backend
+            running: root.isRunning()
+        }
     }
 }

@@ -5,6 +5,6 @@ import Logos.Theme
 Rectangle {
     id: root
     color: Theme.palette.background
-    implicitWidth: 800
-    implicitHeight: 600
+    implicitWidth: 1500
+    implicitHeight: 800
 }

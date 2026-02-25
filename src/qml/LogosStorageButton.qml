@@ -11,7 +11,7 @@ Button {
     leftPadding: Theme.spacing.large
     rightPadding: Theme.spacing.large
 
-    // "default" | "primary"
+    // "default" | "primary" | "secondary"
     property string variant: "default"
 
     // Icon
@@ -35,8 +35,18 @@ Button {
             text: control.text
             font.pixelSize: Theme.typography.primaryText
             font.bold: true
-            color: control.enabled ? Theme.palette.text : Theme.palette.textMuted
-            horizontalAlignment: Text.AlignLeft
+            color: {
+                if (!control.enabled) {
+                    return Theme.palette.textMuted
+                }
+
+                if (control.variant === "secondary") {
+                    return Theme.palette.textTertiary
+                }
+
+                return Theme.palette.text
+            }
+            horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
             Layout.fillWidth: true
         }
@@ -53,14 +63,34 @@ Button {
 
     background: Rectangle {
         color: {
-            if (!control.enabled)
+            if (!control.enabled) {
                 return Theme.palette.backgroundElevated
-            if (control.variant === "primary")
+            }
+
+            if (control.variant === "primary") {
                 return Theme.palette.primary
+            }
+
+            if (control.variant == "secondary") {
+                // TODO: Logos Design System
+                return "#2F2F2F"
+            }
+
             return Theme.palette.backgroundSecondary
         }
         border.width: 1
-        border.color: control.enabled ? Theme.palette.border : Theme.palette.border
+        border.color: {
+            if (!control.enabled) {
+                return Theme.palette.borderSecondary
+            }
+
+            if (control.variant === "secondary") {
+                // TODO: Logos Design System
+                return "#2F2F2F"
+            }
+
+            return Theme.palette.border
+        }
         radius: Theme.spacing.radiusLarge
 
         Behavior on color {

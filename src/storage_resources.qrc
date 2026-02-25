@@ -13,17 +13,17 @@
         <file alias="ModeSelector.qml">qml/ModeSelector.qml</file>
         <file alias="AdvancedSetup.qml">qml/AdvancedSetup.qml</file>
         <file alias="ManifestTable.qml">qml/ManifestTable.qml</file>
-        <file alias="NodeHeader.qml">qml/NodeHeader.qml</file>
+        <file alias="NodeWidget.qml">qml/NodeWidget.qml</file>
         <file alias="Widgets.qml">qml/Widgets.qml</file>
         <file alias="DebugPanel.qml">qml/DebugPanel.qml</file>
         <file alias="SettingsPopup.qml">qml/SettingsPopup.qml</file>
         <file alias="JsonEditor.qml">qml/JsonEditor.qml</file>
+        <file alias="Card.qml">qml/Card.qml</file>
         <file alias="DiskWidget.qml">qml/DiskWidget.qml</file>
         <file alias="UploadWidget.qml">qml/UploadWidget.qml</file>
         <file alias="PeersWidget.qml">qml/PeersWidget.qml</file>
         <file alias="OnBoardingLayout.qml">qml/OnBoardingLayout.qml</file>
         <file alias="OnBoardingContainer.qml">qml/OnBoardingContainer.qml</file>
-        <file alias="OnBoardingHeader.qml">qml/OnBoardingHeader.qml</file>
         <file alias="OnBoardingProgress.qml">qml/OnBoardingProgress.qml</file>
         <file alias="OnBoardingCard.qml">qml/OnBoardingCard.qml</file>
         <file alias="DotIcon.qml">qml/icons/DotIcon.qml</file>
@@ -43,11 +43,21 @@
         <file alias="ArcGauge.qml">qml/icons/ArcGauge.qml</file>
         <file alias="Utils.js">qml/Utils.js</file>
         <file alias="MockBackend.qml">qml/MockBackend.qml</file>
+        <file alias="VaultText.qml">qml/VaultText.qml</file>
         <file>icons/storage.png</file>
         <file alias="assets/bg.png">qml/assets/bg.png</file>
         <file alias="assets/badge_alpha.png">qml/assets/badge_alpha.png</file>
         <file alias="assets/alpha.png">qml/assets/alpha.png</file>
         <file alias="assets/arrow-right.png">qml/assets/arrow-right.png</file>
         <file alias="assets/arrow-left.png">qml/assets/arrow-left.png</file>
+        <file alias="assets/folder-upload.png">qml/assets/folder-upload.png</file>
+        <file alias="assets/close-circle.png">qml/assets/close-circle.png</file>
+        <file alias="assets/file-copy.png">qml/assets/file-copy.png</file>
+        <file alias="assets/hard-drive.png">qml/assets/hard-drive.png</file>
+        <file alias="assets/global.png">qml/assets/global.png</file>
+        <file alias="assets/node-tree.png">qml/assets/node-tree.png</file>
+        <file alias="assets/settings.png">qml/assets/settings.png</file>
+        <file alias="assets/error.png">qml/assets/error.png</file>
+        <file alias="assets/success.png">qml/assets/success.png</file>
     </qresource>
 </RCC>

@@ -13,6 +13,7 @@ Rectangle {
     border.color: Theme.palette.borderSecondary
     border.width: 1
     radius: Theme.spacing.radiusLarge
+    clip: true
 
     Item {
         id: contentArea

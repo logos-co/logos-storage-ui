@@ -13,12 +13,9 @@ import Logos.Theme
 Rectangle {
     id: root
 
-    width: 140
-    height: 140
-    radius: 14
+    implicitWidth: 120
+    implicitHeight: 120
     color: Theme.palette.backgroundSecondary
-    border.color: Theme.palette.borderSecondary
-    border.width: 1
 
     property real fraction: 0.0
     property color fillColor: Theme.palette.text
@@ -44,26 +41,29 @@ Rectangle {
 
             var cx = width / 2
             var cy = height / 2
-            var startRad = 130 * Math.PI / 180
-            var totalRad = 280 * Math.PI / 180
+            var startDeg = 130
+            var totalDeg = 280
+            var numSeg = 4
+            var gapDeg = 4
+            var segDeg = (totalDeg - gapDeg * (numSeg - 1)) / numSeg
 
-            // Track (full arc, muted)
-            ctx.beginPath()
-            ctx.arc(cx, cy, root.arcRadius, startRad, startRad + totalRad)
-            ctx.strokeStyle = root.trackColor.toString()
-            ctx.lineWidth = root.arcWidth
-            ctx.lineCap = "round"
-            ctx.stroke()
+            // Stroke widths: biggest at the base (index 0), smallest at tip
+            var widths = [13, 9, 6, 4]
 
-            // Fill (proportional)
             var f = Math.min(Math.max(root.fraction, 0.0), 1.0)
-            if (f > 0) {
+            var litCount = Math.min(Math.round(f * numSeg), numSeg)
+
+            for (var i = 0; i < numSeg; i++) {
+                var sDeg = startDeg + i * (segDeg + gapDeg)
+                var sRad = sDeg * Math.PI / 180
+                var eRad = (sDeg + segDeg) * Math.PI / 180
+
                 ctx.beginPath()
-                ctx.arc(cx, cy, root.arcRadius, startRad,
-                        startRad + totalRad * f)
-                ctx.strokeStyle = root.fillColor.toString()
-                ctx.lineWidth = root.arcWidth
-                ctx.lineCap = "round"
+                ctx.arc(cx, cy, root.arcRadius, sRad, eRad)
+                ctx.strokeStyle = (i < litCount) ? root.fillColor.toString(
+                                                       ) : root.trackColor.toString()
+                ctx.lineWidth = widths[i]
+                ctx.lineCap = "butt"
                 ctx.stroke()
             }
         }

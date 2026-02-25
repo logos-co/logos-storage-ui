@@ -154,27 +154,38 @@ qt_add_qml_module(appqml
         icons/DownloadIcon.qml
         icons/DeleteIcon.qml
         icons/ArcWidget.qml
+        Card.qml
         DiskWidget.qml
         UploadWidget.qml
         PeersWidget.qml
         JsonEditor.qml
         SettingsPopup.qml
         ManifestTable.qml
-        NodeHeader.qml
+        NodeWidget.qml
         Widgets.qml
         DebugPanel.qml
         Utils.js
         MockBackend.qml
         OnBoardingLayout.qml
-        OnBoardingHeader.qml
         OnBoardingProgress.qml
         OnBoardingCard.qml
         OnBoardingContainer.qml
+        VaultText.qml
+
         assets/bg.png
-        assets/badge_alpha.png
+        assets/badge-alpha.png
         assets/alpha.png
         assets/arrow-right.png
         assets/arrow-left.png
+        assets/hard-drive.png
+        assets/folder-upload.png
+        assets/close-circle.png
+        assets/file-copy.png
+        assets/global.png
+        assets/node-tree.png
+        assets/settings.png
+        assets/error.png
+        assets/success.png
         RESOURCES
 
 )
