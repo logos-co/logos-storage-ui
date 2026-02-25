@@ -387,19 +387,7 @@ void StorageBackend::exists(const QString& cid) {
 void StorageBackend::remove(const QString& cid) {
     qDebug() << "StorageBackend::remove called with cid=" << cid;
 
-    LogosResult result = m_logos->storage_module.exists(cid);
-
-    if (!result.success) {
-        reportError("Failed to check exists: " + result.getError());
-        return;
-    }
-
-    if (!result.getBool()) {
-        debug("Blocks don't exist in store.");
-        return;
-    }
-
-    result = m_logos->storage_module.remove(cid);
+    LogosResult result = m_logos->storage_module.remove(cid);
     if (!result.success) {
         reportError("Failed to remove " + cid + ": " + result.getError());
         return;
