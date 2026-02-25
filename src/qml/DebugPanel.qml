@@ -50,6 +50,16 @@ Rectangle {
                 enabled: root.running
                 onClicked: root.backend.logVersion()
             }
+            LogosStorageButton {
+                text: "List settings"
+                enabled: root.running
+                onClicked: root.backend.listSettings()
+            }
+            LogosStorageButton {
+                text: "Restart onboarding"
+                enabled: root.running
+                onClicked: root.backend.restartOnboarding()
+            }
 
             Item {
                 Layout.fillWidth: true
