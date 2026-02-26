@@ -14,6 +14,7 @@ Card {
     property var backend: MockBackend
     property bool running: false
     property var manifests: []
+    property bool panelOpen: false
 
     // property var manifests: [{
     //         "cid": "1234",
@@ -49,301 +50,385 @@ Card {
             }
         }
 
-        LogosText {
-            text: "Manifests"
-            font.pixelSize: Theme.typography.titleText
-            color: Theme.palette.text
-        }
-
-        Rectangle {
-            id: header
+        // ── Title row ─────────────────────────────────────────────────────────
+        RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 30
-            // TODO: Logos Design System
-            color: "#141414"
-            radius: Theme.spacing.radiusSmall
 
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: Theme.spacing.medium
-                anchors.rightMargin: Theme.spacing.medium
+            LogosText {
+                text: "Manifests"
+                font.pixelSize: Theme.typography.titleText
+                color: Theme.palette.text
+            }
 
-                Text {
-                    text: "CID"
-                    color: Theme.palette.textMuted
-                    font.pixelSize: Theme.typography.secondaryText
-                    Layout.fillWidth: true
+            Item {
+                Layout.fillWidth: true
+            }
+
+            // Toggle panel button
+            Rectangle {
+                id: toggleBtn
+                width: 28
+                height: 28
+                radius: Theme.spacing.radiusSmall
+                color: toggleHover.hovered ? Theme.palette.backgroundElevated : "transparent"
+                border.color: root.panelOpen ? Theme.palette.primary : Theme.palette.borderSecondary
+                border.width: 1
+
+                Grid {
+                    anchors.centerIn: parent
+                    columns: 2
+                    spacing: 3
+
+                    Repeater {
+                        model: 4
+                        Rectangle {
+                            width: 5
+                            height: 5
+                            radius: 1
+                            color: root.panelOpen ? Theme.palette.primary : Theme.palette.textMuted
+                        }
+                    }
                 }
 
-                Text {
-                    text: "Filename"
-                    color: Theme.palette.textSecondary
-                    font.pixelSize: Theme.typography.secondaryText
-                    Layout.preferredWidth: 140
+                HoverHandler {
+                    id: toggleHover
                 }
 
-                Text {
-                    text: "Mimetype"
-                    color: Theme.palette.textSecondary
-                    font.pixelSize: Theme.typography.secondaryText
-                    Layout.preferredWidth: 100
-                }
-
-                Text {
-                    text: "Size"
-                    color: Theme.palette.textSecondary
-                    font.pixelSize: Theme.typography.secondaryText
-                    Layout.preferredWidth: 80
-                }
-
-                Text {
-                    text: "Actions"
-                    color: Theme.palette.textSecondary
-                    font.pixelSize: Theme.typography.secondaryText
-                    Layout.preferredWidth: 92
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.panelOpen = !root.panelOpen
                 }
             }
         }
 
-        ListView {
-            id: manifestList
+        // ── Zone de contenu : liste OU panel ──────────────────────────────────
+        Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            model: root.manifests
 
-            delegate: Rectangle {
-                width: manifestList.width
-                height: 72
-                color: Theme.palette.backgroundSecondary
+            // ── Vue liste ────────────────────────────────────────────────────
+            ColumnLayout {
+                anchors.fill: parent
+                spacing: Theme.spacing.small
+                visible: !root.panelOpen
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.leftMargin: Theme.spacing.medium
-                    anchors.rightMargin: Theme.spacing.medium
+                // Header sticky (hors du ListView = ne scrolle pas)
+                Rectangle {
+                    id: header
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 30
+                    // TODO: Logos Design System
+                    color: "#141414"
+                    radius: Theme.spacing.radiusSmall
 
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: Theme.spacing.medium
+                        anchors.rightMargin: Theme.spacing.medium
 
-                        Image {
-                            id: typeIcon
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            source: root.mimetypeIcon(modelData.mimetype)
-                            width: 32
-                            height: 32
-                            fillMode: Image.PreserveAspectFit
+                        Text {
+                            text: "CID"
+                            color: Theme.palette.textMuted
+                            font.pixelSize: Theme.typography.secondaryText
+                            Layout.fillWidth: true
                         }
 
                         Text {
-                            anchors.left: typeIcon.right
-                            anchors.leftMargin: Theme.spacing.medium
-                            anchors.right: copyBtn.left
-                            anchors.rightMargin: Theme.spacing.medium
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: modelData.cid
-                            color: Theme.palette.text
+                            text: "Filename"
+                            color: Theme.palette.textSecondary
                             font.pixelSize: Theme.typography.secondaryText
-                            elide: Text.ElideRight
-                            ToolTip.visible: cidHover.hovered
-                            ToolTip.text: modelData.cid
-
-                            HoverHandler {
-                                id: cidHover
-                            }
+                            Layout.preferredWidth: 140
                         }
 
-                        Rectangle {
-                            id: copyBtn
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
+                        Text {
+                            text: "Mimetype"
+                            color: Theme.palette.textSecondary
+                            font.pixelSize: Theme.typography.secondaryText
+                            Layout.preferredWidth: 100
+                        }
+
+                        Text {
+                            text: "Size"
+                            color: Theme.palette.textSecondary
+                            font.pixelSize: Theme.typography.secondaryText
+                            Layout.preferredWidth: 80
+                        }
+
+                        Text {
+                            text: "Actions"
+                            color: Theme.palette.textSecondary
+                            font.pixelSize: Theme.typography.secondaryText
+                            Layout.preferredWidth: 92
+                        }
+                    }
+                }
+
+                ListView {
+                    id: manifestList
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    model: root.manifests
+                    clip: true  // empêche les items de déborder sur le header sticky
+
+                    delegate: Rectangle {
+                        width: manifestList.width
+                        height: 72
+                        color: Theme.palette.backgroundSecondary
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: Theme.spacing.medium
                             anchors.rightMargin: Theme.spacing.medium
-                            width: 40
-                            height: 40
-                            radius: Theme.spacing.radiusXlarge * 2
-                            // TODO: Logos Design System
-                            border.color: copyHover.hovered ? Theme.palette.primary : "#333333"
-                            border.width: 1
 
-                            property bool copied: false
+                            Item {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
 
-                            color: "#141414"
-
-                            Timer {
-                                id: resetCopyTimer
-                                interval: 1500
-                                onTriggered: copyBtn.copied = false
-                            }
-
-                            Image {
-                                anchors.centerIn: parent
-                                source: copyBtn.copied ? "assets/success.png" : "assets/file-copy-line.png"
-                                width: 20
-                                height: 20
-                                fillMode: Image.PreserveAspectFit
-                            }
-                            HoverHandler {
-                                id: copyHover
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    clipboardHelper.text = modelData.cid
-                                    clipboardHelper.selectAll()
-                                    clipboardHelper.copy()
-                                    copyBtn.copied = true
-                                    resetCopyTimer.restart()
-                                }
-                            }
-                        }
-
-                        TextEdit {
-                            id: clipboardHelper
-                            visible: false
-                        }
-                    }
-
-                    Text {
-                        text: modelData.filename
-                        color: Theme.palette.text
-                        font.pixelSize: Theme.typography.secondaryText
-                        elide: Text.ElideRight
-                        Layout.preferredWidth: 140
-                    }
-
-                    Text {
-                        text: modelData.mimetype
-                        color: Theme.palette.text
-                        font.pixelSize: Theme.typography.secondaryText
-                        elide: Text.ElideRight
-                        Layout.preferredWidth: 100
-                    }
-
-                    Text {
-                        text: Utils.formatBytes(parseInt(modelData.datasetSize))
-                        color: Theme.palette.text
-                        font.pixelSize: Theme.typography.secondaryText
-                        Layout.preferredWidth: 80
-                    }
-
-                    Rectangle {
-                        color: "#141414"
-                        radius: Theme.spacing.radiusLarge
-                        Layout.alignment: Qt.AlignVCenter
-                        implicitWidth: actionsRow.implicitWidth + Theme.spacing.medium * 2
-                        implicitHeight: actionsRow.implicitHeight + Theme.spacing.small * 2
-
-                        Row {
-                            id: actionsRow
-                            anchors.centerIn: parent
-                            spacing: Theme.spacing.medium
-
-                            Rectangle {
-                                width: 40
-                                height: 40
-                                radius: Theme.spacing.radiusXlarge * 2
-                                // TODO: Logos Design System
-                                color: "#2F2F2F"
-                                // TODO: Logos Design System
-                                border.color: dlHover.hovered ? Theme.palette.primary : "#444444"
-                                border.width: 1
-
-                                // opacity: root.running ? 1.0 : 0.35
                                 Image {
-                                    anchors.centerIn: parent
-                                    source: "assets/download.png"
-                                    width: 24
-                                    height: 24
+                                    id: typeIcon
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    source: root.mimetypeIcon(modelData.mimetype)
+                                    width: 32
+                                    height: 32
                                     fillMode: Image.PreserveAspectFit
                                 }
 
-                                HoverHandler {
-                                    id: dlHover
-                                }
+                                Text {
+                                    anchors.left: typeIcon.right
+                                    anchors.leftMargin: Theme.spacing.medium
+                                    anchors.right: copyBtn.left
+                                    anchors.rightMargin: Theme.spacing.medium
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: modelData.cid
+                                    color: Theme.palette.text
+                                    font.pixelSize: Theme.typography.secondaryText
+                                    elide: Text.ElideRight
+                                    ToolTip.visible: cidHover.hovered
+                                    ToolTip.text: modelData.cid
 
-                                MouseArea {
-                                    anchors.fill: parent
-                                    enabled: root.running
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        saveDialog.pendingManifest = modelData
-                                        saveDialog.currentFile = StandardPaths.writableLocation(
-                                                    StandardPaths.HomeLocation)
-                                                + "/" + (modelData.filename
-                                                         || modelData.cid
-                                                         || "download")
-                                        saveDialog.open()
+                                    HoverHandler {
+                                        id: cidHover
                                     }
                                 }
+
+                                Rectangle {
+                                    id: copyBtn
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    anchors.rightMargin: Theme.spacing.medium
+                                    width: 40
+                                    height: 40
+                                    radius: Theme.spacing.radiusXlarge * 2
+                                    // TODO: Logos Design System
+                                    border.color: copyHover.hovered ? Theme.palette.primary : "#333333"
+                                    border.width: 1
+
+                                    property bool copied: false
+
+                                    color: "#141414"
+
+                                    Timer {
+                                        id: resetCopyTimer
+                                        interval: 1500
+                                        onTriggered: copyBtn.copied = false
+                                    }
+
+                                    Image {
+                                        anchors.centerIn: parent
+                                        source: copyBtn.copied ? "assets/success.png" : "assets/file-copy-line.png"
+                                        width: 20
+                                        height: 20
+                                        fillMode: Image.PreserveAspectFit
+                                    }
+                                    HoverHandler {
+                                        id: copyHover
+                                    }
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: {
+                                            clipboardHelper.text = modelData.cid
+                                            clipboardHelper.selectAll()
+                                            clipboardHelper.copy()
+                                            copyBtn.copied = true
+                                            resetCopyTimer.restart()
+                                        }
+                                    }
+                                }
+
+                                TextEdit {
+                                    id: clipboardHelper
+                                    visible: false
+                                }
+                            }
+
+                            Text {
+                                text: modelData.filename
+                                color: Theme.palette.text
+                                font.pixelSize: Theme.typography.secondaryText
+                                elide: Text.ElideRight
+                                Layout.preferredWidth: 140
+                            }
+
+                            Text {
+                                text: modelData.mimetype
+                                color: Theme.palette.text
+                                font.pixelSize: Theme.typography.secondaryText
+                                elide: Text.ElideRight
+                                Layout.preferredWidth: 100
+                            }
+
+                            Text {
+                                text: Utils.formatBytes(parseInt(modelData.datasetSize))
+                                color: Theme.palette.text
+                                font.pixelSize: Theme.typography.secondaryText
+                                Layout.preferredWidth: 80
                             }
 
                             Rectangle {
-                                width: 40
-                                height: 40
-                                radius: Theme.spacing.radiusXlarge * 2
-                                // TODO: Logos Design System
-                                color: "#2F2F2F"
-                                // TODO: Logos Design System
-                                border.color: rmHover.hovered ? Theme.palette.primary : "#444444"
-                                border.width: 1
+                                color: "#141414"
+                                radius: Theme.spacing.radiusLarge
+                                Layout.alignment: Qt.AlignVCenter
+                                implicitWidth: actionsRow.implicitWidth + Theme.spacing.medium * 2
+                                implicitHeight: actionsRow.implicitHeight + Theme.spacing.small * 2
 
-                                //opacity: root.running ? 1.0 : 0.35
-                                Image {
+                                Row {
+                                    id: actionsRow
                                     anchors.centerIn: parent
-                                    source: "assets/delete.png"
-                                    width: 20
-                                    height: 20
-                                    fillMode: Image.PreserveAspectFit
-                                }
+                                    spacing: Theme.spacing.medium
 
-                                HoverHandler {
-                                    id: rmHover
-                                }
+                                    Rectangle {
+                                        width: 40
+                                        height: 40
+                                        radius: Theme.spacing.radiusXlarge * 2
+                                        // TODO: Logos Design System
+                                        color: "#2F2F2F"
+                                        // TODO: Logos Design System
+                                        border.color: dlHover.hovered ? Theme.palette.primary : "#444444"
+                                        border.width: 1
 
-                                MouseArea {
-                                    anchors.fill: parent
-                                    enabled: root.running
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: {
-                                        if (modelData.cid.length > 0) {
-                                            root.backend.remove(modelData.cid)
+                                        Image {
+                                            anchors.centerIn: parent
+                                            source: "assets/download.png"
+                                            width: 24
+                                            height: 24
+                                            fillMode: Image.PreserveAspectFit
+                                        }
+
+                                        HoverHandler {
+                                            id: dlHover
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            enabled: root.running
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                saveDialog.pendingManifest = modelData
+                                                saveDialog.currentFile = StandardPaths.writableLocation(
+                                                            StandardPaths.HomeLocation)
+                                                        + "/" + (modelData.filename
+                                                                 || modelData.cid
+                                                                 || "download")
+                                                saveDialog.open()
+                                            }
+                                        }
+                                    }
+
+                                    Rectangle {
+                                        width: 40
+                                        height: 40
+                                        radius: Theme.spacing.radiusXlarge * 2
+                                        // TODO: Logos Design System
+                                        color: "#2F2F2F"
+                                        // TODO: Logos Design System
+                                        border.color: rmHover.hovered ? Theme.palette.primary : "#444444"
+                                        border.width: 1
+
+                                        Image {
+                                            anchors.centerIn: parent
+                                            source: "assets/delete.png"
+                                            width: 20
+                                            height: 20
+                                            fillMode: Image.PreserveAspectFit
+                                        }
+
+                                        HoverHandler {
+                                            id: rmHover
+                                        }
+
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            enabled: root.running
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                if (modelData.cid.length > 0) {
+                                                    root.backend.remove(modelData.cid)
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                }
 
-                // Bottom row separator
-                Rectangle {
-                    anchors.bottom: parent.bottom
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    height: 1
-                    color: Theme.palette.borderSecondary
+                        // Bottom row separator
+                        Rectangle {
+                            anchors.bottom: parent.bottom
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            height: 1
+                            color: Theme.palette.borderSecondary
+                        }
+                    }
+
+                    // Empty state — enfant du ListView, pas du delegate
+                    ColumnLayout {
+                        anchors.centerIn: parent
+                        spacing: 10
+                        visible: manifestList.count === 0
+
+                        DotIcon {
+                            pattern: [0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0]
+                            dotColor: Theme.palette.textMuted
+                            activeOpacity: 0.25
+                            Layout.alignment: Qt.AlignHCenter
+                        }
+
+                        LogosText {
+                            text: "No manifests yet"
+                            color: Theme.palette.textMuted
+                            font.pixelSize: 12
+                            Layout.alignment: Qt.AlignHCenter
+                        }
+                    }
                 }
             }
 
-            // Empty state — enfant du ListView, pas du delegate
-            ColumnLayout {
-                anchors.centerIn: parent
-                spacing: 10
-                visible: manifestList.count === 0
+            // ── Vue panel (remplace la liste quand panelOpen = true) ──────────
+            Item {
+                anchors.fill: parent
+                visible: root.panelOpen
 
-                DotIcon {
-                    pattern: [0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0]
-                    dotColor: Theme.palette.textMuted
-                    activeOpacity: 0.25
-                    Layout.alignment: Qt.AlignHCenter
-                }
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: Theme.spacing.medium
 
-                LogosText {
-                    text: "No manifests yet"
-                    color: Theme.palette.textMuted
-                    font.pixelSize: 12
-                    Layout.alignment: Qt.AlignHCenter
+                    DotIcon {
+                        pattern: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
+                        dotColor: Theme.palette.primary
+                        activeOpacity: 0.4
+                        Layout.alignment: Qt.AlignHCenter
+                    }
+
+                    LogosText {
+                        text: "Panel"
+                        color: Theme.palette.textMuted
+                        font.pixelSize: Theme.typography.secondaryText
+                        Layout.alignment: Qt.AlignHCenter
+                    }
                 }
             }
         }

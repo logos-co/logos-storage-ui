@@ -11,7 +11,6 @@ Card {
     implicitWidth: 300
     implicitHeight: 180
 
-    // padding: default (Theme.spacing.medium) — évite le clip du radius sur le contenu
     property var backend: MockBackend
     property string downloadFilename: ""
     property string downloadCid: ""
@@ -31,6 +30,14 @@ Card {
     readonly property int blockGap: 2
 
     property var filledBlocks: []
+
+    function reset() {
+        root.downloadCid = ""
+        root.downloadFilename = ""
+        root.totalBytes = 0
+        root.downloadedBytes = 0
+        root.initBlocks()
+    }
 
     function initBlocks() {
         var arr = []
@@ -91,16 +98,42 @@ Card {
         anchors.fill: parent
         spacing: 0
 
+        // ── Header : filename + close (visible quand actif) ───────────────────
+        RowLayout {
+            Layout.fillWidth: true
+            visible: root.isDownloading || root.isDone
+
+            LogosText {
+                text: root.downloadFilename
+                font.pixelSize: Theme.typography.secondaryText
+                color: Theme.palette.textMuted
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+            }
+
+            Image {
+                source: "assets/close-circle.png"
+                visible: root.isDone
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.reset()
+                }
+            }
+        }
+
         Item {
             Layout.fillHeight: true
         }
 
+        // ── Grid centré ───────────────────────────────────────────────────────
         Item {
             id: gridItem
-            Layout.fillWidth: true
-            Layout.alignment: Qt.AlignCenter
+            Layout.alignment: Qt.AlignHCenter
 
             readonly property real blockSize: 12
+            implicitWidth: root.gridCols * blockSize + (root.gridCols - 1) * root.blockGap
             implicitHeight: root.gridRows * blockSize + (root.gridRows - 1) * root.blockGap
 
             Repeater {
@@ -127,7 +160,7 @@ Card {
             Layout.fillHeight: true
         }
 
-        // Footer : label + % pendant le téléchargement
+        // ── Footer : label + % pendant le téléchargement ─────────────────────
         RowLayout {
             Layout.fillWidth: true
             visible: root.isDownloading || root.isDone
@@ -147,14 +180,14 @@ Card {
             }
         }
 
-        // BottomTitle — visible uniquement au repos
+        // ── BottomTitle — visible uniquement au repos ─────────────────────────
         BottomTitle {
             Layout.fillWidth: true
             title: "No download in progress"
             visible: !root.isDownloading && !root.isDone
         }
 
-        // Progress bar — marges négatives pour être flush aux bords de la card
+        // ── Progress bar — flush aux bords de la card ─────────────────────────
         Rectangle {
             Layout.fillWidth: true
             Layout.leftMargin: -Theme.spacing.medium

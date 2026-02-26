@@ -114,21 +114,6 @@ Card {
             color: Theme.palette.borderSecondary
         }
 
-        // ── Disk activity graph (ECG-style) ──────────────────────────────────
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 90
-            color: Theme.palette.colors.black
-            radius: Theme.spacing.radiusSmall
-
-            DiskActivityGraph {
-                id: activityGraph
-                anchors.fill: parent
-                anchors.margins: Theme.spacing.small
-                lineColor: Theme.palette.primary
-            }
-        }
-
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 120
@@ -142,7 +127,6 @@ Card {
                 // TODO Logos Design System
                 color: "#313131"
 
-                // Fill
                 Rectangle {
                     width: parent.width * root.fraction
                     height: parent.height
@@ -157,10 +141,6 @@ Card {
                     }
                 }
             }
-        }
-
-        Item {
-            Layout.fillHeight: true
         }
 
         // Legend
@@ -204,6 +184,30 @@ Card {
                     font.family: "monospace"
                     color: Theme.palette.textMuted
                 }
+            }
+        }
+
+        // ── Disk activity graph (ECG-style) ──────────────────────────────────
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 90
+            color: Theme.palette.colors.black
+            radius: Theme.spacing.radiusSmall
+
+            DiskActivityGraph {
+                id: activityGraph
+                anchors.fill: parent
+                anchors.margins: Theme.spacing.small
+                lineColor: Theme.palette.primary
+            }
+
+            LogosText {
+                anchors.bottom: parent.bottom
+                anchors.left: parent.left
+                text: "Total space available"
+                font.pixelSize: Theme.typography.secondaryText
+                color: Theme.palette.textSecondary
+                font.family: "monospace"
             }
         }
     }
