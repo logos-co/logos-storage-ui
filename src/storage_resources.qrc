@@ -4,7 +4,7 @@
         <file alias="StartNode.qml">qml/StartNode.qml</file>
         <file alias="OnBoarding.qml">qml/OnBoarding.qml</file>
         <file alias="StorageView.qml">qml/StorageView.qml</file>
-        <file alias="LogosTextField.qml">qml/LogosTextField.qml</file>
+        <file alias="LogosStorageTextField.qml">qml/LogosStorageTextField.qml</file>
         <file alias="LogosStorageButton.qml">qml/LogosStorageButton.qml</file>
         <file alias="LogosStorageLayout.qml">qml/LogosStorageLayout.qml</file>
         <file alias="PortForwarding.qml">qml/PortForwarding.qml</file>
@@ -45,7 +45,10 @@
         <file alias="MockBackend.qml">qml/MockBackend.qml</file>
         <file alias="VaultText.qml">qml/VaultText.qml</file>
         <file alias="ManifestWidget.qml">qml/ManifestWidget.qml</file>
+        <file alias="BottomTitle.qml">qml/BottomTitle.qml</file>
+        <file alias="LogosTextField.qml">qml/LogosTextField.qml</file>
         <file alias="DownloadWidget.qml">qml/DownloadWidget.qml</file>
+        <file alias="DiskActivityGraph.qml">qml/DiskActivityGraph.qml</file>
         <file>icons/storage.png</file>
         <file alias="assets/bg.png">qml/assets/bg.png</file>
         <file alias="assets/badge-alpha.png">qml/assets/badge-alpha.png</file>
@@ -55,6 +58,7 @@
         <file alias="assets/folder-upload.png">qml/assets/folder-upload.png</file>
         <file alias="assets/close-circle.png">qml/assets/close-circle.png</file>
         <file alias="assets/file-copy.png">qml/assets/file-copy.png</file>
+        <file alias="assets/file-copy-line.png">qml/assets/file-copy-line.png</file>
         <file alias="assets/hard-drive.png">qml/assets/hard-drive.png</file>
         <file alias="assets/global.png">qml/assets/global.png</file>
         <file alias="assets/node-tree.png">qml/assets/node-tree.png</file>
@@ -63,5 +67,9 @@
         <file alias="assets/success.png">qml/assets/success.png</file>
         <file alias="assets/download.png">qml/assets/download.png</file>
         <file alias="assets/delete.png">qml/assets/delete.png</file>
+        <file alias="assets/image.png">qml/assets/image.png</file>
+        <file alias="assets/pdf.png">qml/assets/pdf.png</file>
+        <file alias="assets/video.png">qml/assets/video.png</file>
+        <file alias="assets/other.png">qml/assets/other.png</file>
     </qresource>
 </RCC>

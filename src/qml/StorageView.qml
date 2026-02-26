@@ -49,92 +49,90 @@ LogosStorageLayout {
         running: root.isRunning()
     }
 
-    ScrollView {
-        id: mainScroll
+    ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacing.medium
         anchors.bottomMargin: root.showDebug ? debugPanel.height
                                                + Theme.spacing.medium : Theme.spacing.medium
-        contentWidth: availableWidth
-        clip: true
+        spacing: Theme.spacing.medium
 
-        Column {
-            id: mainContent
-            width: mainScroll.availableWidth
-            spacing: Theme.spacing.medium
+        // Partie haute — hauteur strictement fixe (min = max = preferred)
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 465
+            Layout.minimumHeight: 465
+            Layout.maximumHeight: 465
 
-            Item {
-                width: parent.width
-                height: 465
+            RowLayout {
+                anchors.fill: parent
+                spacing: Theme.spacing.medium
 
-                RowLayout {
-                    anchors.fill: parent
+                DiskWidget {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: 0
+                    backend: root.backend
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: 0
                     spacing: Theme.spacing.medium
 
-                    DiskWidget {
+                    DownloadWidget {
+                        id: downloadWidget
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        Layout.preferredWidth: 0
                         backend: root.backend
                     }
 
-                    ColumnLayout {
+                    UploadWidget {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        Layout.preferredWidth: 0
-                        spacing: Theme.spacing.medium
-
-                        DownloadWidget {
-                            id: downloadWidget
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            backend: root.backend
-                        }
-
-                        UploadWidget {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            backend: root.backend
-                            running: root.isRunning()
-                            onUploadRequested: uploadDialog.open()
-                        }
-
-                        ManifestWidget {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            backend: root.backend
-                        }
+                        backend: root.backend
+                        running: root.isRunning()
+                        onUploadRequested: uploadDialog.open()
                     }
 
-                    ColumnLayout {
-                        id: thirdCol
+                    ManifestWidget {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        Layout.preferredWidth: 0
-                        spacing: Theme.spacing.medium
+                        backend: root.backend
+                    }
+                }
 
-                        NodeWidget {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: (thirdCol.height - thirdCol.spacing) / 3
-                            backend: root.backend
-                            nodeIsUp: health.nodeIsUp
-                            blinkOn: health.blinkOn
-                        }
+                ColumnLayout {
+                    id: thirdCol
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: 0
+                    spacing: Theme.spacing.medium
 
-                        PeersWidget {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: (thirdCol.height - thirdCol.spacing) * 2 / 3
-                            backend: root.backend
-                        }
+                    NodeWidget {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: (thirdCol.height - thirdCol.spacing) / 3
+                        backend: root.backend
+                        nodeIsUp: health.nodeIsUp
+                        blinkOn: health.blinkOn
+                    }
+
+                    PeersWidget {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: (thirdCol.height - thirdCol.spacing) * 2 / 3
+                        backend: root.backend
                     }
                 }
             }
+        }
 
-            ManifestTable {
-                width: parent.width
-                backend: root.backend
-                running: root.isRunning()
-            }
+        // Table — prend tout l'espace restant
+        ManifestTable {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.minimumHeight: 0
+            backend: root.backend
+            running: root.isRunning()
         }
     }
 }

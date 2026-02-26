@@ -92,7 +92,7 @@ OnBoardingLayout {
                     Layout.bottomMargin: Theme.spacing.tiny
                 }
 
-                LogosTextField {
+                LogosStorageTextField {
                     Layout.fillWidth: true
                     Layout.leftMargin: Theme.spacing.medium
                     Layout.rightMargin: Theme.spacing.medium

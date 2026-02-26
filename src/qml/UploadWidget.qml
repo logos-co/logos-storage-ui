@@ -54,7 +54,10 @@ Card {
 
     // ── Idle ──────────────────────────────────────────────────────────────────
     ColumnLayout {
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: uploadBottomTitle.top
         visible: !root.isUploading && !root.isDone
 
         Rectangle {
@@ -62,7 +65,7 @@ Card {
             Layout.fillHeight: true
             radius: Theme.spacing.radiusLarge
             color: Theme.palette.colors.black
-            border.color: "#696969"
+            border.color: "#2F2F2F"
             border.width: 1
 
             RowLayout {
@@ -71,10 +74,11 @@ Card {
                 ColumnLayout {
                     Layout.alignment: Qt.AlignTop
                     Layout.fillHeight: false
+                    spacing: Theme.spacing.tiny
 
                     RowLayout {
-                        Layout.topMargin: Theme.spacing.medium
-                        Layout.leftMargin: Theme.spacing.medium
+                        Layout.topMargin: Theme.spacing.small
+                        Layout.leftMargin: Theme.spacing.small
                         Layout.fillHeight: false
 
                         LogosText {
@@ -89,7 +93,7 @@ Card {
                     }
 
                     LogosText {
-                        Layout.leftMargin: Theme.spacing.medium
+                        Layout.leftMargin: Theme.spacing.small
                         text: "Up to 1 file"
                         color: Theme.palette.textMuted
                     }
@@ -101,18 +105,21 @@ Card {
 
                 Image {
                     Layout.alignment: Qt.AlignTop
-                    Layout.topMargin: Theme.spacing.medium
-                    Layout.rightMargin: Theme.spacing.medium
+                    Layout.topMargin: Theme.spacing.tiny
+                    Layout.rightMargin: Theme.spacing.tiny
                     source: "assets/folder-upload.png"
                 }
             }
         }
+    }
 
-        LogosText {
-            text: "Upload"
-            color: Theme.palette.text
-            font.pixelSize: Theme.typography.titleText * 0.6
-        }
+    BottomTitle {
+        id: uploadBottomTitle
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        title: "Upload"
+        visible: !root.isUploading && !root.isDone
     }
 
     Rectangle {
@@ -120,7 +127,8 @@ Card {
         anchors.top: parent.top
         anchors.bottom: parent.bottom
         width: parent.width * (root.uploadProgress / 100.0)
-        radius: 0
+        radius: Theme.spacing.radiusLarge
+        clip: true
         opacity: (root.isUploading || root.isDone) ? 1.0 : 0.0
         gradient: Gradient {
             orientation: Gradient.Horizontal
@@ -130,7 +138,7 @@ Card {
                 color: "#ED7B58"
             }
             GradientStop {
-                position: 0.89
+                position: 0.70
                 // TODO: Logos Design System
                 color: "#FF6F42"
             }
@@ -146,16 +154,12 @@ Card {
             anchors.fill: parent
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop {
-                    position: 0.0
-                    // TODO: Logos Design System
-                    color: "#88000000"
-                }
-                GradientStop {
-                    position: 0.4
-                    // TODO: Logos Design System
-                    color: "#00000000"
-                }
+                GradientStop { position: 0.0;  color: "#88000000" }
+                GradientStop { position: 0.35; color: "#88000000" }
+                GradientStop { position: 0.55; color: "#66000000" }
+                GradientStop { position: 0.72; color: "#33000000" }
+                GradientStop { position: 0.88; color: "#11000000" }
+                GradientStop { position: 1.0;  color: "#00000000" }
             }
         }
 
@@ -203,14 +207,21 @@ Card {
         }
 
         Rectangle {
+            id: cidBox
             Layout.fillWidth: true
             Layout.preferredHeight: 30
             radius: Theme.spacing.radiusSmall
+            opacity: 0.8
 
-            // TODO: Logos Design System
+            property bool copied: false
+
             color: "#141414"
 
-            opacity: 0.8
+            Timer {
+                id: resetCopyTimer
+                interval: 1500
+                onTriggered: cidBox.copied = false
+            }
 
             LogosText {
                 id: cidText
@@ -232,7 +243,13 @@ Card {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right
                 anchors.rightMargin: Theme.spacing.small
-                source: "assets/file-copy.png"
+                source: cidBox.copied ? "assets/success.png" : "assets/file-copy.png"
+
+                Behavior on source {
+                    PropertyAnimation {
+                        duration: 80
+                    }
+                }
 
                 MouseArea {
                     anchors.fill: parent
@@ -241,6 +258,8 @@ Card {
                         clipboardHelper.text = root.uploadedCid
                         clipboardHelper.selectAll()
                         clipboardHelper.copy()
+                        cidBox.copied = true
+                        resetCopyTimer.restart()
                     }
                 }
             }

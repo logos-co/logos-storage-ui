@@ -13,16 +13,29 @@ Card {
 
     property var backend: MockBackend
     property bool running: false
-    property var manifests: [{
-            "cid": "1234",
-            "filename": "Claude.jpg",
-            "mimetype": "image/jpg",
-            "size": 12222
-        }]
+    property var manifests: []
+
+    // property var manifests: [{
+    //         "cid": "1234",
+    //         "filename": "Claude.jpg",
+    //         "mimetype": "image/jpg",
+    //         "size": 12222
+    //     }]
+    function mimetypeIcon(mimetype) {
+        if (!mimetype)
+            return "assets/other.png"
+        var m = mimetype.toLowerCase()
+        if (m.indexOf("image/") === 0)
+            return "assets/image.png"
+        if (m.indexOf("video/") === 0)
+            return "assets/video.png"
+        if (m === "application/pdf")
+            return "assets/pdf.png"
+        return "assets/other.png"
+    }
 
     implicitWidth: 1200
     implicitHeight: 400
-
 
     ColumnLayout {
         anchors.fill: parent
@@ -100,7 +113,7 @@ Card {
 
             delegate: Rectangle {
                 width: manifestList.width
-                height: 52
+                height: 72
                 color: Theme.palette.backgroundSecondary
 
                 RowLayout {
@@ -108,15 +121,25 @@ Card {
                     anchors.leftMargin: Theme.spacing.medium
                     anchors.rightMargin: Theme.spacing.medium
 
-                    // CID cell with copy button on the far right
                     Item {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
 
-                        Text {
+                        Image {
+                            id: typeIcon
                             anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            source: root.mimetypeIcon(modelData.mimetype)
+                            width: 32
+                            height: 32
+                            fillMode: Image.PreserveAspectFit
+                        }
+
+                        Text {
+                            anchors.left: typeIcon.right
+                            anchors.leftMargin: Theme.spacing.medium
                             anchors.right: copyBtn.left
-                            anchors.rightMargin: 6
+                            anchors.rightMargin: Theme.spacing.medium
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.cid
                             color: Theme.palette.text
@@ -124,6 +147,7 @@ Card {
                             elide: Text.ElideRight
                             ToolTip.visible: cidHover.hovered
                             ToolTip.text: modelData.cid
+
                             HoverHandler {
                                 id: cidHover
                             }
@@ -133,18 +157,29 @@ Card {
                             id: copyBtn
                             anchors.right: parent.right
                             anchors.verticalCenter: parent.verticalCenter
-                            width: 28
-                            height: 28
-                            radius: 14
-                            color: copyHover.hovered ? Theme.palette.backgroundElevated : "transparent"
-                            border.color: Theme.palette.borderSecondary
+                            anchors.rightMargin: Theme.spacing.medium
+                            width: 40
+                            height: 40
+                            radius: Theme.spacing.radiusXlarge * 2
+                            // TODO: Logos Design System
+                            border.color: copyHover.hovered ? Theme.palette.primary : "#333333"
                             border.width: 1
+
+                            property bool copied: false
+
+                            color: "#141414"
+
+                            Timer {
+                                id: resetCopyTimer
+                                interval: 1500
+                                onTriggered: copyBtn.copied = false
+                            }
 
                             Image {
                                 anchors.centerIn: parent
-                                source: "assets/file-copy.png"
-                                width: 16
-                                height: 16
+                                source: copyBtn.copied ? "assets/success.png" : "assets/file-copy-line.png"
+                                width: 20
+                                height: 20
                                 fillMode: Image.PreserveAspectFit
                             }
                             HoverHandler {
@@ -157,6 +192,8 @@ Card {
                                     clipboardHelper.text = modelData.cid
                                     clipboardHelper.selectAll()
                                     clipboardHelper.copy()
+                                    copyBtn.copied = true
+                                    resetCopyTimer.restart()
                                 }
                             }
                         }
@@ -190,81 +227,106 @@ Card {
                         Layout.preferredWidth: 80
                     }
 
-                    Row {
-                        spacing: 6
-                        Layout.preferredWidth: 92
+                    Rectangle {
+                        color: "#141414"
+                        radius: Theme.spacing.radiusLarge
                         Layout.alignment: Qt.AlignVCenter
+                        implicitWidth: actionsRow.implicitWidth + Theme.spacing.medium * 2
+                        implicitHeight: actionsRow.implicitHeight + Theme.spacing.small * 2
 
-                        Rectangle {
-                            width: 40
-                            height: 40
-                            radius: 20
-                            color: dlHover.hovered ? Theme.palette.backgroundElevated : "transparent"
-                            border.color: Theme.palette.borderSecondary
-                            border.width: 1
-                            opacity: root.running ? 1.0 : 0.35
+                        Row {
+                            id: actionsRow
+                            anchors.centerIn: parent
+                            spacing: Theme.spacing.medium
 
-                            Image {
-                                anchors.centerIn: parent
-                                source: "assets/download.png"
-                                width: 20
-                                height: 20
-                                fillMode: Image.PreserveAspectFit
-                            }
-                            HoverHandler {
-                                id: dlHover
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: root.running
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    saveDialog.pendingManifest = modelData
-                                    saveDialog.currentFile = StandardPaths.writableLocation(
-                                                StandardPaths.HomeLocation)
-                                            + "/" + (modelData.filename
-                                                     || modelData.cid
-                                                     || "download")
-                                    saveDialog.open()
+                            Rectangle {
+                                width: 40
+                                height: 40
+                                radius: Theme.spacing.radiusXlarge * 2
+                                // TODO: Logos Design System
+                                color: "#2F2F2F"
+                                // TODO: Logos Design System
+                                border.color: dlHover.hovered ? Theme.palette.primary : "#444444"
+                                border.width: 1
+
+                                // opacity: root.running ? 1.0 : 0.35
+                                Image {
+                                    anchors.centerIn: parent
+                                    source: "assets/download.png"
+                                    width: 24
+                                    height: 24
+                                    fillMode: Image.PreserveAspectFit
+                                }
+
+                                HoverHandler {
+                                    id: dlHover
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    enabled: root.running
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        saveDialog.pendingManifest = modelData
+                                        saveDialog.currentFile = StandardPaths.writableLocation(
+                                                    StandardPaths.HomeLocation)
+                                                + "/" + (modelData.filename
+                                                         || modelData.cid
+                                                         || "download")
+                                        saveDialog.open()
+                                    }
                                 }
                             }
-                        }
 
-                        Rectangle {
-                            width: 40
-                            height: 40
-                            radius: 20
-                            color: rmHover.hovered ? Theme.palette.backgroundElevated : "transparent"
-                            border.color: Theme.palette.borderSecondary
-                            border.width: 1
-                            opacity: root.running ? 1.0 : 0.35
+                            Rectangle {
+                                width: 40
+                                height: 40
+                                radius: Theme.spacing.radiusXlarge * 2
+                                // TODO: Logos Design System
+                                color: "#2F2F2F"
+                                // TODO: Logos Design System
+                                border.color: rmHover.hovered ? Theme.palette.primary : "#444444"
+                                border.width: 1
 
-                            Image {
-                                anchors.centerIn: parent
-                                source: "assets/delete.png"
-                                width: 20
-                                height: 20
-                                fillMode: Image.PreserveAspectFit
-                            }
-                            HoverHandler {
-                                id: rmHover
-                            }
-                            MouseArea {
-                                anchors.fill: parent
-                                enabled: root.running
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (modelData.cid.length > 0) {
-                                        root.backend.remove(modelData.cid)
+                                //opacity: root.running ? 1.0 : 0.35
+                                Image {
+                                    anchors.centerIn: parent
+                                    source: "assets/delete.png"
+                                    width: 20
+                                    height: 20
+                                    fillMode: Image.PreserveAspectFit
+                                }
+
+                                HoverHandler {
+                                    id: rmHover
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    enabled: root.running
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: {
+                                        if (modelData.cid.length > 0) {
+                                            root.backend.remove(modelData.cid)
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
+
+                // Bottom row separator
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    height: 1
+                    color: Theme.palette.borderSecondary
+                }
             }
 
-            // Empty state
+            // Empty state — enfant du ListView, pas du delegate
             ColumnLayout {
                 anchors.centerIn: parent
                 spacing: 10
@@ -285,21 +347,22 @@ Card {
                 }
             }
         }
-    }
 
-    FileDialog {
-        id: saveDialog
+        FileDialog {
+            id: saveDialog
 
-        property var pendingManifest: null
+            property var pendingManifest: null
 
-        fileMode: FileDialog.SaveFile
-        onAccepted: {
-            if (pendingManifest) {
-                root.backend.downloadFile(pendingManifest.cid, selectedFile,
-                                          parseInt(pendingManifest.datasetSize) || 0)
-                pendingManifest = null
+            fileMode: FileDialog.SaveFile
+            onAccepted: {
+                if (pendingManifest) {
+                    root.backend.downloadFile(
+                                pendingManifest.cid, selectedFile,
+                                parseInt(pendingManifest.datasetSize) || 0)
+                    pendingManifest = null
+                }
             }
+            onRejected: pendingManifest = null
         }
-        onRejected: pendingManifest = null
     }
 }

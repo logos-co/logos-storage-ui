@@ -132,7 +132,7 @@ qt_add_qml_module(appqml
         OnBoarding.qml
         Main.qml
         StartNode.qml
-        LogosTextField.qml
+        LogosStorageTextField.qml
         LogosStorageButton.qml
         LogosStorageLayout.qml
         PortForwarding.qml
@@ -173,8 +173,13 @@ qt_add_qml_module(appqml
         VaultText.qml
         ManifestWidget.qml
         DownloadWidget.qml
+        DiskActivityGraph.qml
 
         assets/bg.png
+        assets/image.png
+        assets/pdf.png
+        assets/video.png
+        assets/other.png
         assets/badge-alpha.png
         assets/alpha.png
         assets/arrow-right.png
@@ -183,6 +188,7 @@ qt_add_qml_module(appqml
         assets/folder-upload.png
         assets/close-circle.png
         assets/file-copy.png
+        assets/file-copy-line.png
         assets/global.png
         assets/node-tree.png
         assets/settings.png
@@ -190,6 +196,7 @@ qt_add_qml_module(appqml
         assets/success.png
         assets/download.png
         assets/delete.png
+        QML_FILES BottomTitle.qml
 )
 
 # Set up QML module directory for runtime

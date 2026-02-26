@@ -164,7 +164,7 @@ Card {
                 text: root.backend.status === root.running ? "Stop" : "Start"
                 variant: "secondary"
                 implicitHeight: 32
-                implicitWidth: 80
+                implicitWidth: 65
                 onClicked: root.backend.status === root.running ? root.backend.stop(
                                                                       ) : root.backend.start()
             }

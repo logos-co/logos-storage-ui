@@ -14,7 +14,10 @@ Card {
     property int maxPeers: 20
 
     ColumnLayout {
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: bottomTitle.top
         spacing: Theme.spacing.medium
 
         Image {
@@ -23,6 +26,8 @@ Card {
 
         ArcWidget {
             Layout.alignment: Qt.AlignHCenter
+            arcScale: 1.9
+            arcOffsetY: 35
             fraction: root.maxPeers > 0 ? Math.min(root.peers / root.maxPeers,
                                                    1.0) : 0
             fillColor: Theme.palette.primary
@@ -56,6 +61,7 @@ Card {
 
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
+            Layout.bottomMargin: Theme.spacing.medium * 1.25
 
             Image {
                 Layout.alignment: Qt.AlignVCenter
@@ -70,17 +76,13 @@ Card {
                 Layout.alignment: Qt.AlignVCenter
             }
         }
+    }
 
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 1
-            color: Theme.palette.borderSecondary
-        }
-
-        LogosText {
-            text: "Peers"
-            font.pixelSize: Theme.typography.titleText * 0.8
-            color: Theme.palette.text
-        }
+    BottomTitle {
+        id: bottomTitle
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        title: "Peers"
     }
 }

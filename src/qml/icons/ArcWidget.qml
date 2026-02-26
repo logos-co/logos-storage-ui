@@ -20,18 +20,30 @@ Rectangle {
     property real fraction: 0.0
     property color fillColor: Theme.palette.text
     property color trackColor: Theme.palette.textMuted
-    property real arcRadius: 46
+    // arcRadius scales with the widget so enlarging the container also enlarges the arc
+    property real arcScale: 1.0
+    // arcOffsetY: décale le centre de l'arc vers le bas (en px dans le repère du Rectangle).
+    // Utile quand arcScale > 1 — le canvas déborde vers le haut, ce décalage recentre visuellement.
+    property real arcOffsetY: 0
+    // arcRadius et arcWidth s'appuient sur les dimensions du Canvas (pas du Rectangle)
+    // afin que arcScale les fasse grossir sans toucher à l'empreinte layout.
+    property real arcRadius: Math.min(arc.width, arc.height) * 0.43
     property real arcWidth: 8
 
     onFractionChanged: arc.requestPaint()
     onFillColorChanged: arc.requestPaint()
     onTrackColorChanged: arc.requestPaint()
+    onWidthChanged: arc.requestPaint()
+    onHeightChanged: arc.requestPaint()
+    onArcOffsetYChanged: arc.requestPaint()
 
     default property alias content: overlay.data
 
     Canvas {
         id: arc
-        anchors.fill: parent
+        width: parent.width * root.arcScale
+        height: parent.height * root.arcScale
+        anchors.centerIn: parent
 
         Component.onCompleted: requestPaint()
 
@@ -40,15 +52,17 @@ Rectangle {
             ctx.reset()
 
             var cx = width / 2
-            var cy = height / 2
-            var startDeg = 130
-            var totalDeg = 280
+            // arcOffsetY est en px Rectangle → convertir en px Canvas (même échelle, juste un offset)
+            var cy = height / 2 + root.arcOffsetY
+            var totalDeg = 180
+            var startDeg = 270 - totalDeg / 2   // centré autour du sommet (270°)
             var numSeg = 4
             var gapDeg = 4
             var segDeg = (totalDeg - gapDeg * (numSeg - 1)) / numSeg
 
-            // Stroke widths: biggest at the base (index 0), smallest at tip
-            var widths = [13, 9, 6, 4]
+            // Stroke widths: biggest at the base (index 0), smallest at tip — scale with arcWidth
+            var s = root.arcWidth / 8
+            var widths = [22 * s, 13 * s, 8 * s, 4 * s]
 
             var f = Math.min(Math.max(root.fraction, 0.0), 1.0)
             var litCount = Math.min(Math.round(f * numSeg), numSeg)

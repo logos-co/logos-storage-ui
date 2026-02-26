@@ -10,8 +10,8 @@ Card {
 
     implicitWidth: 300
     implicitHeight: 180
-    padding: 0
 
+    // padding: default (Theme.spacing.medium) — évite le clip du radius sur le contenu
     property var backend: MockBackend
     property string downloadFilename: ""
     property string downloadCid: ""
@@ -26,7 +26,7 @@ Card {
 
     // ── Grid config ───────────────────────────────────────────────────────────
     readonly property int gridCols: 20
-    readonly property int gridRows: 5
+    readonly property int gridRows: 4
     readonly property int totalBlocks: gridCols * gridRows
     readonly property int blockGap: 2
 
@@ -91,21 +91,6 @@ Card {
         anchors.fill: parent
         spacing: 0
 
-        // Header
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.topMargin: Theme.spacing.medium
-            Layout.leftMargin: Theme.spacing.medium
-            Layout.rightMargin: Theme.spacing.medium
-            spacing: Theme.spacing.small
-
-            LogosText {
-                text: Math.round(root.progress * 100) + "%"
-                font.pixelSize: Theme.typography.secondaryText
-                color: root.isDone ? Theme.palette.success : Theme.palette.textMuted
-                visible: root.isDownloading || root.isDone
-            }
-        }
         Item {
             Layout.fillHeight: true
         }
@@ -113,25 +98,22 @@ Card {
         Item {
             id: gridItem
             Layout.fillWidth: true
-            Layout.leftMargin: Theme.spacing.medium
-            Layout.rightMargin: Theme.spacing.medium
+            Layout.alignment: Qt.AlignCenter
 
-            readonly property real blockSize: width > 0 ? (width - (root.gridCols - 1)
-                                                           * root.blockGap) / root.gridCols : 8
+            readonly property real blockSize: 12
             implicitHeight: root.gridRows * blockSize + (root.gridRows - 1) * root.blockGap
 
             Repeater {
                 model: root.totalBlocks
-
                 Rectangle {
                     x: (index % root.gridCols) * (gridItem.blockSize + root.blockGap)
                     y: Math.floor(
                            index / root.gridCols) * (gridItem.blockSize + root.blockGap)
                     width: gridItem.blockSize
                     height: gridItem.blockSize
-                    radius: 2
-                    color: root.filledBlocks[index] ? Theme.palette.primary : Theme.palette.backgroundElevated
-
+                    radius: Theme.spacing.radiusSmall
+                    // TODO: Logos Design System
+                    color: root.filledBlocks[index] ? Theme.palette.primary : "#444444"
                     Behavior on color {
                         ColorAnimation {
                             duration: 300
@@ -145,60 +127,50 @@ Card {
             Layout.fillHeight: true
         }
 
-        // Footer row
+        // Footer : label + % pendant le téléchargement
         RowLayout {
             Layout.fillWidth: true
-            Layout.leftMargin: Theme.spacing.medium
-            Layout.rightMargin: Theme.spacing.medium
-            Layout.bottomMargin: Theme.spacing.small
+            visible: root.isDownloading || root.isDone
 
             LogosText {
-                text: root.isDone ? "Complete" : root.isDownloading ? "Downloading..." : "Download"
+                text: root.isDone ? "Complete" : "Downloading..."
                 font.pixelSize: Theme.typography.titleText * 0.8
                 color: Theme.palette.text
             }
-
             Item {
                 Layout.fillWidth: true
             }
-
             LogosText {
-                text: Utils.formatBytes(
-                          root.downloadedBytes) + " / " + Utils.formatBytes(
-                          root.totalBytes)
+                text: Math.round(root.progress * 100) + "%"
                 font.pixelSize: Theme.typography.secondaryText
                 color: Theme.palette.textMuted
-                visible: root.isDownloading || root.isDone
             }
         }
 
-        // Separator
-        Rectangle {
+        // BottomTitle — visible uniquement au repos
+        BottomTitle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 1
-            color: Theme.palette.borderSecondary
+            title: "No download in progress"
+            visible: !root.isDownloading && !root.isDone
         }
 
-        // Progress bar — flush to card bottom, clipped by card radius
+        // Progress bar — marges négatives pour être flush aux bords de la card
         Rectangle {
             Layout.fillWidth: true
+            Layout.leftMargin: -Theme.spacing.medium
+            Layout.rightMargin: -Theme.spacing.medium
+            Layout.bottomMargin: -Theme.spacing.medium - 4
             Layout.preferredHeight: 6
-            color: Theme.palette.backgroundElevated
+            color: Theme.palette.backgroundSecondary
 
             Rectangle {
                 width: parent.width * root.progress
                 height: parent.height
-                color: root.isDone ? Theme.palette.success : Theme.palette.primary
-
+                color: Theme.palette.primary
                 Behavior on width {
                     NumberAnimation {
                         duration: 300
                         easing.type: Easing.OutCubic
-                    }
-                }
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 400
                     }
                 }
             }

@@ -8,11 +8,12 @@ Card {
     id: root
 
     implicitWidth: 500
-    implicitHeight: 300
+    implicitHeight: 500
 
     property var backend: MockBackend
     property double total: 20000
     property double used: 5000
+    property double prevUsed: -1 // tracks last known used to detect upload deltas
 
     readonly property real fraction: root.total > 0 ? Math.min(
                                                           root.used / root.total,
@@ -28,13 +29,31 @@ Card {
         target: root.backend
 
         function onSpaceUpdated(total, used) {
+            // Detect upload activity from growing used-space
+            if (root._prevUsed >= 0) {
+                var delta = used - root._prevUsed
+                if (delta > 0)
+                    activityGraph.addActivity(delta)
+            }
+            root.prevUsed = used
             root.total = total
             root.used = used
+        }
+
+        function onDownloadChunk(len) {
+            activityGraph.addActivity(len)
+        }
+
+        function onUploadChunk(len) {
+            activityGraph.addActivity(len)
         }
     }
 
     ColumnLayout {
-        anchors.fill: parent
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: bottomTitle.top
         spacing: Theme.spacing.medium
 
         RowLayout {
@@ -95,13 +114,24 @@ Card {
             color: Theme.palette.borderSecondary
         }
 
-        Item {
-            Layout.fillHeight: true
+        // ── Disk activity graph (ECG-style) ──────────────────────────────────
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 90
+            color: Theme.palette.colors.black
+            radius: Theme.spacing.radiusSmall
+
+            DiskActivityGraph {
+                id: activityGraph
+                anchors.fill: parent
+                anchors.margins: Theme.spacing.small
+                lineColor: Theme.palette.primary
+            }
         }
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 80
+            Layout.preferredHeight: 120
             color: Theme.palette.colors.black
 
             Rectangle {
@@ -176,17 +206,13 @@ Card {
                 }
             }
         }
+    }
 
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 1
-            color: Theme.palette.borderSecondary
-        }
-
-        LogosText {
-            text: "Space"
-            font.pixelSize: Theme.typography.titleText * 0.8
-            color: Theme.palette.text
-        }
+    BottomTitle {
+        id: bottomTitle
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        title: "Storage"
     }
 }

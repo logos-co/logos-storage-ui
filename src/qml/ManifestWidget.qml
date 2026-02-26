@@ -11,34 +11,15 @@ Card {
 
     property var backend: MockBackend
 
-    LogosText {
-        id: footerLabel
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        text: "Fetch Manifest"
-        font.pixelSize: Theme.typography.titleText * 0.8
-        color: Theme.palette.text
-    }
-
-    Rectangle {
-        id: footerSeparator
-        anchors.bottom: footerLabel.top
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottomMargin: Theme.spacing.medium + 2
-        height: 1
-        color: Theme.palette.borderSecondary
-    }
-
     RowLayout {
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: footerSeparator.top
+        anchors.bottom: bottomTitle.top
         anchors.bottomMargin: Theme.spacing.small
         spacing: Theme.spacing.medium
 
-        LogosTextField {
+        LogosStorageTextField {
             id: cidInput
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignTop
@@ -58,5 +39,13 @@ Card {
                 cidInput.clear()
             }
         }
+    }
+
+    BottomTitle {
+        id: bottomTitle
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        title: "Fetch Manifest"
     }
 }
