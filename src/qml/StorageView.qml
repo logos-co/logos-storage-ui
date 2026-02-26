@@ -9,7 +9,6 @@ LogosStorageLayout {
     id: root
 
     property var backend: MockBackend
-    property bool showDebug: false
 
     function isRunning() {
         return backend.status === 2 // StorageBackend.Running
@@ -35,25 +34,12 @@ LogosStorageLayout {
 
     Shortcut {
         sequence: "Ctrl+D"
-        onActivated: root.showDebug = !root.showDebug
-    }
-
-    DebugPanel {
-        id: debugPanel
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        height: 220
-        visible: root.showDebug
-        backend: root.backend
-        running: root.isRunning()
+        onActivated: manifestTable.panelOpen = !manifestTable.panelOpen
     }
 
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacing.medium
-        anchors.bottomMargin: root.showDebug ? debugPanel.height
-                                               + Theme.spacing.medium : Theme.spacing.medium
         spacing: Theme.spacing.medium
 
         // Partie haute — hauteur strictement fixe (min = max = preferred)
@@ -128,6 +114,7 @@ LogosStorageLayout {
 
         // Table — prend tout l'espace restant
         ManifestTable {
+            id: manifestTable
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumHeight: 0

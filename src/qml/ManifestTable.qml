@@ -55,7 +55,7 @@ Card {
             Layout.fillWidth: true
 
             LogosText {
-                text: "Manifests"
+                text: root.panelOpen ? "Debug" : "Manifests"
                 font.pixelSize: Theme.typography.titleText
                 color: Theme.palette.text
             }
@@ -64,40 +64,15 @@ Card {
                 Layout.fillWidth: true
             }
 
-            // Toggle panel button
-            Rectangle {
-                id: toggleBtn
-                width: 28
-                height: 28
-                radius: Theme.spacing.radiusSmall
-                color: toggleHover.hovered ? Theme.palette.backgroundElevated : "transparent"
-                border.color: root.panelOpen ? Theme.palette.primary : Theme.palette.borderSecondary
-                border.width: 1
-
-                Grid {
-                    anchors.centerIn: parent
-                    columns: 2
-                    spacing: 3
-
-                    Repeater {
-                        model: 4
-                        Rectangle {
-                            width: 5
-                            height: 5
-                            radius: 1
-                            color: root.panelOpen ? Theme.palette.primary : Theme.palette.textMuted
-                        }
-                    }
-                }
-
-                HoverHandler {
-                    id: toggleHover
-                }
+            // Close button — visible uniquement quand le panel debug est ouvert
+            Image {
+                source: "assets/close-circle.png"
+                visible: root.panelOpen
 
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: root.panelOpen = !root.panelOpen
+                    onClicked: root.panelOpen = false
                 }
             }
         }
@@ -407,27 +382,93 @@ Card {
                 }
             }
 
-            // ── Vue panel (remplace la liste quand panelOpen = true) ──────────
-            Item {
+            // ── Vue panel : Debug (même structure visuelle que la vue liste) ──
+            ColumnLayout {
                 anchors.fill: parent
                 visible: root.panelOpen
+                spacing: Theme.spacing.small
 
-                ColumnLayout {
-                    anchors.centerIn: parent
-                    spacing: Theme.spacing.medium
+                // Header sticky — même style que la colonne CID/Filename/…
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 30
+                    // TODO: Logos Design System
+                    color: "#141414"
+                    radius: Theme.spacing.radiusSmall
 
-                    DotIcon {
-                        pattern: [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
-                        dotColor: Theme.palette.primary
-                        activeOpacity: 0.4
-                        Layout.alignment: Qt.AlignHCenter
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: Theme.spacing.medium
+                        anchors.rightMargin: Theme.spacing.medium
+                        spacing: Theme.spacing.small
+
+                        LogosStorageButton {
+                            text: "Debug"
+                            implicitHeight: 24
+                            implicitWidth: 70
+                            enabled: root.running
+                            onClicked: root.backend.logDebugInfo()
+                        }
+                        LogosStorageButton {
+                            text: "Peer ID"
+                            implicitHeight: 24
+                            implicitWidth: 80
+                            enabled: root.running
+                            onClicked: root.backend.logPeerId()
+                        }
+                        LogosStorageButton {
+                            text: "Data dir"
+                            implicitHeight: 24
+                            implicitWidth: 80
+                            enabled: root.running
+                            onClicked: root.backend.logDataDir()
+                        }
+                        LogosStorageButton {
+                            text: "SPR"
+                            implicitHeight: 24
+                            implicitWidth: 60
+                            enabled: root.running
+                            onClicked: root.backend.logSpr()
+                        }
+                        LogosStorageButton {
+                            text: "Version"
+                            implicitHeight: 24
+                            implicitWidth: 80
+                            enabled: root.running
+                            onClicked: root.backend.logVersion()
+                        }
+
+                        Item {
+                            Layout.fillWidth: true
+                        }
                     }
+                }
 
-                    LogosText {
-                        text: "Panel"
-                        color: Theme.palette.textMuted
-                        font.pixelSize: Theme.typography.secondaryText
-                        Layout.alignment: Qt.AlignHCenter
+                // Zone de log scrollable
+                Flickable {
+                    id: logFlick
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    contentWidth: width
+                    contentHeight: debugLogText.implicitHeight
+
+                    TextEdit {
+                        id: debugLogText
+                        width: logFlick.width
+                        text: root.backend.debugLogs
+                        color: Theme.palette.textSecondary
+                        font.family: "monospace"
+                        font.pixelSize: 11
+                        wrapMode: Text.WrapAnywhere
+                        readOnly: true
+                        padding: Theme.spacing.small
+                        bottomPadding: Theme.spacing.large
+
+                        onTextChanged: Qt.callLater(function () {
+                            logFlick.contentY = Math.max(
+                                        0, logFlick.contentHeight - logFlick.height)
+                        })
                     }
                 }
             }

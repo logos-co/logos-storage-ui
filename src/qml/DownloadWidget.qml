@@ -24,8 +24,8 @@ Card {
     readonly property bool isDone: progress >= 1.0
 
     // ── Grid config ───────────────────────────────────────────────────────────
-    readonly property int gridCols: 20
-    readonly property int gridRows: 4
+    readonly property int gridCols: 28
+    readonly property int gridRows: 6
     readonly property int totalBlocks: gridCols * gridRows
     readonly property int blockGap: 2
 

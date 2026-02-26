@@ -11,8 +11,8 @@ Card {
     implicitHeight: 500
 
     property var backend: MockBackend
-    property double total: 20000
-    property double used: 5000
+    property double total: 0
+    property double used: 0
     property double prevUsed: -1 // tracks last known used to detect upload deltas
 
     readonly property real fraction: root.total > 0 ? Math.min(
@@ -128,7 +128,7 @@ Card {
                 color: "#313131"
 
                 Rectangle {
-                    width: parent.width * root.fraction
+                    width: parent.width * root.fraction + 10
                     height: parent.height
                     radius: parent.radius
                     color: Theme.palette.accentOrange
@@ -154,9 +154,9 @@ Card {
             RowLayout {
                 spacing: Theme.spacing.tiny
                 Rectangle {
-                    width: 8
-                    height: 8
-                    radius: Theme.spacing.radiusLarge
+                    Layout.preferredWidth: 8
+                    Layout.preferredHeight: 8
+                    radius: Theme.spacing.radiusSmall
                     color: Theme.palette.accentOrange
                     Layout.alignment: Qt.AlignVCenter
                 }
@@ -172,10 +172,10 @@ Card {
             RowLayout {
                 spacing: Theme.spacing.tiny
                 Rectangle {
-                    width: 8
-                    height: 8
-                    radius: Theme.spacing.radiusLarge
-                    color: Theme.typography.backgroundSecondary
+                    Layout.preferredWidth: 8
+                    Layout.preferredHeight: 8
+                    radius: Theme.spacing.radiusSmall
+                    color: Theme.palette.backgroundSecondary
                     Layout.alignment: Qt.AlignVCenter
                 }
                 LogosText {
@@ -204,7 +204,9 @@ Card {
             LogosText {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
-                text: "Total space available"
+                anchors.bottomMargin: Theme.spacing.small
+                anchors.leftMargin: Theme.spacing.small
+                text: "Disk Utilization Rate"
                 font.pixelSize: Theme.typography.secondaryText
                 color: Theme.palette.textSecondary
                 font.family: "monospace"
