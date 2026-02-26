@@ -94,6 +94,8 @@ class StorageBackend : public QObject {
     // Other log methods for debug
     void logDataDir();
     void logVersion();
+    void listSettings();
+    void restartOnboarding();
     void logSpr();
     void logPeerId();
 
@@ -209,6 +211,9 @@ class StorageBackend : public QObject {
 
     // Used to refresh the Manifests table
     void manifestsUpdated(const QVariantList& manifests);
+
+    // Restarts the onboarding process
+    void restartOnboarding();
 
     // Used in the on boarding to detect success
     void natExtConfigCompleted();

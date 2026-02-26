@@ -12,6 +12,7 @@
 #include <QNetworkProxyFactory>
 #include <QNetworkReply>
 #include <QSslSocket>
+#include <QSettings>
 
 // StorageBackend is responsible for managing the interaction with the storage module.
 // It is mocked in the QML.
@@ -433,6 +434,36 @@ void StorageBackend::logVersion() {
     }
 
     debug("Version: " + result.getString());
+}
+
+void StorageBackend::listSettings() {
+    qDebug() << "StorageBackend::remove settings file called";
+
+
+    QSettings settings;
+
+    debug("Settings file: " + settings.fileName());
+
+    QStringList lines;
+    for (const QString &key : settings.allKeys()) {
+        if (key.startsWith("Storage")){
+          lines << key + " = " + settings.value(key).toString();
+        }
+    }
+    QString all = lines.join("\n");
+    debug("All settings:\n" + all);
+}
+
+void StorageBackend::restartOnboarding() {
+    qDebug() << "StorageBackend::reset onboarding called";
+    
+    
+    QSettings settings;
+    settings.setValue("Storage/onboardingCompleted", false);
+    settings.sync();
+    StorageBackend::listSettings();
+    emit restartOnboarding();
+
 }
 
 void StorageBackend::logPeerId() {

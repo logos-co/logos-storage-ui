@@ -48,6 +48,13 @@ Item {
         function onError(message) {
             errorToast.show("Error", message)
         }
+
+        function onRestartOnboarding() {
+            root.backend.onStopCompleted.connect(function() {
+                stackView.replace(modeSelectorComponent, StackView.Immediate);
+            })
+            root.backend.stop();
+        }
     }
 
     Settings {

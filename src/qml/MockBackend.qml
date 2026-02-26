@@ -23,6 +23,7 @@ QtObject {
     signal spaceUpdated(real total, real used)
     signal manifestsUpdated(var manifests)
     signal stopCompleted
+    signal restartOnboarding
 
     function start() { status = 2 }
     function stop() { status = 0 }
@@ -39,6 +40,8 @@ QtObject {
     function logDataDir() {}
     function logSpr() {}
     function logVersion() {}
+    function listSettings() {}
+    function restartOnboarding() {}
     function saveUserConfig(json) {}
     function saveCurrentConfig() {}
     function loadUserConfig() {}
