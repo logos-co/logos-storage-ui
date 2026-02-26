@@ -64,8 +64,8 @@ Card {
             Layout.fillWidth: true
             Layout.fillHeight: true
             radius: Theme.spacing.radiusLarge
-            color: Theme.palette.colors.black
-            border.color: "#2F2F2F"
+            color: Theme.palette.backgroundBlack
+            border.color: Theme.palette.borderDark
             border.width: 1
 
             RowLayout {
@@ -134,18 +134,15 @@ Card {
             orientation: Gradient.Horizontal
             GradientStop {
                 position: 0.0
-                // TODO: Logos Design System
-                color: "#ED7B58"
+                color: Theme.palette.accentOrange
             }
             GradientStop {
                 position: 0.70
-                // TODO: Logos Design System
-                color: "#FF6F42"
+                color: Theme.palette.accentOrangeMid
             }
             GradientStop {
                 position: 1.0
-                // TODO: Logos Design System
-                color: "#FF4911"
+                color: Theme.palette.accentOrangeDeep
             }
         }
         visible: root.isUploading || root.isDone

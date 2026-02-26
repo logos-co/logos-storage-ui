@@ -93,8 +93,7 @@ Card {
                     id: header
                     Layout.fillWidth: true
                     Layout.preferredHeight: 30
-                    // TODO: Logos Design System
-                    color: "#141414"
+                    color: Theme.palette.backgroundInset
                     radius: Theme.spacing.radiusSmall
 
                     RowLayout {
@@ -196,13 +195,12 @@ Card {
                                     width: 40
                                     height: 40
                                     radius: Theme.spacing.radiusXlarge * 2
-                                    // TODO: Logos Design System
-                                    border.color: copyHover.hovered ? Theme.palette.primary : "#333333"
+                                    border.color: copyHover.hovered ? Theme.palette.primary : Theme.palette.borderSubtle
                                     border.width: 1
 
                                     property bool copied: false
 
-                                    color: "#141414"
+                                    color: Theme.palette.backgroundInset
 
                                     Timer {
                                         id: resetCopyTimer
@@ -263,7 +261,7 @@ Card {
                             }
 
                             Rectangle {
-                                color: "#141414"
+                                color: Theme.palette.backgroundInset
                                 radius: Theme.spacing.radiusLarge
                                 Layout.alignment: Qt.AlignVCenter
                                 implicitWidth: actionsRow.implicitWidth + Theme.spacing.medium * 2
@@ -278,10 +276,8 @@ Card {
                                         width: 40
                                         height: 40
                                         radius: Theme.spacing.radiusXlarge * 2
-                                        // TODO: Logos Design System
-                                        color: "#2F2F2F"
-                                        // TODO: Logos Design System
-                                        border.color: dlHover.hovered ? Theme.palette.primary : "#444444"
+                                        color: Theme.palette.backgroundButton
+                                        border.color: dlHover.hovered ? Theme.palette.primary : Theme.palette.borderInteractive
                                         border.width: 1
 
                                         Image {
@@ -316,10 +312,8 @@ Card {
                                         width: 40
                                         height: 40
                                         radius: Theme.spacing.radiusXlarge * 2
-                                        // TODO: Logos Design System
-                                        color: "#2F2F2F"
-                                        // TODO: Logos Design System
-                                        border.color: rmHover.hovered ? Theme.palette.primary : "#444444"
+                                        color: Theme.palette.backgroundButton
+                                        border.color: rmHover.hovered ? Theme.palette.primary : Theme.palette.borderInteractive
                                         border.width: 1
 
                                         Image {
@@ -392,8 +386,7 @@ Card {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 30
-                    // TODO: Logos Design System
-                    color: "#141414"
+                    color: Theme.palette.backgroundInset
                     radius: Theme.spacing.radiusSmall
 
                     RowLayout {

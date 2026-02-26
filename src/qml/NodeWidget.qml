@@ -49,7 +49,7 @@ Card {
                 }
 
                 Rectangle {
-                    color: Theme.palette.colors.black
+                    color: Theme.palette.backgroundBlack
                     Layout.preferredHeight: 32
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignTop

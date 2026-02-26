@@ -72,8 +72,7 @@ Button {
             }
 
             if (control.variant == "secondary") {
-                // TODO: Logos Design System
-                return "#2F2F2F"
+                return Theme.palette.backgroundButton
             }
 
             return Theme.palette.backgroundSecondary
@@ -85,8 +84,7 @@ Button {
             }
 
             if (control.variant === "secondary") {
-                // TODO: Logos Design System
-                return "#444444"
+                return Theme.palette.borderInteractive
             }
 
             return Theme.palette.border

@@ -145,8 +145,7 @@ Card {
                     width: gridItem.blockSize
                     height: gridItem.blockSize
                     radius: Theme.spacing.radiusSmall
-                    // TODO: Logos Design System
-                    color: root.filledBlocks[index] ? Theme.palette.primary : "#444444"
+                    color: root.filledBlocks[index] ? Theme.palette.primary : Theme.palette.borderInteractive
                     Behavior on color {
                         ColorAnimation {
                             duration: 300

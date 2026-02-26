@@ -117,7 +117,7 @@ Card {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 120
-            color: Theme.palette.colors.black
+            color: Theme.palette.backgroundBlack
 
             Rectangle {
                 anchors.left: parent.left
@@ -191,7 +191,7 @@ Card {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 90
-            color: Theme.palette.colors.black
+            color: Theme.palette.backgroundBlack
             radius: Theme.spacing.radiusSmall
 
             DiskActivityGraph {
