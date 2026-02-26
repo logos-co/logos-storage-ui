@@ -668,8 +668,8 @@ void StorageBackend::enableNatExtConfig(int tcpPort) {
     QJsonDocument doc = defaultConfig();
     QJsonObject obj = doc.object();
 
-    QJsonArray listenAddrs = {QString("/ip4/0.0.0.0/tcp/%1").arg(tcpPort)};
-    obj["listen-addrs"] = listenAddrs;
+    obj["listen-ip"] = "0.0.0.0";
+    obj["listen-port"] = tcpPort;
 
     // Fetch the public IP asynchronously so we can set nat=extip:IP in the config.
     qDebug() << "StorageBackend:: Retrieving public IP...";
