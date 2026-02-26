@@ -1,4 +1,5 @@
 import QtQuick
+import Logos.Theme
 
 // qmllint disable unqualified
 Item {
@@ -9,13 +10,14 @@ Item {
 
     // Dimensions
     property int columns: 5
-    property int dotSize: 6
+    property int dotSize: 8
     property int dotSpacing: 4
 
     // Appearance
-    property color dotColor: "white"
-    property real inactiveOpacity: 0.1
-    property real activeOpacity: 0.9
+    property color dotColor: Theme.palette.primary
+    property color inactiveDotColor: Theme.palette.borderTertiaryMuted
+    property real inactiveOpacity: 1.0
+    property real activeOpacity: 1.0
 
     // Animation
     property bool animated: false
@@ -46,8 +48,14 @@ Item {
             Rectangle {
                 width: root.dotSize
                 height: root.dotSize
-                radius: root.dotSize * 0.3
-                color: root.dotColor
+                radius: 2
+                color: {
+                    if (!root.animated) {
+                        return (index < root.pattern.length
+                                && root.pattern[index]) ? root.dotColor : root.inactiveDotColor
+                    }
+                    return root.dotColor
+                }
 
                 opacity: {
                     if (!root.animated) {

@@ -3,139 +3,89 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-LogosStorageLayout {
+OnBoardingLayout {
     id: root
 
     signal completed(bool isGuide)
 
-    property int selectedMode: -1
+    property int selectedMode: 0
 
-    ColumnLayout {
-        anchors.centerIn: parent
-        spacing: Theme.spacing.medium
-        width: 430
+    OnBoardingContainer {
 
-        LogosText {
-            text: "Logos Storage"
-            font.pixelSize: Theme.typography.titleText
-            Layout.alignment: Qt.AlignHCenter
-        }
+        Column {
+            LogosText {
+                text: "Network Configuration"
+                font.pixelSize: Theme.typography.titleText
+                font.weight: Font.Bold
+            }
 
-        LogosText {
-            text: "How would you like to set up your node?"
-            font.pixelSize: Theme.typography.primaryText
-            Layout.alignment: Qt.AlignHCenter
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.WordWrap
-            Layout.fillWidth: true
+            LogosText {
+                text: "How would you like to set up your node?"
+                font.pixelSize: Theme.typography.primaryText * 1.8
+            }
         }
 
         Item {
             Layout.preferredHeight: Theme.spacing.medium
         }
 
-        Row {
+        RowLayout {
+            Layout.fillWidth: true
             spacing: Theme.spacing.medium
-            Layout.alignment: Qt.AlignHCenter
 
-            Rectangle {
-                width: 190
-                height: 230
-                radius: 14
-                color: root.selectedMode === 0 ? Theme.palette.overlayLight : "transparent"
-                border.color: root.selectedMode
-                              === 0 ? Theme.palette.text : Theme.palette.borderTertiaryMuted
-                border.width: root.selectedMode === 0 ? 2 : 1
-
-                ColumnLayout {
-                    anchors.centerIn: parent
-                    spacing: 14
-
-                    GuideIcon {
-                        dotColor: Theme.palette.text
-                        Layout.alignment: Qt.AlignHCenter
-                    }
-
-                    Text {
-                        text: "Guide"
-                        color: Theme.palette.text
-                        font.pixelSize: 16
-                        font.bold: true
-                        Layout.alignment: Qt.AlignHCenter
-                    }
-
-                    Text {
-                        text: "Step-by-step setup.\nRecommended for\nmost users."
-                        color: Theme.palette.textSecondary
-                        font.pixelSize: 12
-                        horizontalAlignment: Text.AlignHCenter
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.preferredWidth: 150
-                        wrapMode: Text.WordWrap
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.selectedMode = 0
-                }
+            OnBoardingCard {
+                Layout.fillWidth: true
+                title: "Guided"
+                description: "Step-by-step guided wizard to setup your node with the appropriate settings."
+                icon: GuideIcon {}
+                selected: root.selectedMode == 0
+                onCardSelected: root.selectedMode = 0
             }
 
-            Rectangle {
-                width: 190
-                height: 230
-                radius: 14
-                color: root.selectedMode === 1 ? Theme.palette.overlayLight : "transparent"
-                border.color: root.selectedMode
-                              === 1 ? Theme.palette.text : Theme.palette.borderTertiaryMuted
-                border.width: root.selectedMode === 1 ? 2 : 1
-
-                ColumnLayout {
-                    anchors.centerIn: parent
-                    spacing: 14
-
-                    AdvancedIcon {
-                        dotColor: Theme.palette.text
-                        Layout.alignment: Qt.AlignHCenter
-                    }
-
-                    Text {
-                        text: "Advanced"
-                        color: Theme.palette.text
-                        font.pixelSize: 16
-                        font.bold: true
-                        Layout.alignment: Qt.AlignHCenter
-                    }
-
-                    Text {
-                        text: "Manual JSON\nconfiguration for\nexperienced users."
-                        color: Theme.palette.textSecondary
-                        font.pixelSize: 12
-                        horizontalAlignment: Text.AlignHCenter
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.preferredWidth: 150
-                        wrapMode: Text.WordWrap
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.selectedMode = 1
-                }
+            OnBoardingCard {
+                Layout.fillWidth: true
+                title: "Advanced"
+                description: "Manual JSON configuration for experienced users."
+                icon: AdvancedIcon {}
+                selected: root.selectedMode == 1
+                onCardSelected: root.selectedMode = 1
             }
         }
 
-        Item {
-            Layout.preferredHeight: Theme.spacing.small
-        }
+        RowLayout {
+            Layout.fillWidth: true
 
-        LogosStorageButton {
-            text: "Continue"
-            enabled: root.selectedMode !== -1
-            onClicked: root.completed(root.selectedMode === 0)
-            Layout.alignment: Qt.AlignHCenter
+            ColumnLayout {
+                Layout.fillWidth: true
+
+                LogosText {
+                    text: "Logos Storage is a decentralised data storage protocol, created so the world community can preserve its most important knowledge without risk of censorship."
+                    font.pixelSize: Theme.typography.secondaryText
+                    font.family: "monospace"
+                    color: Theme.palette.textMuted
+                    Layout.preferredWidth: 400
+                    wrapMode: Text.WordWrap
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                LogosText {
+                    text: "Legal Disclaimer"
+                    font.pixelSize: Theme.typography.secondaryText
+                    color: Theme.palette.primary
+                    font.family: "monospace"
+                }
+            }
+
+            LogosStorageButton {
+                text: "Continue"
+                variant: "primary"
+                iconSource: "assets/arrow-right.png"
+                iconPosition: "right"
+                onClicked: root.completed(root.selectedMode === 0)
+            }
         }
     }
 }

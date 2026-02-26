@@ -94,6 +94,8 @@ class StorageBackend : public QObject {
     // Other log methods for debug
     void logDataDir();
     void logVersion();
+    void listSettings();
+    void restartOnboarding();
     void logSpr();
     void logPeerId();
 
@@ -110,8 +112,10 @@ class StorageBackend : public QObject {
     void uploadFile(const QUrl& url);
 
     // Upload a file from the url
-    // Emit downloadCompleted(cid)  on storageDownloadDone
-    void downloadFile(const QString& cid, const QUrl& url);
+    // Emit downloadStarted(cid, filename, totalBytes) when download begins
+    // Emit downloadChunk(len) on each storageDownloadProgress event
+    // Emit downloadCompleted(cid) on storageDownloadDone
+    void downloadFile(const QString& cid, const QUrl& url, qint64 totalBytes = 0);
 
     // Emit manifestsUpdated
     void downloadManifest(const QString& cid);
@@ -208,10 +212,20 @@ class StorageBackend : public QObject {
     // Used to refresh the Manifests table
     void manifestsUpdated(const QVariantList& manifests);
 
+    // Emitted when the onboarding has been reset
+    void onboardingRestarted();
+
     // Used in the on boarding to detect success
     void natExtConfigCompleted();
 
     void uploadCompleted(const QString& cid);
+
+    // Emitted when a download starts
+    void downloadStarted(const QString& cid, const QString& filename, qint64 totalBytes);
+
+    // Emitted for each chunk received during download
+    void downloadChunk(qint64 len);
+
     void downloadCompleted(const QString& cid);
 
     // Display a toast message on error

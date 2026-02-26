@@ -1,15 +1,14 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import Logos.Theme
-import Logos.Controls
 
 // qmllint disable unqualified
 LogosStorageLayout {
     id: root
 
     property var backend: MockBackend
-    property bool showDebug: false
 
     function isRunning() {
         return backend.status === 2 // StorageBackend.Running
@@ -23,93 +22,99 @@ LogosStorageLayout {
         }
     }
 
+    FileDialog {
+        id: uploadDialog
+        onAccepted: root.backend.uploadFile(selectedFile)
+    }
+
     HealthIndicator {
         id: health
         backend: root.backend
     }
 
-    SettingsPopup {
-        id: settingsPopup
-        backend: root.backend
-    }
-
-    Shortcut {
-        sequence: "Ctrl+D"
-        onActivated: root.showDebug = !root.showDebug
-    }
-
-    ScrollView {
-        id: mainScroll
+    ColumnLayout {
         anchors.fill: parent
-        anchors.bottomMargin: root.showDebug ? debugPanel.height : 0
-        contentWidth: availableWidth
-        clip: true
+        anchors.margins: Theme.spacing.medium
+        spacing: Theme.spacing.medium
 
-        ColumnLayout {
-            width: mainScroll.availableWidth
-            spacing: 0
+        // Partie haute — hauteur strictement fixe (min = max = preferred)
+        Item {
+            Layout.fillWidth: true
+            Layout.preferredHeight: 465
+            Layout.minimumHeight: 465
+            Layout.maximumHeight: 465
 
-            NodeHeader {
-                Layout.fillWidth: true
-                Layout.leftMargin: 24
-                Layout.rightMargin: 24
-                Layout.topMargin: 24
-                Layout.bottomMargin: 20
-                backend: root.backend
-                nodeIsUp: health.nodeIsUp
-                blinkOn: health.blinkOn
-                onSettingsRequested: settingsPopup.open()
-            }
+            RowLayout {
+                anchors.fill: parent
+                spacing: Theme.spacing.medium
 
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.leftMargin: 24
-                Layout.rightMargin: 24
-                Layout.preferredHeight: 1
-                color: Theme.palette.borderSecondary
-            }
+                DiskWidget {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: 0
+                    backend: root.backend
+                }
 
-            Widgets {
-                Layout.fillWidth: true
-                Layout.leftMargin: 24
-                Layout.rightMargin: 24
-                Layout.topMargin: 20
-                backend: root.backend
-                running: root.isRunning()
-            }
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: 0
+                    spacing: Theme.spacing.medium
 
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.leftMargin: 24
-                Layout.rightMargin: 24
-                Layout.preferredHeight: 1
-                color: Theme.palette.borderSecondary
-            }
+                    DownloadWidget {
+                        id: downloadWidget
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        backend: root.backend
+                    }
 
-            ManifestTable {
-                Layout.fillWidth: true
-                Layout.leftMargin: 24
-                Layout.rightMargin: 24
-                Layout.topMargin: 20
-                Layout.bottomMargin: 20
-                backend: root.backend
-                running: root.isRunning()
-            }
+                    UploadWidget {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        backend: root.backend
+                        running: root.isRunning()
+                        onUploadRequested: uploadDialog.open()
+                    }
 
-            Item {
-                Layout.preferredHeight: 20
+                    ManifestWidget {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        backend: root.backend
+                    }
+                }
+
+                ColumnLayout {
+                    id: thirdCol
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredWidth: 0
+                    spacing: Theme.spacing.medium
+
+                    NodeWidget {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: (thirdCol.height - thirdCol.spacing) / 3
+                        backend: root.backend
+                        nodeIsUp: health.nodeIsUp
+                        blinkOn: health.blinkOn
+                    }
+
+                    PeersWidget {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: (thirdCol.height - thirdCol.spacing) * 2 / 3
+                        backend: root.backend
+                    }
+                }
             }
         }
-    }
 
-    DebugPanel {
-        id: debugPanel
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        height: 220
-        visible: root.showDebug
-        backend: root.backend
-        running: root.isRunning()
+        // Table — prend tout l'espace restant
+        ManifestTable {
+            id: manifestTable
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.minimumHeight: 0
+            backend: root.backend
+            running: root.isRunning()
+        }
     }
 }

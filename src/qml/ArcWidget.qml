@@ -16,8 +16,8 @@ import Logos.Theme
 Rectangle {
     id: root
 
-    width: 140
-    height: 140
+    implicitWidth: 140
+    implicitHeight: 140
     radius: 14
     color: Theme.palette.backgroundSecondary
     border.color: Theme.palette.borderSecondary

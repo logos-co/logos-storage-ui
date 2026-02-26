@@ -3,40 +3,86 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-ArcWidget {
+Card {
     id: root
+
+    implicitWidth: 320
+    implicitHeight: 300
 
     property var backend: MockBackend
     property int peers: 0
     property int maxPeers: 20
 
-    fraction: root.maxPeers > 0 ? Math.min(root.peers / root.maxPeers, 1.0) : 0
-
     ColumnLayout {
-        anchors.centerIn: parent
-        spacing: 2
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: bottomTitle.top
+        spacing: Theme.spacing.medium
 
-        LogosText {
-            text: root.peers
-            font.pixelSize: 22
-            font.bold: true
-            Layout.alignment: Qt.AlignHCenter
+        Image {
+            source: "assets/global.png"
         }
 
-        LogosText {
-            text: "PEERS"
-            font.pixelSize: 9
-            color: Theme.palette.textTertiary
-            font.letterSpacing: 1.3
+        ArcWidget {
             Layout.alignment: Qt.AlignHCenter
+            arcScale: 1.9
+            arcOffsetY: 35
+            fraction: root.maxPeers > 0 ? Math.min(root.peers / root.maxPeers,
+                                                   1.0) : 0
+            fillColor: Theme.palette.primary
+
+            ColumnLayout {
+                anchors.centerIn: parent
+
+                LogosText {
+                    text: root.peers
+                    font.pixelSize: Theme.typography.primaryText * 1.5
+                    font.bold: true
+                    Layout.alignment: Qt.AlignHCenter
+                }
+
+                LogosText {
+                    text: "PEERS"
+                    font.pixelSize: Theme.typography.primaryText
+                    color: Theme.palette.textTertiary
+                    Layout.alignment: Qt.AlignHCenter
+                }
+            }
+
+            Connections {
+                target: root.backend
+
+                function onPeersUpdated(peers) {
+                    root.peers = peers
+                }
+            }
+        }
+
+        RowLayout {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.bottomMargin: Theme.spacing.medium * 1.25
+
+            Image {
+                Layout.alignment: Qt.AlignVCenter
+                source: root.peers > 0 ? "assets/success.png" : "assets/error.png"
+            }
+
+            LogosText {
+                text: "Peer connections are in good standing."
+                font.pixelSize: Theme.typography.secondaryText
+                color: Theme.palette.textMuted
+                font.family: "monospace"
+                Layout.alignment: Qt.AlignVCenter
+            }
         }
     }
 
-    Connections {
-        target: root.backend
-
-        function onPeersUpdated(peers) {
-            root.peers = peers
-        }
+    BottomTitle {
+        id: bottomTitle
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        title: "Peers"
     }
 }

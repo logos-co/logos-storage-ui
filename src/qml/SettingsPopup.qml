@@ -63,7 +63,7 @@ Popup {
 
             LogosStorageButton {
                 text: "Save"
-                variant: "success"
+                variant: "primary"
                 enabled: jsonEditor.isValid
                 onClicked: {
                     root.backend.saveUserConfig(jsonEditor.text)

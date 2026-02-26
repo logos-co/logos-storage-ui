@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-LogosStorageLayout {
+OnBoardingLayout {
     id: root
 
     property var backend: MockBackend
@@ -12,46 +12,53 @@ LogosStorageLayout {
     signal back
     signal completed
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: 40
+    OnBoardingContainer {
         spacing: Theme.spacing.medium
 
-        LogosText {
-            text: "Advanced Configuration"
-            font.pixelSize: Theme.typography.titleText
-            Layout.alignment: Qt.AlignHCenter
-        }
+        Column {
+            Layout.fillHeight: false
 
-        LogosText {
-            text: "Edit the JSON configuration below, then click Validate."
-            font.pixelSize: Theme.typography.primaryText
-            Layout.alignment: Qt.AlignHCenter
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.WordWrap
-            Layout.fillWidth: true
+            LogosText {
+                text: "Advanced Configuration"
+                font.pixelSize: Theme.typography.titleText
+                font.weight: Font.Bold
+            }
+
+            LogosText {
+                text: "Edit the JSON configuration below, than click Validate. "
+                font.pixelSize: Theme.typography.primaryText * 1.8
+            }
         }
 
         JsonEditor {
             id: jsonEditor
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            Layout.fillHeight: false
+            Layout.preferredHeight: 250
             Component.onCompleted: load(root.backend.configJson() || "{}")
         }
 
         RowLayout {
-            Layout.alignment: Qt.AlignHCenter
+            Layout.fillWidth: true
             spacing: Theme.spacing.medium
 
             LogosStorageButton {
                 text: "Back"
                 onClicked: root.back()
+                iconSource: "assets/arrow-left.png"
+                iconPosition: "left"
+            }
+
+            Item {
+                Layout.fillWidth: true
             }
 
             LogosStorageButton {
                 text: "Validate"
-                variant: "success"
+                variant: "primary"
                 enabled: jsonEditor.isValid
+                iconSource: "assets/arrow-right.png"
+                iconPosition: "right"
                 onClicked: {
                     root.backend.saveUserConfig(jsonEditor.text)
                     root.completed()

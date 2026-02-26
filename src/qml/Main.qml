@@ -22,7 +22,7 @@ import Logos.Theme
 Item {
     id: root
     implicitWidth: 800
-    implicitHeight: 800
+    implicitHeight: 600
     Layout.fillWidth: true
     Layout.fillHeight: true
 
@@ -47,6 +47,13 @@ Item {
         // If there is any error, display it in a toast view
         function onError(message) {
             errorToast.show("Error", message)
+        }
+
+        function onOnboardingRestarted() {
+            root.backend.onStopCompleted.connect(function () {
+                stackView.replace(modeSelectorComponent, StackView.Immediate)
+            })
+            root.backend.stop()
         }
     }
 
@@ -158,5 +165,4 @@ Item {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Theme.spacing.medium
     }
-
 }

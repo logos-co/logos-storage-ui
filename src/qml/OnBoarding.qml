@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-LogosStorageLayout {
+OnBoardingLayout {
     id: root
 
     property var backend: MockBackend
@@ -13,120 +13,69 @@ LogosStorageLayout {
 
     property int selectedMode: -1
 
-    ColumnLayout {
-        anchors.centerIn: parent
-        spacing: Theme.spacing.medium
-        width: 430
+    OnBoardingContainer {
 
-        LogosText {
-            text: "Network Configuration"
-            font.pixelSize: Theme.typography.titleText
-            Layout.alignment: Qt.AlignHCenter
+        OnBoardingProgress {
+            Layout.fillWidth: true
+            currentStep: 0
+            Layout.topMargin: Theme.spacing.small
         }
 
-        LogosText {
-            text: "How is your network configured?"
-            font.pixelSize: Theme.typography.primaryText
-            Layout.alignment: Qt.AlignHCenter
-            horizontalAlignment: Text.AlignHCenter
-            wrapMode: Text.WordWrap
+        ColumnLayout {
             Layout.fillWidth: true
+            Layout.topMargin: 10
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                LogosText {
+                    text: "Network Configuration"
+                    font.pixelSize: Theme.typography.titleText
+                    font.weight: Font.Bold
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                LogosText {
+                    text: "1 / 5"
+                    font.pixelSize: Theme.typography.primaryText
+                    color: Theme.palette.primary
+                    font.family: "monospace"
+                }
+            }
+
+            LogosText {
+                text: "How would you like to set up your node?"
+                font.pixelSize: Theme.typography.primaryText * 1.8
+            }
         }
 
         Item {
             Layout.preferredHeight: Theme.spacing.medium
         }
 
-        Row {
+        RowLayout {
+            Layout.fillWidth: true
             spacing: Theme.spacing.medium
-            Layout.alignment: Qt.AlignHCenter
 
-            Rectangle {
-                width: 190
-                height: 230
-                radius: 14
-                color: root.selectedMode === 0 ? Theme.palette.overlayLight : "transparent"
-                border.color: root.selectedMode
-                              === 0 ? Theme.palette.text : Theme.palette.borderTertiaryMuted
-                border.width: root.selectedMode === 0 ? 2 : 1
-
-                ColumnLayout {
-                    anchors.centerIn: parent
-                    spacing: 14
-
-                    UpnpIcon {
-                        dotColor: Theme.palette.text
-                        Layout.alignment: Qt.AlignHCenter
-                    }
-
-                    Text {
-                        text: "UPnP"
-                        color: Theme.palette.text
-                        font.pixelSize: 16
-                        font.bold: true
-                        Layout.alignment: Qt.AlignHCenter
-                    }
-
-                    Text {
-                        text: "Automatic port\nforwarding via\nUPnP router."
-                        color: Theme.palette.textSecondary
-                        font.pixelSize: 12
-                        horizontalAlignment: Text.AlignHCenter
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.preferredWidth: 150
-                        wrapMode: Text.WordWrap
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.selectedMode = 0
-                }
+            OnBoardingCard {
+                Layout.fillWidth: true
+                title: "UPnP"
+                description: "Atuomatic port forwarding via UPnP Router."
+                icon: UpnpIcon {}
+                selected: root.selectedMode == 0
+                onCardSelected: root.selectedMode = 0
             }
 
-            Rectangle {
-                width: 190
-                height: 230
-                radius: 14
-                color: root.selectedMode === 1 ? Theme.palette.overlayLight : "transparent"
-                border.color: root.selectedMode
-                              === 1 ? Theme.palette.text : Theme.palette.borderTertiaryMuted
-                border.width: root.selectedMode === 1 ? 2 : 1
-
-                ColumnLayout {
-                    anchors.centerIn: parent
-                    spacing: 14
-
-                    PortIcon {
-                        dotColor: Theme.palette.text
-                        Layout.alignment: Qt.AlignHCenter
-                    }
-
-                    Text {
-                        text: "Port Forwarding"
-                        color: Theme.palette.text
-                        font.pixelSize: 16
-                        font.bold: true
-                        Layout.alignment: Qt.AlignHCenter
-                    }
-
-                    Text {
-                        text: "Manual TCP port\nconfiguration on\nyour router."
-                        color: Theme.palette.textSecondary
-                        font.pixelSize: 12
-                        horizontalAlignment: Text.AlignHCenter
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.preferredWidth: 150
-                        wrapMode: Text.WordWrap
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.selectedMode = 1
-                }
+            OnBoardingCard {
+                Layout.fillWidth: true
+                title: "Port Fowarding"
+                description: "Atuomatic port Manual TCP port configuration on your Router. via UPnP Router."
+                icon: PortIcon {}
+                selected: root.selectedMode == 1
+                onCardSelected: root.selectedMode = 1
             }
         }
 
@@ -135,16 +84,24 @@ LogosStorageLayout {
         }
 
         RowLayout {
-            Layout.alignment: Qt.AlignHCenter
             spacing: Theme.spacing.medium
 
             LogosStorageButton {
                 text: "Back"
+                iconSource: "assets/arrow-left.png"
+                iconPosition: "left"
                 onClicked: root.back()
+            }
+
+            Item {
+                Layout.fillWidth: true
             }
 
             LogosStorageButton {
                 text: "Continue"
+                variant: "primary"
+                iconSource: "assets/arrow-right.png"
+                iconPosition: "right"
                 enabled: root.selectedMode !== -1
                 onClicked: {
                     if (root.selectedMode === 0) {
@@ -155,5 +112,4 @@ LogosStorageLayout {
             }
         }
     }
-
 }

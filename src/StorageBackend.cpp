@@ -12,6 +12,7 @@
 #include <QNetworkProxyFactory>
 #include <QNetworkReply>
 #include <QSslSocket>
+#include <QSettings>
 
 // StorageBackend is responsible for managing the interaction with the storage module.
 // It is mocked in the QML.
@@ -179,9 +180,9 @@ LogosResult StorageBackend::init(const QString& configJson) {
                 reportError("Failure during download progress: " + message);
             } else {
                 QString sessionId = data[1].toString();
-                int len = data[2].toInt();
+                qint64 len = data[2].toLongLong();
                 debug("Downloaded " + QString::number(len) + " bytes for session " + sessionId);
-                // TODO display progress here
+                emit downloadChunk(len);
             }
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageDownloadProgress events";
@@ -351,13 +352,19 @@ void StorageBackend::uploadFile(const QUrl& url) {
     qDebug() << "StorageBackend: uploadFile result =" << sessionId;
 }
 
-void StorageBackend::downloadFile(const QString& cid, const QUrl& url) {
+void StorageBackend::downloadFile(const QString& cid, const QUrl& url, qint64 totalBytes) {
     qDebug() << "StorageBackend: downloadFile called";
 
     if (!url.isLocalFile()) {
         reportError("The provided URL is not a local file.");
         return;
     }
+
+    QString filename = QFileInfo(url.toLocalFile()).fileName();
+    debug(QString("Starting download of cid: %1, filename: %2, total: %3 bytes")
+              .arg(cid, filename)
+              .arg(totalBytes));
+    emit downloadStarted(cid, filename, totalBytes);
 
     LogosResult result = m_logos->storage_module.downloadToUrl(cid, url, false);
 
@@ -387,19 +394,7 @@ void StorageBackend::exists(const QString& cid) {
 void StorageBackend::remove(const QString& cid) {
     qDebug() << "StorageBackend::remove called with cid=" << cid;
 
-    LogosResult result = m_logos->storage_module.exists(cid);
-
-    if (!result.success) {
-        reportError("Failed to check exists: " + result.getError());
-        return;
-    }
-
-    if (!result.getBool()) {
-        debug("Blocks don't exist in store.");
-        return;
-    }
-
-    result = m_logos->storage_module.remove(cid);
+    LogosResult result = m_logos->storage_module.remove(cid);
     if (!result.success) {
         reportError("Failed to remove " + cid + ": " + result.getError());
         return;
@@ -408,7 +403,11 @@ void StorageBackend::remove(const QString& cid) {
     debug("Cid " + cid + " removed from local storage.");
 
     // Refresh space data for Disk widget
-    QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace, Qt::QueuedConnection);
+    QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace,
+                              Qt::QueuedConnection);
+    // Update manifests list
+    QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
+
 }
 
 void StorageBackend::fetch(const QString& cid) {
@@ -435,6 +434,35 @@ void StorageBackend::logVersion() {
     }
 
     debug("Version: " + result.getString());
+}
+
+void StorageBackend::listSettings() {
+    qDebug() << "StorageBackend::remove settings file called";
+
+
+    QSettings settings;
+
+    debug("Settings file: " + settings.fileName());
+
+    QStringList lines;
+    for (const QString &key : settings.allKeys()) {
+        if (key.startsWith("Storage")){
+          lines << key + " = " + settings.value(key).toString();
+        }
+    }
+    QString all = lines.join("\n");
+    debug("All settings:\n" + all);
+}
+
+void StorageBackend::restartOnboarding() {
+    qDebug() << "StorageBackend::reset onboarding called";
+    
+    
+    QSettings settings;
+    settings.setValue("Storage/onboardingCompleted", false);
+    settings.sync();
+    StorageBackend::listSettings();
+    emit onboardingRestarted();
 }
 
 void StorageBackend::logPeerId() {
@@ -639,8 +667,8 @@ void StorageBackend::enableNatExtConfig(int tcpPort) {
     QJsonDocument doc = defaultConfig();
     QJsonObject obj = doc.object();
 
-    QJsonArray listenAddrs = {QString("/ip4/0.0.0.0/tcp/%1").arg(tcpPort)};
-    obj["listen-addrs"] = listenAddrs;
+    obj["listen-ip"] = "0.0.0.0";
+    obj["listen-port"] = tcpPort;
 
     // Fetch the public IP asynchronously so we can set nat=extip:IP in the config.
     qDebug() << "StorageBackend:: Retrieving public IP...";
