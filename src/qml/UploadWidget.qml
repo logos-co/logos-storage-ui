@@ -59,6 +59,11 @@ Card {
         anchors.right: parent.right
         anchors.bottom: uploadBottomTitle.top
         visible: !root.isUploading && !root.isDone
+        opacity: root.running ? 1.0 : 0.4
+
+        Behavior on opacity {
+            NumberAnimation { duration: 200 }
+        }
 
         Rectangle {
             Layout.fillWidth: true
@@ -212,7 +217,7 @@ Card {
 
             property bool copied: false
 
-            color: "#141414"
+            color: Theme.palette.backgroundInset
 
             Timer {
                 id: resetCopyTimer
@@ -292,7 +297,7 @@ Card {
     MouseArea {
         anchors.fill: parent
         cursorShape: root.running ? Qt.PointingHandCursor : Qt.ArrowCursor
-        enabled: !root.isUploading && !root.isDone
+        enabled: !root.isUploading && !root.isDone && root.running
         onClicked: root.uploadRequested()
     }
 }

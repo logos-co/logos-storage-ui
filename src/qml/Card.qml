@@ -4,7 +4,6 @@ import Logos.Theme
 Rectangle {
     id: root
 
-    // Padding appliqué autour du contenu enfant
     property int padding: Theme.spacing.medium
 
     default property alias content: contentArea.data

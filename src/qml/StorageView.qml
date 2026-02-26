@@ -10,8 +10,10 @@ LogosStorageLayout {
 
     property var backend: MockBackend
 
+    readonly property bool running: backend.status === 2 // StorageBackend.Running
+
     function isRunning() {
-        return backend.status === 2 // StorageBackend.Running
+        return backend.status === 2
     }
 
     Component.onCompleted: function () {
@@ -72,7 +74,7 @@ LogosStorageLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         backend: root.backend
-                        running: root.isRunning()
+                        running: root.running
                         onUploadRequested: uploadDialog.open()
                     }
 
@@ -80,6 +82,7 @@ LogosStorageLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         backend: root.backend
+                        running: root.running
                     }
                 }
 
@@ -102,19 +105,19 @@ LogosStorageLayout {
                         Layout.fillWidth: true
                         Layout.preferredHeight: (thirdCol.height - thirdCol.spacing) * 2 / 3
                         backend: root.backend
+                        running: root.running
                     }
                 }
             }
         }
 
-        // Table — prend tout l'espace restant
         ManifestTable {
             id: manifestTable
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumHeight: 0
             backend: root.backend
-            running: root.isRunning()
+            running: root.running
         }
     }
 }
