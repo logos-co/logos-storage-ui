@@ -223,11 +223,16 @@ void StorageBackend::setStatus(StorageStatus newStatus) {
     }
 }
 
-LogosResult StorageBackend::start(const QString& newConfigJson) {
+LogosResult StorageBackend::start() {
     qDebug() << "StorageBackend: start method called";
 
-    if (newConfigJson != "") {
-        reloadIfChanged(newConfigJson);
+    QFile file(USER_CONFIG_PATH);
+
+    if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString configJson = QString::fromUtf8(file.readAll());
+        reloadIfChanged(configJson);
+    } else {
+        debug("Cannot open the user config file.", "warning");
     }
 
     if (m_status != Stopped) {
@@ -630,8 +635,6 @@ void StorageBackend::saveUserConfig(const QString& configJson) {
         reportError("Invalid json config" + configJson);
         return;
     }
-
-    m_config = config;
 }
 
 QJsonDocument StorageBackend::defaultConfig() {

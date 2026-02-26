@@ -80,10 +80,9 @@ class StorageBackend : public QObject {
     LogosResult init(const QString& configJson);
 
     // Start the node
-    // If a configuration is passed (not empty string),
-    // the configuration will be reloaded before trying
-    // to start.
-    LogosResult start(const QString& configJson = "");
+    // If the user configuration has changed, it will
+    // reloaded it.
+    LogosResult start();
 
     // Destroy the Storage Module
     void destroy();

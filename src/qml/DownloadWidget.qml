@@ -93,12 +93,10 @@ Card {
         }
     }
 
-    // ── Layout ────────────────────────────────────────────────────────────────
     ColumnLayout {
         anchors.fill: parent
         spacing: 0
 
-        // ── Header : filename + close (visible quand actif) ───────────────────
         RowLayout {
             Layout.fillWidth: true
             visible: root.isDownloading || root.isDone
