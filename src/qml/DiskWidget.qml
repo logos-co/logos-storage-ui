@@ -124,8 +124,7 @@ Card {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 height: 40
-                // TODO Logos Design System
-                color: "#313131"
+                color: Theme.palette.backgroundTrack
 
                 Rectangle {
                     width: parent.width * root.fraction + 10

@@ -69,7 +69,6 @@ Card {
                 Layout.fillWidth: true
             }
 
-            // Close button — visible uniquement quand le panel debug est ouvert
             Image {
                 source: "assets/close-circle.png"
                 visible: root.panelOpen
@@ -82,7 +81,6 @@ Card {
             }
         }
 
-        // ── Zone de contenu : liste OU panel ──────────────────────────────────
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -93,7 +91,6 @@ Card {
                 spacing: Theme.spacing.small
                 visible: !root.panelOpen
 
-                // Header sticky (hors du ListView = ne scrolle pas)
                 Rectangle {
                     id: header
                     Layout.fillWidth: true
@@ -148,7 +145,7 @@ Card {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     model: root.manifests
-                    clip: true // empêche les items de déborder sur le header sticky
+                    clip: true
 
                     delegate: Rectangle {
                         width: manifestList.width
@@ -201,7 +198,8 @@ Card {
                                     width: 40
                                     height: 40
                                     radius: Theme.spacing.radiusXlarge * 2
-                                    border.color: copyHover.hovered ? Theme.palette.primary : Theme.palette.borderSubtle
+                                    border.color: copyHover.hovered
+                                                  && root.running ? Theme.palette.primary : Theme.palette.borderSubtle
                                     border.width: 1
 
                                     property bool copied: false
@@ -284,8 +282,16 @@ Card {
                                         height: 40
                                         radius: Theme.spacing.radiusXlarge * 2
                                         color: Theme.palette.backgroundButton
-                                        border.color: dlHover.hovered ? Theme.palette.primary : Theme.palette.borderInteractive
+                                        border.color: dlHover.hovered
+                                                      && root.running ? Theme.palette.primary : Theme.palette.borderInteractive
                                         border.width: 1
+                                        opacity: root.running ? 1.0 : 0.35
+
+                                        Behavior on opacity {
+                                            NumberAnimation {
+                                                duration: 200
+                                            }
+                                        }
 
                                         Image {
                                             anchors.centerIn: parent
@@ -321,8 +327,16 @@ Card {
                                         height: 40
                                         radius: Theme.spacing.radiusXlarge * 2
                                         color: Theme.palette.backgroundButton
-                                        border.color: rmHover.hovered ? Theme.palette.primary : Theme.palette.borderInteractive
+                                        border.color: rmHover.hovered
+                                                      && root.running ? Theme.palette.primary : Theme.palette.borderInteractive
                                         border.width: 1
+                                        opacity: root.running ? 1.0 : 0.35
+
+                                        Behavior on opacity {
+                                            NumberAnimation {
+                                                duration: 200
+                                            }
+                                        }
 
                                         Image {
                                             anchors.centerIn: parent
@@ -362,7 +376,6 @@ Card {
                         }
                     }
 
-                    // Empty state — enfant du ListView, pas du delegate
                     ColumnLayout {
                         anchors.centerIn: parent
                         spacing: 10

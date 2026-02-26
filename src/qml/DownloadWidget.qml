@@ -127,7 +127,7 @@ Card {
             Layout.fillHeight: true
         }
 
-        // ── Grid centré ───────────────────────────────────────────────────────
+        // ── Grid ──────────────────────────────────────────────────────────────
         Item {
             id: gridItem
             Layout.alignment: Qt.AlignHCenter
@@ -159,7 +159,7 @@ Card {
             Layout.fillHeight: true
         }
 
-        // ── Footer : label + % pendant le téléchargement ─────────────────────
+        // ── Footer: label + progress % ────────────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
             visible: root.isDownloading || root.isDone
@@ -179,14 +179,14 @@ Card {
             }
         }
 
-        // ── BottomTitle — visible uniquement au repos ─────────────────────────
+        // ── BottomTitle — visible when idle ───────────────────────────────────
         BottomTitle {
             Layout.fillWidth: true
             title: "No download in progress"
             visible: !root.isDownloading && !root.isDone
         }
 
-        // ── Progress bar — flush aux bords de la card ─────────────────────────
+        // ── Progress bar — flush with card edges ──────────────────────────────
         Rectangle {
             Layout.fillWidth: true
             Layout.leftMargin: -Theme.spacing.medium

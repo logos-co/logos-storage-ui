@@ -10,8 +10,13 @@ Card {
     implicitHeight: 300
 
     property var backend: MockBackend
+    property bool running: false
     property int peers: 0
     property int maxPeers: 20
+
+    onRunningChanged: {
+        if (!running) root.peers = 0
+    }
 
     ColumnLayout {
         anchors.top: parent.top

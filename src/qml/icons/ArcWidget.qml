@@ -22,11 +22,11 @@ Rectangle {
     property color trackColor: Theme.palette.textMuted
     // arcRadius scales with the widget so enlarging the container also enlarges the arc
     property real arcScale: 1.0
-    // arcOffsetY: décale le centre de l'arc vers le bas (en px dans le repère du Rectangle).
-    // Utile quand arcScale > 1 — le canvas déborde vers le haut, ce décalage recentre visuellement.
+    // arcOffsetY: shifts the arc center downward (px, in Rectangle space).
+    // Useful when arcScale > 1 — the canvas overflows upward, this offset re-centers it visually.
     property real arcOffsetY: 0
-    // arcRadius et arcWidth s'appuient sur les dimensions du Canvas (pas du Rectangle)
-    // afin que arcScale les fasse grossir sans toucher à l'empreinte layout.
+    // arcRadius and arcWidth are based on the Canvas dimensions (not the Rectangle),
+    // so arcScale enlarges them without affecting the layout footprint.
     property real arcRadius: Math.min(arc.width, arc.height) * 0.43
     property real arcWidth: 8
 
@@ -52,10 +52,10 @@ Rectangle {
             ctx.reset()
 
             var cx = width / 2
-            // arcOffsetY est en px Rectangle → convertir en px Canvas (même échelle, juste un offset)
+            // arcOffsetY is in Rectangle px — same scale as Canvas, just an offset
             var cy = height / 2 + root.arcOffsetY
             var totalDeg = 180
-            var startDeg = 270 - totalDeg / 2   // centré autour du sommet (270°)
+            var startDeg = 270 - totalDeg / 2   // centered around the top (270°)
             var numSeg = 4
             var gapDeg = 4
             var segDeg = (totalDeg - gapDeg * (numSeg - 1)) / numSeg
