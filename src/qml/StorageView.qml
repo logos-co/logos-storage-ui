@@ -32,11 +32,6 @@ LogosStorageLayout {
         backend: root.backend
     }
 
-    Shortcut {
-        sequence: "Ctrl+D"
-        onActivated: manifestTable.panelOpen = !manifestTable.panelOpen
-    }
-
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.spacing.medium

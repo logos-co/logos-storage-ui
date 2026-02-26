@@ -462,8 +462,7 @@ void StorageBackend::restartOnboarding() {
     settings.setValue("Storage/onboardingCompleted", false);
     settings.sync();
     StorageBackend::listSettings();
-    emit restartOnboarding();
-
+    emit onboardingRestarted();
 }
 
 void StorageBackend::logPeerId() {

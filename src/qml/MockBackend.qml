@@ -1,4 +1,5 @@
 pragma Singleton
+
 import QtQuick
 
 QtObject {
@@ -23,10 +24,14 @@ QtObject {
     signal spaceUpdated(real total, real used)
     signal manifestsUpdated(var manifests)
     signal stopCompleted
-    signal restartOnboarding
+    signal onboardingRestarted
 
-    function start() { status = 2 }
-    function stop() { status = 0 }
+    function start() {
+        status = 2
+    }
+    function stop() {
+        status = 0
+    }
     function destroy() {}
     function checkNodeIsUp() {}
     function fetchWidgetsData() {}
@@ -47,6 +52,10 @@ QtObject {
     function loadUserConfig() {}
     function reloadIfChanged(json) {}
     function enableUpnpConfig() {}
-    function enableNatExtConfig(tcpPort) { natExtConfigCompleted() }
-    function configJson() { return "{}" }
+    function enableNatExtConfig(tcpPort) {
+        natExtConfigCompleted()
+    }
+    function configJson() {
+        return "{}"
+    }
 }

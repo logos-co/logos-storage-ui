@@ -212,8 +212,8 @@ class StorageBackend : public QObject {
     // Used to refresh the Manifests table
     void manifestsUpdated(const QVariantList& manifests);
 
-    // Restarts the onboarding process
-    void restartOnboarding();
+    // Emitted when the onboarding has been reset
+    void onboardingRestarted();
 
     // Used in the on boarding to detect success
     void natExtConfigCompleted();

@@ -38,6 +38,11 @@ Card {
     implicitWidth: 1200
     implicitHeight: 400
 
+    Shortcut {
+        sequence: "Ctrl+D"
+        onActivated: root.panelOpen = !root.panelOpen
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacing.small
@@ -143,7 +148,7 @@ Card {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     model: root.manifests
-                    clip: true  // empêche les items de déborder sur le header sticky
+                    clip: true // empêche les items de déborder sur le header sticky
 
                     delegate: Rectangle {
                         width: manifestList.width
@@ -163,7 +168,8 @@ Card {
                                     id: typeIcon
                                     anchors.left: parent.left
                                     anchors.verticalCenter: parent.verticalCenter
-                                    source: root.mimetypeIcon(modelData.mimetype)
+                                    source: root.mimetypeIcon(
+                                                modelData.mimetype)
                                     width: 32
                                     height: 32
                                     fillMode: Image.PreserveAspectFit
@@ -254,7 +260,8 @@ Card {
                             }
 
                             Text {
-                                text: Utils.formatBytes(parseInt(modelData.datasetSize))
+                                text: Utils.formatBytes(
+                                          parseInt(modelData.datasetSize))
                                 color: Theme.palette.text
                                 font.pixelSize: Theme.typography.secondaryText
                                 Layout.preferredWidth: 80
@@ -298,11 +305,12 @@ Card {
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
                                                 saveDialog.pendingManifest = modelData
-                                                saveDialog.currentFile = StandardPaths.writableLocation(
-                                                            StandardPaths.HomeLocation)
-                                                        + "/" + (modelData.filename
-                                                                 || modelData.cid
-                                                                 || "download")
+                                                saveDialog.currentFile
+                                                        = StandardPaths.writableLocation(
+                                                            StandardPaths.HomeLocation) + "/"
+                                                        + (modelData.filename
+                                                           || modelData.cid
+                                                           || "download")
                                                 saveDialog.open()
                                             }
                                         }
@@ -334,7 +342,8 @@ Card {
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
                                                 if (modelData.cid.length > 0) {
-                                                    root.backend.remove(modelData.cid)
+                                                    root.backend.remove(
+                                                                modelData.cid)
                                                 }
                                             }
                                         }
@@ -376,94 +385,10 @@ Card {
                 }
             }
 
-            // ── Vue panel : Debug (même structure visuelle que la vue liste) ──
-            ColumnLayout {
-                anchors.fill: parent
-                visible: root.panelOpen
-                spacing: Theme.spacing.small
-
-                // Header sticky — même style que la colonne CID/Filename/…
-                Rectangle {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 30
-                    color: Theme.palette.backgroundInset
-                    radius: Theme.spacing.radiusSmall
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: Theme.spacing.medium
-                        anchors.rightMargin: Theme.spacing.medium
-                        spacing: Theme.spacing.small
-
-                        LogosStorageButton {
-                            text: "Debug"
-                            implicitHeight: 24
-                            implicitWidth: 70
-                            enabled: root.running
-                            onClicked: root.backend.logDebugInfo()
-                        }
-                        LogosStorageButton {
-                            text: "Peer ID"
-                            implicitHeight: 24
-                            implicitWidth: 80
-                            enabled: root.running
-                            onClicked: root.backend.logPeerId()
-                        }
-                        LogosStorageButton {
-                            text: "Data dir"
-                            implicitHeight: 24
-                            implicitWidth: 80
-                            enabled: root.running
-                            onClicked: root.backend.logDataDir()
-                        }
-                        LogosStorageButton {
-                            text: "SPR"
-                            implicitHeight: 24
-                            implicitWidth: 60
-                            enabled: root.running
-                            onClicked: root.backend.logSpr()
-                        }
-                        LogosStorageButton {
-                            text: "Version"
-                            implicitHeight: 24
-                            implicitWidth: 80
-                            enabled: root.running
-                            onClicked: root.backend.logVersion()
-                        }
-
-                        Item {
-                            Layout.fillWidth: true
-                        }
-                    }
-                }
-
-                // Zone de log scrollable
-                Flickable {
-                    id: logFlick
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-                    contentWidth: width
-                    contentHeight: debugLogText.implicitHeight
-
-                    TextEdit {
-                        id: debugLogText
-                        width: logFlick.width
-                        text: root.backend.debugLogs
-                        color: Theme.palette.textSecondary
-                        font.family: "monospace"
-                        font.pixelSize: 11
-                        wrapMode: Text.WrapAnywhere
-                        readOnly: true
-                        padding: Theme.spacing.small
-                        bottomPadding: Theme.spacing.large
-
-                        onTextChanged: Qt.callLater(function () {
-                            logFlick.contentY = Math.max(
-                                        0, logFlick.contentHeight - logFlick.height)
-                        })
-                    }
-                }
+            DebugPanel {
+                backend: root.backend
+                running: root.running
+                isOpen: panelOpen
             }
         }
 

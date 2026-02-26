@@ -49,11 +49,11 @@ Item {
             errorToast.show("Error", message)
         }
 
-        function onRestartOnboarding() {
-            root.backend.onStopCompleted.connect(function() {
-                stackView.replace(modeSelectorComponent, StackView.Immediate);
+        function onOnboardingRestarted() {
+            root.backend.onStopCompleted.connect(function () {
+                stackView.replace(modeSelectorComponent, StackView.Immediate)
             })
-            root.backend.stop();
+            root.backend.stop()
         }
     }
 
@@ -165,5 +165,4 @@ Item {
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Theme.spacing.medium
     }
-
 }
