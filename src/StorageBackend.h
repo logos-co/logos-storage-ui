@@ -18,6 +18,9 @@ static const QString APP_HOME = QDir::homePath() + "/.logos_storage";
 static const QString DEFAULT_DATA_DIR = APP_HOME + "/data";
 static const QString USER_CONFIG_PATH = APP_HOME + "/config.json";
 
+static const int DEFAULT_LISTEN_PORT = 8500;
+static const int DEFAULT_DISC_PORT = 9090;
+
 // Add manual SPR from https://spr.codex.storage/devnet
 static const QStringList BOOTSTRAP_NODES = {
     "spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-"
