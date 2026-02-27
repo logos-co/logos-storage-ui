@@ -187,25 +187,54 @@ pkgs.stdenv.mkDerivation rec {
       cp -L "${logosSdk}/lib/"liblogos_sdk.* "$out/lib/" || true
     fi
 
-    # Determine platform-specific plugin extension
+    # Determine platform-specific plugin extension and variant
     OS_EXT="so"
+    PLATFORM_VARIANT="linux-x86_64"
     case "$(uname -s)" in
-      Darwin) OS_EXT="dylib";;
-      Linux) OS_EXT="so";;
-      MINGW*|MSYS*|CYGWIN*) OS_EXT="dll";;
+      Darwin)
+        OS_EXT="dylib"
+        case "$(uname -m)" in
+          arm64) PLATFORM_VARIANT="darwin-arm64";;
+          *)     PLATFORM_VARIANT="darwin-x86_64";;
+        esac;;
+      Linux)
+        OS_EXT="so"
+        case "$(uname -m)" in
+          aarch64) PLATFORM_VARIANT="linux-arm64";;
+          *)       PLATFORM_VARIANT="linux-x86_64";;
+        esac;;
+      MINGW*|MSYS*|CYGWIN*)
+        OS_EXT="dll"
+        PLATFORM_VARIANT="windows-x86_64";;
     esac
 
-    # Copy module plugins into the modules directory
+    # Copy module plugins into subdirectories with manifest.json (new plugin format)
     if [ -f "${logosCapabilityModule}/lib/capability_module_plugin.$OS_EXT" ]; then
-      cp -L "${logosCapabilityModule}/lib/capability_module_plugin.$OS_EXT" "$out/modules/"
+      mkdir -p "$out/modules/logos-capability"
+      cp -L "${logosCapabilityModule}/lib/capability_module_plugin.$OS_EXT" "$out/modules/logos-capability/"
+      cat > "$out/modules/logos-capability/manifest.json" <<MANIFEST
+{
+  "main": {
+    "$PLATFORM_VARIANT": "capability_module_plugin.$OS_EXT"
+  }
+}
+MANIFEST
     fi
+
     if [ -f "${logosStorageModule}/lib/storage_module_plugin.$OS_EXT" ]; then
-      cp -L "${logosStorageModule}/lib/storage_module_plugin.$OS_EXT" "$out/modules/"
-    fi
-    
-    # Copy libstorage library to modules directory (needed by storage_module_plugin)
-    if [ -f "${logosStorageModule}/lib/libstorage.$OS_EXT" ]; then
-      cp -L "${logosStorageModule}/lib/libstorage.$OS_EXT" "$out/modules/"
+      mkdir -p "$out/modules/logos-storage"
+      cp -L "${logosStorageModule}/lib/storage_module_plugin.$OS_EXT" "$out/modules/logos-storage/"
+      # libstorage is a dependency of storage_module_plugin, keep it alongside
+      if [ -f "${logosStorageModule}/lib/libstorage.$OS_EXT" ]; then
+        cp -L "${logosStorageModule}/lib/libstorage.$OS_EXT" "$out/modules/logos-storage/"
+      fi
+      cat > "$out/modules/logos-storage/manifest.json" <<MANIFEST
+{
+  "main": {
+    "$PLATFORM_VARIANT": "storage_module_plugin.$OS_EXT"
+  }
+}
+MANIFEST
     fi
 
     # Copy storage_ui Qt plugin to root directory (not modules, as it's loaded differently)
@@ -237,7 +266,8 @@ storage-ui: ${logosStorageUI}
 Runtime Layout:
 - Binary: $out/bin/logos-storage-ui-app
 - Libraries: $out/lib
-- Modules: $out/modules
+- Modules: $out/modules/logos-storage/{manifest.json,storage_module_plugin.$OS_EXT}
+           $out/modules/logos-capability/{manifest.json,capability_module_plugin.$OS_EXT}
 - Qt Plugin: $out/storage_ui.$OS_EXT
 
 Usage:
