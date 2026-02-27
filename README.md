@@ -98,38 +98,45 @@ The application also provides a JSON editor in the debug panel for runtime confi
 
 ## Troubleshooting
 
+Logos Storage requires your node to be reachable from the internet and, to that end, you must open two ports on your router:
+
+1. **Discovery.** UDP, defaults to `8090`. Used for discovery and DHT operations.
+2. **libp2p listen port.** TCP, defaults to `8500`- Used for data transfer and peer connections.
+
+Problems in not being able to share files are commonly related to either one (or both) of those ports not being open or available.
+
 ### Node has no peers
 
-**Symptom:**  
+**Symptom:**
 The node starts successfully but never connects to any peer.
 
-**Cause:**  
-Logos Storage uses a discovery port (default `8090`) to announce itself to the DHT and find peers. If this port is already use by another process, the DHT cannot work properly.
+**Cause:**
+This is typically due to the discovery being unavailable - for instance, if another process is already occupying its port.
 
-**Fix:**  
-Ensure that no process is running on `8090` process or change the default port value in the advanced configuration.
+**Fix:**
+Ensure that no process is using port `8090`, or change the default port value in the advanced configuration.
 
 ### UPnP not working
 
-**Symptom:**  
+**Symptom:**
 You selected UPnP during setup but the node remains unreachable.
 
-**Cause:**  
+**Cause:**
 UPnP relies on your router supporting and enabling the UPnP protocol. Many routers have it disabled by default for security reasons.
 
-**Fix:**  
+**Fix:**
 Make sure UPnP is enabled on your router or switch to port forwarding config.
 
 ### Manual port forwarding
 
-**Symptom:**  
-You configure the port forwarding with a TCP port but the node remains unreachable.
+**Symptom:**
+You configure the port forwarding with both UDP and TCP ports but the node remains unreachable.
 
-**Cause:**  
-The port is not open on your router.
+**Cause:**
+The ports are not open on your router.
 
-**Fix:**  
-Make port forwarding is enabled for this port on your router.
+**Fix:**
+Make port forwarding is enabled for these ports on your router.
 
 #### Nix Organization
 

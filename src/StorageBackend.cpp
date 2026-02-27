@@ -645,6 +645,8 @@ QJsonDocument StorageBackend::defaultConfig() {
     obj["bootstrap-node"] = bootstrapArray;
 
     obj["data-dir"] = DEFAULT_DATA_DIR;
+    obj["listen-port"] = DEFAULT_LISTEN_PORT;
+    obj["disc-port"] = DEFAULT_DISC_PORT;
 
     return QJsonDocument(obj);
 }
