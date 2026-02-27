@@ -39,6 +39,7 @@ class StorageBackend : public QObject {
     QML_ELEMENT
     Q_PROPERTY(QString debugLogs READ debugLogs NOTIFY debugLogsChanged)
     Q_PROPERTY(StorageStatus status READ status NOTIFY statusChanged)
+    Q_PROPERTY(int defaultListenPort READ defaultListenPort CONSTANT)
   public:
     enum StorageStatus {
         // Stopped means that the context is created but the module is not started
@@ -180,6 +181,9 @@ class StorageBackend : public QObject {
 
     // Fetch multiple data for the widgets: manifests, debug..
     void fetchWidgetsData();
+
+    // Used in the port forwarding onboarding
+    int defaultListenPort();
 
   signals:
     // Used to start the Storage Module

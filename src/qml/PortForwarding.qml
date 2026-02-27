@@ -6,9 +6,9 @@ import Logos.Controls
 OnBoardingLayout {
     id: root
 
-    property var tcpPort: 0
-    property bool loading: false
     property var backend: MockBackend
+    property var tcpPort: backend.defaultListenPort
+    property bool loading: false
 
     signal back
     signal completed(int port)

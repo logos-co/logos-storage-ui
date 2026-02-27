@@ -6,6 +6,7 @@ QtObject {
     readonly property bool isMock: true
     property int status: 0
     property string debugLogs: "Hello!"
+    property int defaultListenPort: 8500
 
     signal ready
     signal startCompleted

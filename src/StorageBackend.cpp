@@ -833,3 +833,4 @@ QString StorageBackend::configJson() const { return QString::fromUtf8(m_config.t
 
 StorageBackend::StorageStatus StorageBackend::status() const { return m_status; }
 
+int StorageBackend::defaultListenPort() { return DEFAULT_LISTEN_PORT; }
