@@ -11,6 +11,7 @@ Card {
 
     property var backend: MockBackend
     property bool running: false
+    property bool enabled: true
 
     RowLayout {
         anchors.top: parent.top
@@ -22,7 +23,9 @@ Card {
         opacity: root.running ? 1.0 : 0.4
 
         Behavior on opacity {
-            NumberAnimation { duration: 200 }
+            NumberAnimation {
+                duration: 200
+            }
         }
 
         LogosStorageTextField {
@@ -40,9 +43,11 @@ Card {
             implicitHeight: 42
             variant: "secondary"
             Layout.alignment: Qt.AlignTop
-            enabled: cidInput.text.length > 0 && root.running
+            enabled: cidInput.text.length > 0 && root.running && root.enabled
             onClicked: {
+                root.enabled = false
                 root.backend.downloadManifest(cidInput.text)
+                root.enabled = true
                 cidInput.clear()
             }
         }
