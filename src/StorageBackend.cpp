@@ -830,6 +830,19 @@ void StorageBackend::loadUserConfig() {
     }
 }
 
+QString StorageBackend::getUserConfig() {
+    qDebug() << "StorageBackend::refreshUserConfig called.";
+
+    QFile file(USER_CONFIG_PATH);
+
+    if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return QString::fromUtf8(file.readAll());
+    } else {
+        debug("Failed to read the user config file, use current config.");
+        return configJson();
+    }
+}
+
 QString StorageBackend::debugLogs() const { return m_debugLogs; };
 
 QString StorageBackend::configJson() const { return QString::fromUtf8(m_config.toJson(QJsonDocument::Indented)); }

@@ -143,6 +143,9 @@ class StorageBackend : public QObject {
     // Load the user config saved previously
     void loadUserConfig();
 
+    // Get the content of the user config file
+    QString getUserConfig();
+
     // Take a new config json and reload the Storage context
     // if the configuration has changed.
     //
