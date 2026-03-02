@@ -834,6 +834,10 @@ QString StorageBackend::debugLogs() const { return m_debugLogs; };
 
 QString StorageBackend::configJson() const { return QString::fromUtf8(m_config.toJson(QJsonDocument::Indented)); }
 
+QString StorageBackend::defaultConfigJson() const {
+    return QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented));
+}
+
 StorageBackend::StorageStatus StorageBackend::status() const { return m_status; }
 
 int StorageBackend::defaultListenPort() { return DEFAULT_LISTEN_PORT; }

@@ -60,6 +60,7 @@ class StorageBackend : public QObject {
     QString debugLogs() const;
     StorageStatus status() const;
     Q_INVOKABLE QString configJson() const;
+    Q_INVOKABLE QString defaultConfigJson() const;
 
     // Provide a default config for onboarding
     static QJsonDocument defaultConfig();
