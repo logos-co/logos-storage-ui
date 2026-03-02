@@ -831,7 +831,7 @@ void StorageBackend::loadUserConfig() {
 }
 
 QString StorageBackend::getUserConfig() {
-    qDebug() << "StorageBackend::refreshUserConfig called.";
+    qDebug() << "StorageBackend::getUserConfig called.";
 
     QFile file(USER_CONFIG_PATH);
 
