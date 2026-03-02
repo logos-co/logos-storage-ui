@@ -17,7 +17,7 @@ Popup {
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     // Reload the live config every time the popup opens
-    onOpened: jsonEditor.load(root.backend.configJson() || "{}")
+    onOpened: jsonEditor.load(root.backend.getUserConfig() || "{}")
 
     background: Rectangle {
         color: Theme.palette.backgroundSecondary
@@ -25,7 +25,6 @@ Popup {
         border.width: 1
         radius: 14
     }
-
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacing.small
