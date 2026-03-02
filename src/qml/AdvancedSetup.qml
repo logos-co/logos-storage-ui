@@ -35,7 +35,8 @@ OnBoardingLayout {
             Layout.fillWidth: true
             Layout.fillHeight: false
             Layout.preferredHeight: 250
-            Component.onCompleted: load(root.backend.configJson() || "{}")
+            Component.onCompleted: load(root.backend.defaultConfigJson(
+                                            ) || "{}")
         }
 
         RowLayout {
