@@ -608,6 +608,7 @@ void StorageBackend::reloadIfChanged(const QString& configJson) {
     debug("New config loaded successfully");
 
     m_config = config;
+    saveUserConfig(configJson);
     setStatus(StorageStatus::Stopped);
 }
 
@@ -699,6 +700,7 @@ void StorageBackend::enableNatExtConfig(int tcpPort) {
         }
 
         reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+
         emit natExtConfigCompleted();
     });
 }
