@@ -163,7 +163,7 @@ LogosResult StorageBackend::init(const QString& configJson) {
             } else {
                 QString sessionId = data[1].toString();
                 QString cid = data[2].toString();
-                debug("Upload completed for session " + sessionId + " with CID " + cid);
+                //  debug("Upload completed for session " + sessionId + " with CID " + cid);
                 emit uploadCompleted(cid);
                 QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace, Qt::QueuedConnection);
                 QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
@@ -181,7 +181,7 @@ LogosResult StorageBackend::init(const QString& configJson) {
             } else {
                 QString sessionId = data[1].toString();
                 qint64 len = data[2].toLongLong();
-                debug("Downloaded " + QString::number(len) + " bytes for session " + sessionId);
+                // debug("Downloaded " + QString::number(len) + " bytes for session " + sessionId);
                 emit downloadChunk(len);
             }
         })) {
