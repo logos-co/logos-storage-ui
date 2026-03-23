@@ -27,6 +27,8 @@ LogosStorageLayout {
     FileDialog {
         id: uploadDialog
         onAccepted: root.backend.uploadFile(selectedFile)
+        currentFolder: StandardPaths.standardLocations(
+                           StandardPaths.HomeLocation)[0]
     }
 
     HealthIndicator {
