@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
+import QtCore
 import Logos.Theme
 import Logos.Controls
 
@@ -8,10 +10,25 @@ Popup {
     id: root
 
     property var backend: MockBackend
+    property string downloadFolderPath: ""
+
+    signal folderPathChanged(string path)
+
+    readonly property string displayFolderPath: downloadFolderPath.replace(
+                                                    /^file:\/{2,2}/, "")
+
+    FolderDialog {
+        id: folderDialog
+        currentFolder: root.downloadFolderPath
+        onAccepted: {
+            root.downloadFolderPath = selectedFolder.toString()
+            root.folderPathChanged(root.downloadFolderPath)
+        }
+    }
 
     modal: true
     width: 520
-    height: 400
+    height: 480
     anchors.centerIn: Overlay.overlay
     padding: 24
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
@@ -49,6 +66,31 @@ Popup {
             id: jsonEditor
             Layout.fillWidth: true
             Layout.fillHeight: true
+        }
+
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: Theme.spacing.tiny
+
+            LogosText {
+                text: "Download folder"
+                font.pixelSize: Theme.typography.primaryText
+                color: Theme.palette.textSecondary
+            }
+
+            LogosStorageTextField {
+                Layout.fillWidth: true
+                Layout.bottomMargin: Theme.spacing.large
+                readOnly: true
+                text: root.displayFolderPath
+                rightPadding: Theme.spacing.large + 20
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: folderDialog.open()
+                }
+            }
         }
 
         RowLayout {
