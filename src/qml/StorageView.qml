@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
+import QtCore
 import Logos.Theme
 
 // qmllint disable unqualified
@@ -11,6 +12,15 @@ LogosStorageLayout {
     property var backend: MockBackend
 
     readonly property bool running: backend.status === 2 // StorageBackend.Running
+
+    Settings {
+        id: settings
+        category: "Storage"
+        property string downloadFolderPath: {
+            const p = StandardPaths.standardLocations(StandardPaths.HomeLocation)[0].toString()
+            return p.startsWith("file://") ? p : "file://" + p
+        }
+    }
 
     function isRunning() {
         return backend.status === 2
@@ -101,6 +111,8 @@ LogosStorageLayout {
                         backend: root.backend
                         nodeIsUp: health.nodeIsUp
                         blinkOn: health.blinkOn
+                        downloadFolderPath: settings.downloadFolderPath
+                        onFolderPathChanged: function(path) { settings.downloadFolderPath = path }
                     }
 
                     PeersWidget {
@@ -120,6 +132,7 @@ LogosStorageLayout {
             Layout.minimumHeight: 0
             backend: root.backend
             running: root.running
+            downloadFolderPath: settings.downloadFolderPath
         }
     }
 }
