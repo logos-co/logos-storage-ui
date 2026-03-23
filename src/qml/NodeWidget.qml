@@ -16,6 +16,10 @@ Card {
     property bool blinkOn: false
     readonly property int effectiveStatus: root.backend ? root.backend.status : StorageBackend.Destroyed
 
+    property string downloadFolderPath: ""
+
+    signal folderPathChanged(string path)
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacing.medium
@@ -174,6 +178,8 @@ Card {
         SettingsPopup {
             id: settingsPopup
             backend: root.backend
+            downloadFolderPath: root.downloadFolderPath
+            onFolderPathChanged: function(path) { root.folderPathChanged(path) }
         }
 
         // Rectangle {

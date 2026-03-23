@@ -174,6 +174,7 @@ qt_add_qml_module(appqml
         assets/download.png
         assets/delete.png
         BottomTitle.qml
+        DownloadFolder.qml
 )
 
 # Set up QML module directory for runtime

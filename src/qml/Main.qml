@@ -124,8 +124,9 @@ Item {
             onBack: stackView.pop()
 
             onCompleted: function () {
-                settings.onboardingCompleted = true
-                stackView.replace(storageComponent, StackView.Immediate)
+                //  settings.onboardingCompleted = true
+                // stackView.replace(storageComponent, StackView.Immediate)
+                stackView.push(downloadFolderComponent)
             }
         }
     }
@@ -135,6 +136,23 @@ Item {
 
         StorageView {
             backend: d.backend
+        }
+    }
+
+    Component {
+        id: downloadFolderComponent
+
+        DownloadFolder {
+            backend: root.backend
+
+            onBack: {
+                stackView.pop()
+            }
+
+            onNext: {
+                settings.onboardingCompleted = true
+                stackView.push(storageComponent)
+            }
         }
     }
 
@@ -149,8 +167,8 @@ Item {
             }
 
             onNext: {
-                settings.onboardingCompleted = true
-                stackView.push(storageComponent)
+                //settings.onboardingCompleted = true
+                stackView.push(downloadFolderComponent)
             }
         }
     }
