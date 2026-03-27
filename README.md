@@ -2,7 +2,7 @@
 
 ## How to Build
 
-### Using Nix (Recommended)
+### Using Nix
 
 #### Build the app
 
