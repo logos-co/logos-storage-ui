@@ -2,7 +2,7 @@
 
 ## How to Build
 
-### Using Nix (Recommended)
+### Using Nix
 
 #### Build the app
 
@@ -145,31 +145,6 @@ The nix build system is organized into modular files in the `/nix` directory:
 - `nix/lib.nix` - UI plugin compilation
 - `nix/app.nix` - Standalone Qt application compilation
 
-### Using submodules
-
-CMake is also configured to work with submodules. This is particularly useful for proper integration with Qt Creator. You only need to fetch the submodules using:
-
-```bash
-git submodule update --init --recursive
-```
-
-Everything should work straightforwardly. The submodules are also used as a fallback when the dependency folders are not found on the system. It can also be forced by enabling the `LOGOS_STORAGE_MODULE_USE_VENDOR` option.
-
-Note: While this setup is convenient for integration with Qt Creator, it is strongly recommended to use Nix for producing reproducible and deterministic builds.
-
-### Using local dependencies
-
-Another way to build the project is to clone the dependencies into the same parent directory, for example:
-
-```
-logos-storage-module
-logos-storage-ui
-logos-cpp-sdk
-logos-liblogos
-```
-
-While this setup is less common, it is also supported and works correctly in Qt Creator
-
 ## Output Structure
 
 When built with Nix:
@@ -208,7 +183,7 @@ Qt Creator provides a great development experience for Qt. To ensure proper inte
 
 #### Installation
 
-##### Install from the repository (recommended)
+##### Install from the repository
 
 If your package manager provides `qtcreator`, this is the easiest way to start. You will need to install some dependencies with it.
 Note that you should install and run it from a Toolbox, otherwise you may face `glx` errors:
@@ -216,12 +191,6 @@ Note that you should install and run it from a Toolbox, otherwise you may face `
 ```bash
 sudo dnf install cmake ninja clangd qtcreator gcc
 ```
-
-##### Install from the installer
-
-An alternative is to use the [Qt installer](https://www.qt.io/development/download-qt-installer).
-
-Ensure that you already have the build tools installed (see the previous section), or let the installer install them for you (default behavior).
 
 ### Configuration
 

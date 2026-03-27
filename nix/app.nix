@@ -214,9 +214,11 @@ pkgs.stdenv.mkDerivation rec {
       cp -L "${logosCapabilityModule}/lib/capability_module_plugin.$OS_EXT" "$out/modules/logos-capability/"
       cat > "$out/modules/logos-capability/manifest.json" <<MANIFEST
 {
-  "main": {
-    "$PLATFORM_VARIANT": "capability_module_plugin.$OS_EXT"
-  }
+  "name": "capability_module",
+  "version": "1.0.0",
+  "type": "core",
+  "main": "capability_module_plugin.$OS_EXT",
+  "description": "Logos capability module"
 }
 MANIFEST
     fi
@@ -230,9 +232,11 @@ MANIFEST
       fi
       cat > "$out/modules/logos-storage/manifest.json" <<MANIFEST
 {
-  "main": {
-    "$PLATFORM_VARIANT": "storage_module_plugin.$OS_EXT"
-  }
+  "name": "storage_module",
+  "version": "1.0.0",
+  "type": "core",
+  "main": "storage_module_plugin.$OS_EXT",
+  "description": "Logos storage module"
 }
 MANIFEST
     fi

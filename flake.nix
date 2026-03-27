@@ -6,7 +6,7 @@
     nixpkgs.follows = "logos-liblogos/nixpkgs";
     logos-cpp-sdk.url = "github:logos-co/logos-cpp-sdk";
     logos-liblogos.url = "github:logos-co/logos-liblogos";
-    logos-storage-module.url = "github:logos-co/logos-storage-module";
+    logos-storage-module.url = "github:logos-co/logos-storage-module?ref=chore/update-dependencies-2";
     #logos-storage-module.url = "path:/home/arnaud/Work/logos/logos-storage-module";
     logos-capability-module.url = "github:logos-co/logos-capability-module";
     logos-design-system.url = "github:logos-co/logos-design-system";
@@ -28,16 +28,16 @@
       packages = forAllSystems ({ pkgs, logosSdk, logosLiblogos, logosStorageModule, logosCapabilityModule, logosDesignSystem }:
         let
           # Common configuration
-          common = import ./nix/default.nix { 
+          common = import ./nix/default.nix {
             inherit pkgs logosSdk logosLiblogos logosStorageModule logosDesignSystem;
           };
           src = ./.;
-          
+
           # Library package
-          lib = import ./nix/lib.nix { 
-            inherit pkgs common src logosStorageModule logosSdk; 
+          lib = import ./nix/lib.nix {
+            inherit pkgs common src logosStorageModule logosSdk;
           };
-          
+
           # App package
           app = import ./nix/app.nix {
             inherit pkgs common src logosLiblogos logosSdk logosStorageModule logosCapabilityModule logosDesignSystem;
@@ -49,7 +49,7 @@
           # Individual outputs
           lib = lib;
           app = app;
-          
+
           # Default package
           default = app;
         }
@@ -69,7 +69,7 @@
             pkgs.krb5
             pkgs.abseil-cpp
           ];
-          
+
           shellHook = ''
             export LOGOS_CPP_SDK_ROOT="${logosSdk}"
             export LOGOS_LIBLOGOS_ROOT="${logosLiblogos}"
@@ -79,6 +79,7 @@
             echo "LOGOS_CPP_SDK_ROOT: $LOGOS_CPP_SDK_ROOT"
             echo "LOGOS_LIBLOGOS_ROOT: $LOGOS_LIBLOGOS_ROOT"
             echo "LOGOS_STORAGE_ROOT: $LOGOS_STORAGE_ROOT"
+            echo "LOGOS_DESIGN_SYSTEM_ROOT: $LOGOS_DESIGN_SYSTEM_ROOT"
           '';
         };
       });
