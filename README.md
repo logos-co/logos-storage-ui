@@ -208,6 +208,14 @@ That’s it. The configuration defined in `CMakeLists.txt` should allow the proj
 
 If you encounter any configuration issues, close Qt Creator, remove the `CMakeLists.txt.user` file, and restart Qt Creator to reconfigure the project.
 
+### QML
+
+The QML preview in Qt Creator should work. If not, you can install `qt6-qtdeclarative-devel` and run the following command in a Nix develop shell:
+
+```bash
+qml-qt6 -I $LOGOS_DESIGN_SYSTEM_ROOT/lib src/qml/Main.qml
+```
+
 ### Tips
 
 Here are some tips that may help during development:
