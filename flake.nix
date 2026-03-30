@@ -65,12 +65,15 @@
           buildInputs = [
             pkgs.qt6.qtbase
             pkgs.qt6.qtremoteobjects
+            pkgs.qt6.qtdeclarative
             pkgs.zstd
             pkgs.krb5
             pkgs.abseil-cpp
           ];
 
           shellHook = ''
+            ${pkgs.lib.optionalString pkgs.stdenv.isLinux "export LD_LIBRARY_PATH=${pkgs.mesa}/lib:$LD_LIBRARY_PATH"}
+            export QML_IMPORT_PATH="${pkgs.qt6.qtdeclarative}/lib/qt-6/qml"
             export LOGOS_CPP_SDK_ROOT="${logosSdk}"
             export LOGOS_LIBLOGOS_ROOT="${logosLiblogos}"
             export LOGOS_STORAGE_ROOT="${logosStorageModule}"

@@ -210,10 +210,10 @@ If you encounter any configuration issues, close Qt Creator, remove the `CMakeLi
 
 ### QML
 
-The QML preview in Qt Creator should work. If not, you can install `qt6-qtdeclarative-devel` and run the following command in a Nix develop shell:
+The QML preview in Qt Creator should work. If not, run the following command in a Nix develop shell:
 
 ```bash
-qml-qt6 -I $LOGOS_DESIGN_SYSTEM_ROOT/lib src/qml/Main.qml
+qml -I $LOGOS_DESIGN_SYSTEM_ROOT/lib src/qml/Main.qml
 ```
 
 ### Tips
