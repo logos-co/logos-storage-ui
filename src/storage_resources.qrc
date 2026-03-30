@@ -48,6 +48,7 @@
         <file alias="BottomTitle.qml">qml/BottomTitle.qml</file>
         <file alias="LogosTextField.qml">qml/LogosTextField.qml</file>
         <file alias="DownloadWidget.qml">qml/DownloadWidget.qml</file>
+        <file alias="DownloadFolder.qml">qml/DownloadFolder.qml</file>
         <file alias="DiskActivityGraph.qml">qml/DiskActivityGraph.qml</file>
         <file>icons/storage.png</file>
         <file alias="assets/bg.png">qml/assets/bg.png</file>

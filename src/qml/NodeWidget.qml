@@ -13,6 +13,9 @@ Card {
     property var backend: MockBackend
     property bool nodeIsUp: false
     property bool blinkOn: false
+    property string downloadFolderPath: ""
+
+    signal folderPathChanged(string path)
 
     readonly property int stopped: 0
     readonly property int starting: 1
@@ -173,6 +176,8 @@ Card {
         SettingsPopup {
             id: settingsPopup
             backend: root.backend
+            downloadFolderPath: root.downloadFolderPath
+            onFolderPathChanged: function(path) { root.folderPathChanged(path) }
         }
 
         // Rectangle {
