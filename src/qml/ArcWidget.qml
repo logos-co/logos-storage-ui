@@ -27,13 +27,20 @@ Rectangle {
     property real  fraction:   0.0
     property color fillColor:  Theme.palette.text
     property color trackColor: Theme.palette.textMuted
+    property real  arcScale:   1.0
+    property real  arcOffsetY: 0
+
+    clip: true
 
     // ── Content slot ──────────────────────────────────────────────────────────
     // Children declared inside ArcWidget { … } land here, on top of the arc.
     default property alias content: overlay.data
 
     ArcGauge {
-        anchors.fill: parent
+        width:  parent.width  * root.arcScale
+        height: parent.height * root.arcScale
+        anchors.horizontalCenter: parent.horizontalCenter
+        y: (parent.height - height) / 2 + root.arcOffsetY
         fraction:   root.fraction
         trackColor: root.trackColor
         fillColor:  root.fillColor

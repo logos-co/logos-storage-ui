@@ -7,74 +7,56 @@ set(CMAKE_AUTOMOC ON)
 
 ########### DEPENDENCIES ###########
 
-# This section locates the required dependencies in 3 different ways:
-# 1- With NIX, the root folders (LOGOS_LIBLOGOS_ROOT, LOGOS_CPP_SDK_ROO)
-#    are defined and point to the correct locations in
-#    the Nix store.
-# 2- If the root folders are fetched from source (basically using git) in the
-#    parent folder, this is detected and used.
-# 3- If none of the above apply, the vendor folders inside this project are used,
-#    meaning the dependencies need to be fetched using git submodules.
-
-# Locate logos-cpp-sdk
-if(NOT DEFINED LOGOS_CPP_SDK_ROOT)
-    set(_parent_cpp_sdk "${CMAKE_SOURCE_DIR}/../../../logos-cpp-sdk")
-    set(_use_vendor ${LOGOS_STORAGE_UI_USE_VENDOR})
-
-    if(NOT _use_vendor)
-        if(NOT EXISTS "${_parent_cpp_sdk}/cpp/logos_api.h")
-            set(_use_vendor ON)
-        endif()
-    endif()
-
-    if(_use_vendor)
-        set(LOGOS_CPP_SDK_ROOT "${CMAKE_SOURCE_DIR}/../../vendor/logos-cpp-sdk")
-    else()
-        set(LOGOS_CPP_SDK_ROOT "${_parent_cpp_sdk}")
-    endif()
+if(NOT DEFINED LOGOS_LIBLOGOS_ROOT AND DEFINED ENV{LOGOS_LIBLOGOS_ROOT})
+    set(LOGOS_LIBLOGOS_ROOT "$ENV{LOGOS_LIBLOGOS_ROOT}")
 endif()
 
-if(NOT DEFINED LOGOS_DESIGN_SYSTEM_ROOT)
-    set(_parent_logos_design_system "${CMAKE_SOURCE_DIR}/../../../logos-design-system")
-    set(_use_vendor ${LOGOS_STORAGE_UI_USE_VENDOR})
-
-    if(NOT _use_vendor)
-        if(NOT EXISTS "${_parent_logos_design_system}/CMakeLists.txt")
-            set(_use_vendor ON)
-        endif()
-    endif()
-
-    if(_use_vendor)
-        set(LOGOS_DESIGN_SYSTEM_ROOT "${CMAKE_SOURCE_DIR}/../../vendor/logos-design-system")
-    else()
-        set(LOGOS_DESIGN_SYSTEM_ROOT "${_parent_logos_design_system}")
-    endif()
+if(NOT DEFINED LOGOS_CPP_SDK_ROOT AND DEFINED ENV{LOGOS_CPP_SDK_ROOT})
+    set(LOGOS_CPP_SDK_ROOT "$ENV{LOGOS_CPP_SDK_ROOT}")
 endif()
 
-# Locate the logos_api header file.
-# If the file is found, the sdk is considered found.
-set(_cpp_sdk_found FALSE)
-if(EXISTS "${LOGOS_CPP_SDK_ROOT}/cpp/logos_api.h")
-    set(_cpp_sdk_found TRUE)
-    set(_cpp_sdk_is_source TRUE)
-elseif(EXISTS "${LOGOS_CPP_SDK_ROOT}/include/cpp/logos_api.h")
-    set(_cpp_sdk_found TRUE)
-    set(_cpp_sdk_is_source FALSE)
+if(NOT DEFINED LOGOS_STORAGE_ROOT AND DEFINED ENV{LOGOS_STORAGE_ROOT})
+    set(LOGOS_STORAGE_ROOT "$ENV{LOGOS_STORAGE_ROOT}")
 endif()
 
-# Fails if the SDK is not found.
-if(NOT _cpp_sdk_found)
-    message(FATAL_ERROR
-        "logos-cpp-sdk not found at ${LOGOS_CPP_SDK_ROOT}. "
-        "Set LOGOS_CPP_SDK_ROOT or run git submodule update --init --recursive."
-    )
+if(NOT EXISTS "${LOGOS_LIBLOGOS_ROOT}/include/core/interface.h")
+    message(FATAL_ERROR "logos-liblogos not found at ${LOGOS_LIBLOGOS_ROOT}. "
+                        "Set LOGOS_LIBLOGOS_ROOT.")
+endif()
+
+if(NOT DEFINED LOGOS_DESIGN_SYSTEM_ROOT AND DEFINED ENV{LOGOS_DESIGN_SYSTEM_ROOT})
+    set(LOGOS_DESIGN_SYSTEM_ROOT "$ENV{LOGOS_DESIGN_SYSTEM_ROOT}")
+endif()
+
+if(NOT EXISTS "${LOGOS_CPP_SDK_ROOT}/include/cpp/logos_api.h")
+    message(FATAL_ERROR "logos-cpp-sdk not found at ${LOGOS_CPP_SDK_ROOT}. "
+                        "Set LOGOS_CPP_SDK_ROOT.")
 endif()
 
 ########### DEPENDENCIES END ###########
 
 ########### QML DEFINITION ###########
 
-set(PLUGIN_UI_BUILD_DIR "../../build/generated_code")
+set(METADATA_JSON "${CMAKE_CURRENT_SOURCE_DIR}/../../metadata.json")
+set(PLUGIN_UI_BUILD_DIR "${CMAKE_BINARY_DIR}/generated_code")
+
+if(NOT EXISTS "${PLUGIN_UI_BUILD_DIR}/logos_sdk.cpp")
+    find_program(LOGOS_CPP_GENERATOR logos-cpp-generator REQUIRED)
+    file(MAKE_DIRECTORY "${PLUGIN_UI_BUILD_DIR}")
+    execute_process(
+        COMMAND env -u LD_LIBRARY_PATH "${LOGOS_CPP_GENERATOR}" --metadata "${METADATA_JSON}" --general-only --output-dir "${PLUGIN_UI_BUILD_DIR}"
+        RESULT_VARIABLE _gen_result
+    )
+    if(NOT _gen_result EQUAL 0)
+        message(FATAL_ERROR "logos-cpp-generator failed (exit code ${_gen_result})")
+    endif()
+endif()
+
+# storage_module_api.cpp comes from the storage module's installed include dir
+file(COPY "${LOGOS_STORAGE_ROOT}/include/"
+    DESTINATION "${PLUGIN_UI_BUILD_DIR}"
+    FILES_MATCHING PATTERN "storage_module_api.*"
+)
 
 list(APPEND SOURCES
     ${PLUGIN_UI_BUILD_DIR}/logos_sdk.cpp
@@ -84,20 +66,14 @@ list(APPEND SOURCES
 add_library(storage_generated STATIC
     ${PLUGIN_UI_BUILD_DIR}/logos_sdk.cpp
     ${PLUGIN_UI_BUILD_DIR}/storage_module_api.cpp
-    ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api.cpp
-    ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api_client.cpp
-    ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api_provider.cpp
-    ${LOGOS_CPP_SDK_ROOT}/cpp/module_proxy.cpp
-    ${LOGOS_CPP_SDK_ROOT}/cpp/token_manager.cpp
-    ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api_consumer.cpp
-    ${LOGOS_CPP_SDK_ROOT}/cpp/logos_api_provider.cpp
-    ${LOGOS_CPP_SDK_ROOT}/cpp/logos_types.cpp
 )
 
 # Define the dependencies needed for storage_generated
+find_library(LOGOS_SDK_LIB logos_sdk PATHS ${LOGOS_CPP_SDK_ROOT}/lib NO_DEFAULT_PATH REQUIRED)
 target_link_libraries(storage_generated PUBLIC
     Qt6::Core
     Qt6::RemoteObjects
+    ${LOGOS_SDK_LIB}
 )
 
 # Discover the required dependencies
@@ -200,7 +176,6 @@ qt_add_qml_module(appqml
 )
 
 # Set up QML module directory for runtime
-set(DESIGN_SYSTEM_QML ${LOGOS_DESIGN_SYSTEM_ROOT}/src/qml)
 set(QML_THEME_DIR ${CMAKE_CURRENT_BINARY_DIR}/qml/Logos/Theme)
 set(QML_CONTROLS_DIR ${CMAKE_CURRENT_BINARY_DIR}/qml/Logos/Controls)
 
@@ -208,9 +183,9 @@ set(QML_CONTROLS_DIR ${CMAKE_CURRENT_BINARY_DIR}/qml/Logos/Controls)
 # Pure QML module - no library, just QML files + qmldir
 add_custom_command(TARGET storage_generated POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory ${QML_THEME_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${DESIGN_SYSTEM_QML}/theme/ ${QML_THEME_DIR}/
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${LOGOS_DESIGN_SYSTEM_ROOT}/lib/Logos/Theme/ ${QML_THEME_DIR}/
     COMMAND ${CMAKE_COMMAND} -E make_directory ${QML_CONTROLS_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${DESIGN_SYSTEM_QML}/controls/ ${QML_CONTROLS_DIR}/
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${LOGOS_DESIGN_SYSTEM_ROOT}/lib/Logos/Controls/ ${QML_CONTROLS_DIR}/
     COMMENT "Setting up Logos.Theme and Logos.Controls QML modules for the app"
 )
 
@@ -224,27 +199,20 @@ target_include_directories(storage_generated PUBLIC
 )
 
 # Include directories
-if(_cpp_sdk_is_source)
-    target_include_directories(storage_generated PUBLIC
-        ${LOGOS_CPP_SDK_ROOT}/cpp
-        ${LOGOS_CPP_SDK_ROOT}/cpp/generated
-    )
-else()
-    target_include_directories(storage_generated PUBLIC
-        ${LOGOS_CPP_SDK_ROOT}/include
-        ${LOGOS_CPP_SDK_ROOT}/include/cpp
-        ${LOGOS_CPP_SDK_ROOT}/include/core
-        ${PLUGIN_UI_BUILD_DIR}/include
-    )
-endif()
+target_include_directories(storage_generated PUBLIC
+    ${LOGOS_CPP_SDK_ROOT}/include
+    ${LOGOS_CPP_SDK_ROOT}/include/cpp
+    ${LOGOS_CPP_SDK_ROOT}/include/core
+    ${PLUGIN_UI_BUILD_DIR}/include
+)
 
 # Import the application headers.
 target_include_directories(appqml PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/..
-    ${PLUGINS_OUTPUT_DIR}
 )
 
 ########### HEADERS END ###########
+
 
 message(STATUS "Qt Quick app configured successfully")
