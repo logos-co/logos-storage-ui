@@ -6,7 +6,7 @@
     nixpkgs.follows = "logos-liblogos/nixpkgs";
     logos-cpp-sdk.url = "github:logos-co/logos-cpp-sdk";
     logos-liblogos.url = "github:logos-co/logos-liblogos";
-    logos-storage-module.url = "github:logos-co/logos-storage-module?ref=move_module_builder";
+    logos-storage-module.url = "github:logos-co/logos-storage-module";
     #logos-storage-module.url = "path:/home/arnaud/Work/logos/logos-storage-module";
     logos-capability-module.url = "github:logos-co/logos-capability-module";
     logos-design-system.url = "github:logos-co/logos-design-system";
