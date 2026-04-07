@@ -28,16 +28,16 @@
       packages = forAllSystems ({ pkgs, logosSdk, logosLiblogos, logosStorageModule, logosCapabilityModule, logosDesignSystem }:
         let
           # Common configuration
-          common = import ./nix/default.nix { 
+          common = import ./nix/default.nix {
             inherit pkgs logosSdk logosLiblogos logosStorageModule logosDesignSystem;
           };
           src = ./.;
-          
+
           # Library package
-          lib = import ./nix/lib.nix { 
-            inherit pkgs common src logosStorageModule logosSdk; 
+          lib = import ./nix/lib.nix {
+            inherit pkgs common src logosStorageModule logosSdk;
           };
-          
+
           # App package
           app = import ./nix/app.nix {
             inherit pkgs common src logosLiblogos logosSdk logosStorageModule logosCapabilityModule logosDesignSystem;
@@ -49,7 +49,7 @@
           # Individual outputs
           lib = lib;
           app = app;
-          
+
           # Default package
           default = app;
         }
@@ -65,12 +65,15 @@
           buildInputs = [
             pkgs.qt6.qtbase
             pkgs.qt6.qtremoteobjects
+            pkgs.qt6.qtdeclarative
             pkgs.zstd
             pkgs.krb5
             pkgs.abseil-cpp
           ];
-          
+
           shellHook = ''
+            ${pkgs.lib.optionalString pkgs.stdenv.isLinux "export LD_LIBRARY_PATH=${pkgs.mesa}/lib:$LD_LIBRARY_PATH"}
+            export QML_IMPORT_PATH="${pkgs.qt6.qtdeclarative}/lib/qt-6/qml"
             export LOGOS_CPP_SDK_ROOT="${logosSdk}"
             export LOGOS_LIBLOGOS_ROOT="${logosLiblogos}"
             export LOGOS_STORAGE_ROOT="${logosStorageModule}"
@@ -79,6 +82,7 @@
             echo "LOGOS_CPP_SDK_ROOT: $LOGOS_CPP_SDK_ROOT"
             echo "LOGOS_LIBLOGOS_ROOT: $LOGOS_LIBLOGOS_ROOT"
             echo "LOGOS_STORAGE_ROOT: $LOGOS_STORAGE_ROOT"
+            echo "LOGOS_DESIGN_SYSTEM_ROOT: $LOGOS_DESIGN_SYSTEM_ROOT"
           '';
         };
       });

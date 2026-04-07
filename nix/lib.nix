@@ -17,17 +17,6 @@ pkgs.stdenv.mkDerivation {
     # Create generated_code directory for generated files
     mkdir -p ./generated_code
     
-    # Copy include files from logos-storage-module result
-    echo "Copying include files from logos-storage-module..."
-    if [ -d "${logosStorageModule}/include" ]; then
-      echo "Found include directory in logos-storage-module"
-      cp -r "${logosStorageModule}/include"/* ./generated_code/
-      echo "Copied include files:"
-      ls -la ./generated_code/
-    else
-      echo "Warning: No include directory found in logos-storage-module"
-    fi
-    
     # Run logos-cpp-generator with metadata.json and --general-only flag
     echo "Running logos-cpp-generator..."
     logos-cpp-generator --metadata ${src}/metadata.json --general-only --output-dir ./generated_code
