@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
 import QtQuick.Layouts
-import QtCore
 import Logos.Theme
 import Logos.Controls
 import "Utils.js" as Utils
@@ -15,6 +14,8 @@ Card {
     property bool running: false
     property var manifests: []
     property bool panelOpen: false
+    property bool isDownloading: false
+    property string downloadFolderPath: ""
 
     // property var manifests: [{
     //         "cid": "1234",
@@ -50,8 +51,16 @@ Card {
         Connections {
             target: root.backend
 
-            onManifestsUpdated: function (manifests) {
+            function onManifestsUpdated(manifests) {
                 root.manifests = manifests
+            }
+
+            function onDownloadStarted(cid, filename, total) {
+                root.isDownloading = true
+            }
+
+            function onDownloadCompleted(cid) {
+                root.isDownloading = false
             }
         }
 
@@ -283,9 +292,9 @@ Card {
                                         radius: Theme.spacing.radiusXlarge * 2
                                         color: Theme.palette.backgroundButton
                                         border.color: dlHover.hovered
-                                                      && root.running ? Theme.palette.primary : Theme.palette.borderInteractive
+                                                      && root.running && !root.isDownloading ? Theme.palette.primary : Theme.palette.borderInteractive
                                         border.width: 1
-                                        opacity: root.running ? 1.0 : 0.35
+                                        opacity: root.running && !root.isDownloading ? 1.0 : 0.35
 
                                         Behavior on opacity {
                                             NumberAnimation {
@@ -307,17 +316,16 @@ Card {
 
                                         MouseArea {
                                             anchors.fill: parent
-                                            enabled: root.running
+                                            enabled: root.running && !root.isDownloading
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
-                                                saveDialog.pendingManifest = modelData
-                                                saveDialog.currentFile
-                                                        = StandardPaths.writableLocation(
-                                                            StandardPaths.HomeLocation) + "/"
-                                                        + (modelData.filename
-                                                           || modelData.cid
-                                                           || "download")
-                                                saveDialog.open()
+                                                const dest = root.downloadFolderPath.replace(/\/$/, "") + "/" + modelData.filename
+                                                root.backend.downloadFile(
+                                                            modelData.cid,
+                                                            dest,
+                                                            parseInt(
+                                                                modelData.datasetSize)
+                                                            || 0)
                                             }
                                         }
                                     }
@@ -403,23 +411,6 @@ Card {
                 running: root.running
                 isOpen: panelOpen
             }
-        }
-
-        FileDialog {
-            id: saveDialog
-
-            property var pendingManifest: null
-
-            fileMode: FileDialog.SaveFile
-            onAccepted: {
-                if (pendingManifest) {
-                    root.backend.downloadFile(
-                                pendingManifest.cid, selectedFile,
-                                parseInt(pendingManifest.datasetSize) || 0)
-                    pendingManifest = null
-                }
-            }
-            onRejected: pendingManifest = null
         }
     }
 }
