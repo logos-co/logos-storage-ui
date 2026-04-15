@@ -1,88 +1,81 @@
 # logos-storage-ui
 
-## How to Build
+A QML + C++ backend UI module for the [Logos](https://logos.co) platform that provides a decentralized storage interface built on top of [`logos-storage-module`](https://github.com/logos-co/logos-storage-module).
 
-### Using Nix
+Built with [`logos-module-builder`](https://github.com/logos-co/logos-module-builder) using the `mkLogosQmlModule` pattern (QML frontend + C++ backend with Qt Remote Objects).
 
-#### Build the app
+## Features
 
-```bash
-# Build the app
-nix build 
+- Onboarding wizard (UPnP or manual port forwarding)
+- Upload and download files via the Logos network
+- Monitor storage node status, peers, and space usage
+- Download manifests and manage stored content
+- Debug panel with JSON config editor and logs
+- Configuration persistence across restarts
 
-# Or explicitly
-nix build '.#default'
-```
+## How to Run
 
-The result will include:
-- `/lib/storage_ui.dylib` (or `.so` on Linux) - The Storage UI plugin
-
-#### Build Individual Components
+### Standalone (recommended for development)
 
 ```bash
-# Build only the library (plugin)
-nix build '.#lib'
+# Run directly
+nix run
 
-# Build the standalone Qt application
-nix build '.#app'
+# With local workspace overrides
+nix run --override-input storage_module path:../logos-storage-module \
+        --override-input storage_module/logos-module-builder path:../logos-module-builder
 ```
 
-Troubleshooting:
+The standalone app starts Logos Core, loads `capability_module` and `storage_module`, then launches the QML UI via an isolated `ui-host` process.
 
-If you encounter the following error during the build process:
+### In Basecamp
 
-```
-error: Failed to fetch git repository https://boringssl.googlesource.com/boringssl : error: RPC failed; HTTP 500 curl 22 The requested URL returned error: 500
-fatal: unable to write request to remote: Broken pipe
-```
-
-This is typically due to Git's HTTP request size limits being too low for large repositories. To resolve this, increase the limits by running the following commands:
-
-```
-git config --global http.postBuffer 524288000
-git config --global http.maxRequestBuffer 100M
-```
-
-After setting these values, retry to build.
-
-#### Development Shell
+Build the `.lgx` package and install it:
 
 ```bash
-# Enter development shell with all dependencies
-nix develop
+# Build LGX
+nix build .#lgx
+
+# Install into Basecamp's plugin directory
+lgpm --ui-plugins-dir ~/Library/Application\ Support/Logos/LogosBasecampDev/plugins \
+     install --file result/*.lgx
 ```
 
-**Note:** In zsh, you need to quote the target (e.g., `'.#default'`) to prevent glob expansion.
-
-If you don't have flakes enabled globally, add experimental flags:
+Or from the workspace:
 
 ```bash
-nix build --extra-experimental-features 'nix-command flakes'
+ws bundle logos-storage-ui --auto-local
 ```
 
-To enable globally so you don't need these flag for each command, add the following to `~/.config/nix/nix.conf` (create if it doesn't exist):
-```ini
-experimental-features = nix-command flakes
-```
-
-The compiled artifacts can be found at `result/`
-
-#### SELinux
-
-If you are using Linux with SELinux enabled, you will not be able to install Nix without disabling it. A common workaround is to install Nix inside a Toolbox container. In that case, if you are using Qt Creator, you may also need to configure the project using submodules.
-
-#### Running the Standalone App
-
-After building the app with `nix build`, you can run it:
+### Build Targets
 
 ```bash
-# Run the standalone Qt application
-./result/bin/logos-storage-ui-app
+nix build            # default — combined plugin + QML output
+nix build .#lgx      # .lgx package for distribution
+nix build .#install  # lgpm-installed output (modules/ + plugins/)
+nix run              # standalone app with storage_module
+nix develop          # enter development shell
+```
+
+## Module Structure
+
+```
+logos-storage-ui/
+├── flake.nix                  # mkLogosQmlModule
+├── metadata.json              # Module config (ui_qml type)
+├── CMakeLists.txt             # logos_module() macro
+└── src/
+    ├── StorageBackend.rep     # RemoteObject interface
+    ├── StorageBackend.h/cpp   # Business logic (extends StorageBackendSimpleSource)
+    ├── StorageUIPlugin.h/cpp  # Thin plugin entry point
+    ├── StorageInterface.h     # Plugin interface marker
+    └── qml/
+        └── Main.qml           # QML frontend (+ sub-views)
 ```
 
 ## Configuration
 
-After onboarding, settings are saved to a file whose location depends on the OS:
+After onboarding, settings are saved to a platform-specific location:
 
 | OS      | Path                                             |
 |---------|--------------------------------------------------|
@@ -90,155 +83,41 @@ After onboarding, settings are saved to a file whose location depends on the OS:
 | macOS   | `~/Library/Preferences/Logos.LogosStorage.plist` |
 | Windows | `HKCU\Software\Logos\LogosStorage` (Registry)    |
 
-The settings are saved to the preferences file to preserve the onboarding defaults, but the active configuration is stored in `${HOME}/.logos_storage/config.json`. You can tweak the values there directly. Note that running the onboarding again will override any onboarding-related values.
+The active configuration is stored in `${HOME}/.logos_storage/config.json`. You can edit values there directly. Running onboarding again will override onboarding-related values.
 
-To restart the onboarding process, simply delete the prefences file and relaunch the application.
-
-The application also provides a JSON editor in the debug panel for runtime configuration tweaks. To apply changes, restart the Storage Module.
+The debug panel also provides a JSON editor for runtime configuration tweaks. Restart the Storage Module to apply changes.
 
 ## Troubleshooting
 
-Logos Storage requires your node to be reachable from the internet and, to that end, you must open two ports on your router:
+Logos Storage requires your node to be reachable from the internet. You must open two ports on your router:
 
-1. **Discovery.** UDP, defaults to `8090`. Used for discovery and DHT operations.
-2. **libp2p listen port.** TCP, defaults to `8500`- Used for data transfer and peer connections.
-
-Problems in not being able to share files are commonly related to either one (or both) of those ports not being open or available.
+1. **Discovery** — UDP, defaults to `8090`. Used for discovery and DHT operations.
+2. **libp2p listen port** — TCP, defaults to `8500`. Used for data transfer and peer connections.
 
 ### Node has no peers
 
-**Symptom:**
-The node starts successfully but never connects to any peer.
-
-**Cause:**
-This is typically due to the discovery being unavailable - for instance, if another process is already occupying its port.
-
-**Fix:**
-Ensure that no process is using port `8090`, or change the default port value in the advanced configuration.
+The node starts but never connects. Typically caused by the discovery port being occupied by another process. Ensure port `8090` is free, or change it in the advanced configuration.
 
 ### UPnP not working
 
-**Symptom:**
-You selected UPnP during setup but the node remains unreachable.
-
-**Cause:**
-UPnP relies on your router supporting and enabling the UPnP protocol. Many routers have it disabled by default for security reasons.
-
-**Fix:**
-Make sure UPnP is enabled on your router or switch to port forwarding config.
+UPnP relies on router support. Many routers disable it by default. Enable UPnP on your router or switch to port forwarding.
 
 ### Manual port forwarding
 
-**Symptom:**
-You configure the port forwarding with both UDP and TCP ports but the node remains unreachable.
+Ensure both UDP and TCP ports are forwarded on your router.
 
-**Cause:**
-The ports are not open on your router.
+## Dependencies
 
-**Fix:**
-Make port forwarding is enabled for these ports on your router.
+| Dependency | Purpose |
+|---|---|
+| Qt6 Core, RemoteObjects, Declarative | UI framework + IPC |
+| [`logos-module-builder`](https://github.com/logos-co/logos-module-builder) | Build system (mkLogosQmlModule) |
+| [`logos-storage-module`](https://github.com/logos-co/logos-storage-module) | Storage backend module |
 
-#### Nix Organization
+## Related Repositories
 
-The nix build system is organized into modular files in the `/nix` directory:
-- `nix/default.nix` - Common configuration (dependencies, flags, metadata)
-- `nix/lib.nix` - UI plugin compilation
-- `nix/app.nix` - Standalone Qt application compilation
-
-## Output Structure
-
-When built with Nix:
-
-**App build (`nix build`):**
-```
-result/
-├── bin/
-│   ├── logos-storage-ui-app  # Standalone Qt application
-│   ├── logos_host           # Logos host executable (for plugins)
-│   └── logoscore            # Logos core executable
-├── lib/
-│   ├── liblogos_core.dylib  # Logos core library
-│   └── liblogos_sdk.dylib   # Logos SDK library
-├── modules/
-│   ├── capability_module_plugin.dylib
-│   └── storage_module_plugin.dylib
-└── storage_ui.dylib            # Qt plugin (loaded by app)
-```
-
-## Development
-
-### Architecture
-
-The project is divided into 3 apps:
-
-1- **StorageUIPlugin**: It uses the root `CMakeLists.txt` and the sources in the `plugin` folder. This is the main UI. It is a plugin because it can be reused in the Logos main app or in a standalone application.
-
-2- **qml**: It uses `plugin/qml/CMakeLists.txt`. It is just a dev application used to run the QML Preview easily. Note that it relies on the `StorageUIPlugin` build folder, so **YOU MUST** build `StorageUIPlugin` before using the QML preview.
-
-3- **LogosStorageUIApp**: It uses `app/CMakeLists.txt`. It is a standalone demo app to showcase the `StorageUIPlugin`.
-
-### Qt Creator (for development)
-
-Qt Creator provides a great development experience for Qt. To ensure proper integration, it is recommended to either configure the project using submodules or clone the dependencies independently into the same parent directory. Nix *may* work with Qt Creator, but only after an initial build has been run.
-
-#### Installation
-
-##### Install from the repository
-
-If your package manager provides `qtcreator`, this is the easiest way to start. You will need to install some dependencies with it.
-Note that you should install and run it from a Toolbox, otherwise you may face `glx` errors:
-
-```bash
-sudo dnf install cmake ninja clangd qtcreator gcc
-```
-
-### Configuration
-
-You need to import the 3 apps in Qt Creator.
-
-To import the project into Qt Creator, click on `File -> Open File or Project` and select the `CMakeLists.txt` file. A configuration popup will appear. Make sure you have a **Debug** build configuration pointing to the `build` directory and then click on `Configure project`.
-
-Enable CMake debug logging, add `--log-level=DEBUG` in `Projects` -> `Imported Kits` -> `Build` -> `Additional CMake options`.
-
-Ensure that `clangd` is enabled for your project. Go to `Projects` on the left, then click on `Manage Kits` at the top. Select the `C++` tab and open the last tab, `Clangd`. Check `Use clangd` and, if needed, configure it to use the `clangd` installed on your system.
-
-Then go to `Projects `-> `qml` -> `Build` -> `Build Environment`. Click Add to create a new variable, set the name to `QML_IMPORT_TYPE`, and set the value to the absolute path of your QML build directory (for example, /path/to/your/project/src/qml/build/qml).
-
-That’s it. The configuration defined in `CMakeLists.txt` should allow the project to build correctly.
-
-If you encounter any configuration issues, close Qt Creator, remove the `CMakeLists.txt.user` file, and restart Qt Creator to reconfigure the project.
-
-### QML
-
-The QML preview in Qt Creator should work. If not, run the following command in a Nix develop shell:
-
-```bash
-qml -I $LOGOS_DESIGN_SYSTEM_ROOT/lib src/qml/Main.qml
-```
-
-### Tips
-
-Here are some tips that may help during development:
-
-1. If you use the `Ctrl+B` shortcut to build, make sure the correct project is selected. Right-click on it and choose `Set as Active Project`.
-2. If you encounter build errors, a possible fix is to nuke the build folder and rebuild from scratch.
-3. Do not call storage module functions from within a callback.
-
-## Requirements
-
-### Build Tools
-- CMake (3.16 or later)
-- Ninja build system
-- pkg-config
-
-### Dependencies
-- Qt6 (qtbase)
-- Qt6 Widgets (included in qtbase)
-- Qt6 Remote Objects (qtremoteobjects)
-- logos-liblogos
-- logos-cpp-sdk (for header generation)
-- logos-storage-module
-- logos-capability-module
-- zstd
-- krb5
-- abseil-cpp
+| Repository | Role |
+|---|---|
+| [`logos-storage-module`](https://github.com/logos-co/logos-storage-module) | Storage backend — this UI's required dependency |
+| [`logos-module-builder`](https://github.com/logos-co/logos-module-builder) | Module build system |
+| [`logos-liblogos`](https://github.com/logos-co/logos-liblogos) | Logos Core platform |
