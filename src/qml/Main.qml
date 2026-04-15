@@ -3,8 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtCore
 import Logos.Theme
-
-// qmllint disable unqualified
+import Logos.StorageBackend 1.0
 
 // Application flow overview:
 // On startup, the onboarding screen is shown by default.
@@ -26,10 +25,15 @@ Item {
     Layout.fillWidth: true
     Layout.fillHeight: true
 
-    property var backend: MockBackend
+    QtObject {
+        id: d
+        readonly property var backend: typeof logos !== "undefined" && logos ? logos.module(mod) : null
+        readonly property string mod: "storage_ui"
+    }
 
     Connections {
-        target: root.backend
+        target: d.backend
+        ignoreUnknownSignals: true
 
         // When the onboarding is completed,
         // the user should have a config save in his
@@ -39,7 +43,7 @@ Item {
         // the stackView item immediatly.
         function onReady() {
             if (settings.onboardingCompleted) {
-                root.backend.loadUserConfig()
+                d.backend.loadUserConfig()
                 stackView.replace(storageComponent, StackView.Immediate)
             }
         }
@@ -50,10 +54,10 @@ Item {
         }
 
         function onOnboardingRestarted() {
-            root.backend.onStopCompleted.connect(function () {
+            d.backend.onStopCompleted.connect(function () {
                 stackView.replace(modeSelectorComponent, StackView.Immediate)
             })
-            root.backend.stop()
+            d.backend.stop()
         }
     }
 
@@ -88,7 +92,7 @@ Item {
         id: onboardingComponent
 
         OnBoarding {
-            backend: root.backend
+            backend: d.backend
 
             onBack: stackView.pop()
 
@@ -106,7 +110,7 @@ Item {
         id: advancedSetupComponent
 
         AdvancedSetup {
-            backend: root.backend
+            backend: d.backend
 
             onBack: stackView.pop()
 
@@ -121,7 +125,7 @@ Item {
         id: storageComponent
 
         StorageView {
-            backend: root.backend
+            backend: d.backend
         }
     }
 
@@ -129,7 +133,7 @@ Item {
         id: startNodeComponent
 
         StartNode {
-            backend: root.backend
+            backend: d.backend
 
             onBack: {
                 stackView.pop()
@@ -146,7 +150,7 @@ Item {
         id: portForwardingComponent
 
         PortForwarding {
-            backend: root.backend
+            backend: d.backend
             loading: false
 
             onBack: {
