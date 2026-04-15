@@ -1,27 +1,20 @@
 {
-    "name": "storage_ui",
-    "version": "1.0.0",
-    "description": "Storage interface for the Logos application",
-    "author": "Logos Core Team",
-    "type": "ui",
-    "main": "storage_ui",
-    "icon": ":/icons/storage.png",
-    "dependencies": [
-        "storage_module"
-    ],
-    "category": "storage",
-    "build": {
-        "type": "cmake",
-        "files": [
-            "src/StorageUIPlugin.cpp",
-            "src/StorageUIPlugin.h",
-            "src/StorageBackend.cpp",
-            "src/StorageBackend.h",
-            "src/storage_resources.qrc"
-        ]
+  "name": "storage_ui",
+  "version": "1.0.0",
+  "type": "ui_qml",
+  "category": "storage",
+  "description": "Storage interface for the Logos application",
+  "main": "storage_ui_plugin",
+  "icon": "src/icons/storage.png",
+  "view": "qml/Main.qml",
+  "dependencies": ["storage_module"],
+
+  "nix": {
+    "packages": {
+      "build": [],
+      "runtime": ["qt6.qtdeclarative", "zstd", "krb5", "abseil-cpp"]
     },
-    "capabilities": [
-        "ui_components",
-        "storage"
-    ]
+    "external_libraries": [],
+    "cmake": { "find_packages": [], "extra_sources": [] }
+  }
 }

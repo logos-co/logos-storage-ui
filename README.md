@@ -22,12 +22,18 @@ The result will include:
 #### Build Individual Components
 
 ```bash
-# Build only the library (plugin)
+# Combined plugin + QML view (default package)
+nix build
+
+# Build only the C++ plugin library
 nix build '.#lib'
 
-# Build the standalone Qt application
-nix build '.#app'
+# Optional: packaged outputs (see flake)
+nix build '.#lgx'
+nix build '.#install'
 ```
+
+There is no separate `.#app` package; the standalone runner is exposed as `nix run` / `apps.default` by `mkLogosQmlModule`.
 
 Troubleshooting:
 
@@ -75,17 +81,17 @@ If you are using Linux with SELinux enabled, you will not be able to install Nix
 
 #### Running the Standalone App
 
-After building the app with `nix build`, you can run it:
+After building (`nix build`) or without a prior install step:
 
 ```bash
-# Run the standalone Qt application
-./result/bin/logos-storage-ui-app
+nix run
 ```
 
-## Using The Application
+If you prefer running from `result/` after `nix build`:
 
-The first time the application starts, you will be greeted with an onboarding screen which will help you set up your node and establish
-connectivity. Check below to see which of the setup options best applies to your situation:
+```bash
+./result/bin/logos-storage-ui-app
+```
 
 **Case 1.** You are behind a NAT, but your node supports UPnP or NAT-PMP.
 
@@ -137,7 +143,7 @@ After onboarding, settings are saved to a file whose location depends on the OS:
 
 The settings are saved to the preferences file to preserve the onboarding defaults, but the active configuration is stored in `${HOME}/.logos_storage/config.json`. You can tweak the values there directly. Note that running the onboarding again will override any onboarding-related values.
 
-To restart the onboarding process, simply delete the prefences file and relaunch the application.
+To restart the onboarding process, simply delete the preferences file and relaunch the application.
 
 The debug panel also provides access to the module's configuration JSON for runtime configuration tweaks. See the module's [API reference](https://logos-co.github.io/logos-storage-module/api_reference.html) for a list of configuration options. To apply changes, restart the Storage Module.
 
@@ -146,7 +152,7 @@ The debug panel also provides access to the module's configuration JSON for runt
 Logos Storage requires your node to be reachable from the internet and, to that end, you must open two ports on your router:
 
 1. **Discovery.** UDP, defaults to `8090`. Used for discovery and DHT operations.
-2. **libp2p listen port.** TCP, defaults to `8500`- Used for data transfer and peer connections.
+2. **libp2p listen port.** TCP, defaults to `8500`. Used for data transfer and peer connections.
 
 Problems in not being able to share files are commonly related to either one (or both) of those ports not being open or available.
 
@@ -181,14 +187,36 @@ You configure the port forwarding with both UDP and TCP ports but the node remai
 The ports are not open on your router.
 
 **Fix:**
-Make port forwarding is enabled for these ports on your router.
+Make sure port forwarding is enabled for these ports on your router.
 
 #### Nix Organization
 
-The nix build system is organized into modular files in the `/nix` directory:
-- `nix/default.nix` - Common configuration (dependencies, flags, metadata)
-- `nix/lib.nix` - UI plugin compilation
-- `nix/app.nix` - Standalone Qt application compilation
+The build is driven by `flake.nix` and `metadata.json`, using `mkLogosQmlModule` from `logos-module-builder`. The previous layout with a separate `nix/` directory (`default.nix`, `lib.nix`, `app.nix`) has been replaced by that template.
+
+### Using submodules
+
+CMake is also configured to work with submodules. This is particularly useful for proper integration with Qt Creator. You only need to fetch the submodules using:
+
+```bash
+git submodule update --init --recursive
+```
+
+Everything should work straightforwardly. The submodules are also used as a fallback when the dependency folders are not found on the system. For the `src/qml` CMake project outside Nix, set `LOGOS_LIBLOGOS_ROOT`, `LOGOS_CPP_SDK_ROOT`, and `LOGOS_STORAGE_ROOT` as required by `src/qml/CMakeLists.txt`.
+
+Note: While this setup is convenient for integration with Qt Creator, it is strongly recommended to use Nix for producing reproducible and deterministic builds.
+
+### Using local dependencies
+
+Another way to build the project is to clone the dependencies into the same parent directory, for example:
+
+```
+logos-storage-module
+logos-storage-ui
+logos-cpp-sdk
+logos-liblogos
+```
+
+While this setup is less common, it is also supported and works correctly in Qt Creator
 
 ## Output Structure
 
@@ -210,17 +238,19 @@ result/
 └── storage_ui.dylib            # Qt plugin (loaded by app)
 ```
 
+Exact paths and file names follow the current `mkLogosQmlModule` / standalone harness outputs; inspect `result/` after a successful build.
+
 ## Development
 
 ### Architecture
 
-The project is divided into 3 apps:
+The project is divided into two CMake entry points:
 
-1- **StorageUIPlugin**: It uses the root `CMakeLists.txt` and the sources in the `plugin` folder. This is the main UI. It is a plugin because it can be reused in the Logos main app or in a standalone application.
+1. **StorageUIPlugin**: It uses the root `CMakeLists.txt` and the sources under `src/`. This is the main UI. It is a plugin because it can be reused in the Logos main app or in a standalone application.
 
-2- **qml**: It uses `plugin/qml/CMakeLists.txt`. It is just a dev application used to run the QML Preview easily. Note that it relies on the `StorageUIPlugin` build folder, so **YOU MUST** build `StorageUIPlugin` before using the QML preview.
+2. **qml**: It uses `src/qml/CMakeLists.txt`. It is a dev application used to run the QML preview easily. Note that it relies on the `StorageUIPlugin` build folder, so **YOU MUST** build `StorageUIPlugin` before using the QML preview.
 
-3- **LogosStorageUIApp**: It uses `app/CMakeLists.txt`. It is a standalone demo app to showcase the `StorageUIPlugin`.
+There is no longer a separate third app under `app/` — the standalone demo flow is satisfied by `nix run` together with `mkLogosQmlModule`'s bundled output.
 
 ### Qt Creator (for development)
 
@@ -228,7 +258,7 @@ Qt Creator provides a great development experience for Qt. To ensure proper inte
 
 #### Installation
 
-##### Install from the repository
+##### Install from the repository (recommended)
 
 If your package manager provides `qtcreator`, this is the easiest way to start. You will need to install some dependencies with it.
 Note that you should install and run it from a Toolbox, otherwise you may face `glx` errors:
@@ -237,9 +267,15 @@ Note that you should install and run it from a Toolbox, otherwise you may face `
 sudo dnf install cmake ninja clangd qtcreator gcc
 ```
 
+##### Install from the installer
+
+An alternative is to use the [Qt installer](https://www.qt.io/development/download-qt-installer).
+
+Ensure that you already have the build tools installed (see the previous section), or let the installer install them for you (default behavior).
+
 ### Configuration
 
-You need to import the 3 apps in Qt Creator.
+You need to import the CMake projects for the plugin (`CMakeLists.txt` at the repo root) and for `src/qml` into Qt Creator.
 
 To import the project into Qt Creator, click on `File -> Open File or Project` and select the `CMakeLists.txt` file. A configuration popup will appear. Make sure you have a **Debug** build configuration pointing to the `build` directory and then click on `Configure project`.
 
@@ -249,17 +285,9 @@ Ensure that `clangd` is enabled for your project. Go to `Projects` on the left, 
 
 Then go to `Projects `-> `qml` -> `Build` -> `Build Environment`. Click Add to create a new variable, set the name to `QML_IMPORT_TYPE`, and set the value to the absolute path of your QML build directory (for example, /path/to/your/project/src/qml/build/qml).
 
-That’s it. The configuration defined in `CMakeLists.txt` should allow the project to build correctly.
+That's it. The configuration defined in `CMakeLists.txt` should allow the project to build correctly.
 
 If you encounter any configuration issues, close Qt Creator, remove the `CMakeLists.txt.user` file, and restart Qt Creator to reconfigure the project.
-
-### QML
-
-The QML preview in Qt Creator should work. If not, run the following command in a Nix develop shell:
-
-```bash
-qml -I $LOGOS_DESIGN_SYSTEM_ROOT/lib src/qml/Main.qml
-```
 
 ### Tips
 
