@@ -1,4 +1,5 @@
 import QtQuick
+import Logos.StorageBackend 1.0
 
 QtObject {
     id: root
@@ -7,9 +8,6 @@ QtObject {
     property bool nodeIsUp: false
     property bool blinkOn: true
     readonly property int threeMinutes: 180000
-
-    // Backend status
-    readonly property int running: 2
 
     // 600 ms blink toggle
     property Timer blinkTimer: Timer {
@@ -23,7 +21,7 @@ QtObject {
     property Timer checkTimer: Timer {
         interval: root.threeMinutes
         repeat: true
-        running: root.backend !== null && root.backend.status === root.running
+        running: root.backend !== null && root.backend.status === StorageBackend.Running
         triggeredOnStart: true
         onTriggered: function () {
             if (root.backend) {
@@ -44,7 +42,7 @@ QtObject {
         }
 
         function onStatusChanged() {
-            if (root.backend.status !== root.running) {
+            if (root.backend.status !== StorageBackend.Running) {
                 root.nodeIsUp = false
             }
         }

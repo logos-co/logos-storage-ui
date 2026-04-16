@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.StorageBackend 1.0
 
 // qmllint disable unqualified
 Card {
@@ -13,12 +14,6 @@ Card {
     property var backend: MockBackend
     property bool nodeIsUp: false
     property bool blinkOn: false
-
-    readonly property int stopped: 0
-    readonly property int starting: 1
-    readonly property int running: 2
-    readonly property int stopping: 3
-    readonly property int destroyed: 4
 
     ColumnLayout {
         anchors.fill: parent
@@ -86,14 +81,14 @@ Card {
             }
 
             StorageIcon {
-                animated: root.backend.status === root.starting
-                          || root.backend.status === root.stopping
+                animated: root.backend.status === StorageBackend.Starting
+                          || root.backend.status === StorageBackend.Stopping
                 dotColor: {
-                    if (root.backend.status === root.starting) {
+                    if (root.backend.status === StorageBackend.Starting) {
                         return Theme.palette.warning
                     }
 
-                    if (root.backend.status !== root.running) {
+                    if (root.backend.status !== StorageBackend.Running) {
                         return Theme.palette.textMuted
                     }
 
@@ -119,32 +114,32 @@ Card {
                     radius: Theme.spacing.radiusSmall
                     Layout.alignment: Qt.AlignVCenter
                     color: {
-                        if (root.backend.status === root.starting) {
+                        if (root.backend.status === StorageBackend.Starting) {
                             return Theme.palette.warning
                         }
 
-                        if (root.backend.status !== root.running) {
+                        if (root.backend.status !== StorageBackend.Running) {
                             return Theme.palette.textMuted
                         }
 
                         return root.nodeIsUp ? Theme.palette.success : Theme.palette.error
                     }
                     opacity: root.backend.status
-                             === root.running ? (root.blinkOn ? 1.0 : 0.15) : 1.0
+                             === StorageBackend.Running ? (root.blinkOn ? 1.0 : 0.15) : 1.0
                 }
 
                 LogosText {
                     text: {
                         switch (root.backend.status) {
-                        case root.stopped:
+                        case StorageBackend.Stopped:
                             return "Stopped"
-                        case root.starting:
+                        case StorageBackend.Starting:
                             return "Starting…"
-                        case root.running:
+                        case StorageBackend.Running:
                             return "Running"
-                        case root.stopping:
+                        case StorageBackend.Stopping:
                             return "Stopping…"
-                        case root.destroyed:
+                        case StorageBackend.Destroyed:
                             return "Not initialised"
                         default:
                             return "Unknown"
@@ -161,11 +156,11 @@ Card {
             }
 
             LogosStorageButton {
-                text: root.backend.status === root.running ? "Stop" : "Start"
+                text: root.backend.status === StorageBackend.Running ? "Stop" : "Start"
                 variant: "secondary"
                 implicitHeight: 32
                 implicitWidth: 65
-                onClicked: root.backend.status === root.running ? root.backend.stop(
+                onClicked: root.backend.status === StorageBackend.Running ? root.backend.stop(
                                                                       ) : root.backend.start()
             }
         }
@@ -207,22 +202,22 @@ Card {
         //     color: startStopHover.hovered ? Theme.palette.backgroundElevated : "transparent"
         //     border.color: Theme.palette.borderSecondary
         //     border.width: 1
-        //     opacity: (root.backend.status === root.running
-        //               || root.backend.status === root.stopped) ? 1.0 : 0.4
+        //     opacity: (root.backend.status === StorageBackend.Running
+        //               || root.backend.status === StorageBackend.Stopped) ? 1.0 : 0.4
 
         //     PlayIcon {
         //         anchors.centerIn: parent
         //         dotColor: Theme.palette.text
         //         dotSize: 5
         //         dotSpacing: 2
-        //         visible: root.backend.status !== root.running
+        //         visible: root.backend.status !== StorageBackend.Running
         //     }
         //     StopIcon {
         //         anchors.centerIn: parent
         //         dotColor: Theme.palette.text
         //         dotSize: 5
         //         dotSpacing: 2
-        //         visible: root.backend.status === root.running
+        //         visible: root.backend.status === StorageBackend.Running
         //     }
 
         //     HoverHandler {
@@ -230,10 +225,10 @@ Card {
         //     }
         //     MouseArea {
         //         anchors.fill: parent
-        //         enabled: root.backend.status === root.running
-        //                  || root.backend.status === root.stopped
+        //         enabled: root.backend.status === StorageBackend.Running
+        //                  || root.backend.status === StorageBackend.Stopped
         //         cursorShape: Qt.PointingHandCursor
-        //         onClicked: root.backend.status === root.running ? root.backend.stop(
+        //         onClicked: root.backend.status === StorageBackend.Running ? root.backend.stop(
         //                                                               ) : root.backend.start()
         //     }
         // }
