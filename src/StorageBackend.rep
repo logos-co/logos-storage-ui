@@ -14,6 +14,7 @@ class StorageBackend
     PROP(QString debugLogs READONLY)
     PROP(StorageStatus status READONLY)
     PROP(int defaultListenPort READONLY)
+    PROP(QString defaultConfigJson READONLY)
 
     // Lifecycle
     SLOT(void init(QString configJson))
@@ -40,7 +41,6 @@ class StorageBackend
     SLOT(QString getUserConfig())
     SLOT(void reloadIfChanged(QString configJson))
     SLOT(QString configJson())
-    SLOT(QString defaultConfigJson())
 
     // Network / Onboarding
     SLOT(void enableUpnpConfig())
@@ -58,7 +58,6 @@ class StorageBackend
     SLOT(void logPeerId())
 
     // Lifecycle signals
-    SIGNAL(ready())
     SIGNAL(initCompleted(bool success, QString error))
     SIGNAL(startCompleted())
     SIGNAL(startFailed(QString error))

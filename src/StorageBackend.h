@@ -158,7 +158,6 @@ class StorageBackend : public StorageBackendSimpleSource {
     void fetchWidgetsData() override;
 
     QString configJson() override;
-    QString defaultConfigJson() override;
 
   private:
     // Provide a default config for onboarding

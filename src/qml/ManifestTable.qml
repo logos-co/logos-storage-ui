@@ -410,6 +410,7 @@ Card {
 
             property var pendingManifest: null
 
+            modality: Qt.NonModal
             fileMode: FileDialog.SaveFile
             onAccepted: {
                 if (pendingManifest) {

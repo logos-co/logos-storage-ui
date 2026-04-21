@@ -7,8 +7,8 @@ import Logos.StorageBackend 1.0
 
 // Application flow overview:
 // On startup, the onboarding screen is shown by default.
-// If the storage backend emits a ready event and onboarding is already
-// complete, the onboarding screen is immediately replaced by the
+// If the storage replica is valid (logos.viewModuleReadyChanged) and onboarding
+// is already complete, the onboarding screen is immediately replaced by the
 // storageComponent.
 // Onboarding offers two choices:
 //   1. UPnP            : the user proceeds directly to the startNodeComponent.
@@ -32,7 +32,7 @@ Item {
     }
 
     Connections {
-        target: d.backend
+        target: typeof logos !== "undefined" && logos ? logos : null
         ignoreUnknownSignals: true
 
         // When the onboarding is completed,
@@ -41,12 +41,19 @@ Item {
         // After the config is loaded, the node will be
         // started and the storeComponent will replace
         // the stackView item immediatly.
-        function onReady() {
-            if (settings.onboardingCompleted) {
+        function onViewModuleReadyChanged(moduleName, ready) {
+            if (moduleName !== d.mod || !ready)
+                return
+            if (settings.onboardingCompleted && d.backend) {
                 d.backend.loadUserConfig()
                 stackView.replace(storageComponent, StackView.Immediate)
             }
         }
+    }
+
+    Connections {
+        target: d.backend
+        ignoreUnknownSignals: true
 
         // If there is any error, display it in a toast view
         function onError(message) {

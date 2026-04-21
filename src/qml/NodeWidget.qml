@@ -14,6 +14,7 @@ Card {
     property var backend: MockBackend
     property bool nodeIsUp: false
     property bool blinkOn: false
+    readonly property int effectiveStatus: root.backend ? root.backend.status : StorageBackend.Destroyed
 
     ColumnLayout {
         anchors.fill: parent
@@ -81,14 +82,14 @@ Card {
             }
 
             StorageIcon {
-                animated: root.backend.status === StorageBackend.Starting
-                          || root.backend.status === StorageBackend.Stopping
+                animated: root.effectiveStatus === StorageBackend.Starting
+                          || root.effectiveStatus === StorageBackend.Stopping
                 dotColor: {
-                    if (root.backend.status === StorageBackend.Starting) {
+                    if (root.effectiveStatus === StorageBackend.Starting) {
                         return Theme.palette.warning
                     }
 
-                    if (root.backend.status !== StorageBackend.Running) {
+                    if (root.effectiveStatus !== StorageBackend.Running) {
                         return Theme.palette.textMuted
                     }
 
@@ -114,23 +115,23 @@ Card {
                     radius: Theme.spacing.radiusSmall
                     Layout.alignment: Qt.AlignVCenter
                     color: {
-                        if (root.backend.status === StorageBackend.Starting) {
+                        if (root.effectiveStatus === StorageBackend.Starting) {
                             return Theme.palette.warning
                         }
 
-                        if (root.backend.status !== StorageBackend.Running) {
+                        if (root.effectiveStatus !== StorageBackend.Running) {
                             return Theme.palette.textMuted
                         }
 
                         return root.nodeIsUp ? Theme.palette.success : Theme.palette.error
                     }
-                    opacity: root.backend.status
+                    opacity: root.effectiveStatus
                              === StorageBackend.Running ? (root.blinkOn ? 1.0 : 0.15) : 1.0
                 }
 
                 LogosText {
                     text: {
-                        switch (root.backend.status) {
+                        switch (root.effectiveStatus) {
                         case StorageBackend.Stopped:
                             return "Stopped"
                         case StorageBackend.Starting:
@@ -156,12 +157,17 @@ Card {
             }
 
             LogosStorageButton {
-                text: root.backend.status === StorageBackend.Running ? "Stop" : "Start"
+                text: root.effectiveStatus === StorageBackend.Running ? "Stop" : "Start"
                 variant: "secondary"
                 implicitHeight: 32
                 implicitWidth: 65
-                onClicked: root.backend.status === StorageBackend.Running ? root.backend.stop(
-                                                                      ) : root.backend.start()
+                enabled: root.backend
+                onClicked: {
+                    if (!root.backend)
+                        return
+                    root.backend.status === StorageBackend.Running ? root.backend.stop(
+                                                                       ) : root.backend.start()
+                }
             }
         }
 

@@ -14,12 +14,21 @@
 #include <QSslSocket>
 #include <QSettings>
 
+// StorageBackend is responsible for managing the interaction with the storage module.
+// It is mocked in the QML.
+// There are currently 2 ways to display debug information:
+// - the first one is to log only in the console using qDebug/qWarning. This is basically
+// for developers: entering a function, sending a command to the storage module...
+// - the second one is to use the "debug" helper that logs both in the console and in a
+// QString property that can be displayed in the UI. This is more for users to understand
+// what is happening.
 StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
     : StorageBackendSimpleSource(parent), m_logosAPI(nullptr), m_logos(nullptr) {
     qDebug() << "Initializing StorageBackend...";
 
     setStatus(Destroyed);
     setDefaultListenPort(DEFAULT_LISTEN_PORT);
+    setDefaultConfigJson(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
 
     // Disable system proxy detection — it crashes in Nix/some Linux environments
     QNetworkProxyFactory::setUseSystemConfiguration(false);
@@ -31,8 +40,6 @@ StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
     }
 
     m_logos = new LogosModules(m_logosAPI);
-
-    emit ready();
 }
 
 StorageBackend::~StorageBackend()
@@ -786,7 +793,3 @@ QString StorageBackend::getUserConfig() {
 }
 
 QString StorageBackend::configJson() { return QString::fromUtf8(m_config.toJson(QJsonDocument::Indented)); }
-
-QString StorageBackend::defaultConfigJson() {
-    return QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented));
-}

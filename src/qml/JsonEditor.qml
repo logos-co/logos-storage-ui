@@ -10,7 +10,7 @@ import Logos.Theme
 //       Layout.fillHeight: true
 //   }
 //   // Load content (e.g. when a popup opens):
-//   editor.load(backend.configJson() || "{}")
+//   editor.load(backend.defaultConfigJson || "{}")
 //   // Read back:
 //   editor.text      // current text
 //   editor.isValid   // false when JSON.parse would throw

@@ -42,7 +42,7 @@ QtObject {
         }
 
         function onStatusChanged() {
-            if (root.backend.status !== StorageBackend.Running) {
+            if (!root.backend || root.backend.status !== StorageBackend.Running) {
                 root.nodeIsUp = false
             }
         }

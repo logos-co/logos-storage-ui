@@ -129,7 +129,8 @@ qt_add_qml_module(appqml
         icons/UploadIcon.qml
         icons/DownloadIcon.qml
         icons/DeleteIcon.qml
-        icons/ArcWidget.qml
+        ArcGauge.qml
+        ArcWidget.qml
         Card.qml
         DiskWidget.qml
         UploadWidget.qml
@@ -172,7 +173,7 @@ qt_add_qml_module(appqml
         assets/success.png
         assets/download.png
         assets/delete.png
-        QML_FILES BottomTitle.qml
+        BottomTitle.qml
 )
 
 # Set up QML module directory for runtime
