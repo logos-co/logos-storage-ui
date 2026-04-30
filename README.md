@@ -87,6 +87,12 @@ After building (`nix build`) or without a prior install step:
 nix run
 ```
 
+You can override a dependency by using a local version with `--override-input`. Example:
+
+```
+nix run --override-input storage_module/logos-storage git+file:///somewhere/logos-storage-nim?submodules=1
+```
+
 If you prefer running from `result/` after `nix build`:
 
 ```bash
