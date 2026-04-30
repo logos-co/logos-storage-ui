@@ -61,9 +61,11 @@ Item {
         }
 
         function onOnboardingRestarted() {
-            d.backend.onStopCompleted.connect(function () {
+            function handleStopped() {
+                d.backend.onStopCompleted.disconnect(handleStopped)
                 stackView.replace(modeSelectorComponent, StackView.Immediate)
-            })
+            }
+            d.backend.onStopCompleted.connect(handleStopped)
             d.backend.stop()
         }
     }
