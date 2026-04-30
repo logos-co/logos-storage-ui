@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtCore
 import Logos.Theme
+import Logos.StorageBackend 1.0
 
 // qmllint disable unqualified
 LogosStorageLayout {
@@ -11,10 +12,10 @@ LogosStorageLayout {
 
     property var backend: MockBackend
 
-    readonly property bool running: backend.status === 2 // StorageBackend.Running
+    readonly property bool running: backend && backend.status === StorageBackend.Running
 
     function isRunning() {
-        return backend.status === 2
+        return backend && backend.status === StorageBackend.Running
     }
 
     Component.onCompleted: function () {
@@ -27,6 +28,7 @@ LogosStorageLayout {
 
     FileDialog {
         id: uploadDialog
+        modality: Qt.NonModal
         onAccepted: root.backend.uploadFile(selectedFile)
         currentFolder: StandardPaths.standardLocations(
                            StandardPaths.HomeLocation)[0]

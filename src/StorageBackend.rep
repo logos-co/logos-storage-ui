@@ -1,0 +1,91 @@
+#include <QVariantList>
+#include <QUrl>
+
+class StorageBackend
+{
+    ENUM StorageStatus {
+        Stopped = 0,
+        Starting = 1,
+        Running = 2,
+        Stopping = 3,
+        Destroyed = 4
+    }
+
+    PROP(QString debugLogs READONLY)
+    PROP(StorageStatus status READONLY)
+    PROP(int defaultListenPort READONLY)
+    PROP(QString defaultConfigJson READONLY)
+
+    // Lifecycle
+    SLOT(void init(QString configJson))
+    SLOT(void start())
+    SLOT(void stop())
+    SLOT(void destroy())
+
+    // Upload / Download
+    SLOT(void uploadFile(QUrl url))
+    SLOT(void downloadFile(QString cid, QUrl url, qint64 totalBytes))
+    SLOT(void downloadManifest(QString cid))
+    SLOT(void downloadManifests())
+    SLOT(void exists(QString cid))
+    SLOT(void remove(QString cid))
+    SLOT(void fetch(QString cid))
+
+    // Space
+    SLOT(void refreshSpace())
+
+    // Config
+    SLOT(void saveUserConfig(QString configJson))
+    SLOT(void saveCurrentConfig())
+    SLOT(void loadUserConfig())
+    SLOT(QString getUserConfig())
+    SLOT(void reloadIfChanged(QString configJson))
+    SLOT(QString configJson())
+
+    // Network / Onboarding
+    SLOT(void enableUpnpConfig())
+    SLOT(void enableNatExtConfig(int tcpPort))
+    SLOT(void checkNodeIsUp())
+    SLOT(void restartOnboarding())
+
+    // Widgets / Debug
+    SLOT(void fetchWidgetsData())
+    SLOT(void logDebugInfo())
+    SLOT(void logDataDir())
+    SLOT(void logVersion())
+    SLOT(void listSettings())
+    SLOT(void logSpr())
+    SLOT(void logPeerId())
+
+    // Lifecycle signals
+    SIGNAL(initCompleted(bool success, QString error))
+    SIGNAL(startCompleted())
+    SIGNAL(startFailed(QString error))
+    SIGNAL(stopCompleted())
+
+    // Space
+    SIGNAL(spaceUpdated(qint64 total, qint64 used))
+
+    // Upload
+    SIGNAL(uploadStarted(qint64 totalBytes))
+    SIGNAL(uploadChunk(qint64 len))
+    SIGNAL(uploadCompleted(QString cid))
+
+    // Download
+    SIGNAL(downloadStarted(QString cid, QString filename, qint64 totalBytes))
+    SIGNAL(downloadChunk(qint64 len))
+    SIGNAL(downloadCompleted(QString cid))
+
+    // Manifests
+    SIGNAL(manifestsUpdated(QVariantList manifests))
+
+    // Network / Onboarding
+    SIGNAL(onboardingRestarted())
+    SIGNAL(natExtConfigCompleted())
+    SIGNAL(nodeIsUp())
+    SIGNAL(nodeIsntUp(QString reason))
+    SIGNAL(peersUpdated(int count))
+
+    // Errors
+    SIGNAL(error(QString message))
+}

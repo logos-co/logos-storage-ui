@@ -94,7 +94,7 @@ ColumnLayout {
         TextEdit {
             id: debugLogText
             width: logFlick.width
-            text: root.backend.debugLogs
+            text: root.backend ? root.backend.debugLogs : ""
             color: Theme.palette.textSecondary
             font.family: "monospace"
             font.pixelSize: 11

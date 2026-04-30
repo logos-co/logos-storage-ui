@@ -3,13 +3,12 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtCore
 import Logos.Theme
-
-// qmllint disable unqualified
+import Logos.StorageBackend 1.0
 
 // Application flow overview:
 // On startup, the onboarding screen is shown by default.
-// If the storage backend emits a ready event and onboarding is already
-// complete, the onboarding screen is immediately replaced by the
+// If the storage replica is valid (logos.viewModuleReadyChanged) and onboarding
+// is already complete, the onboarding screen is immediately replaced by the
 // storageComponent.
 // Onboarding offers two choices:
 //   1. UPnP            : the user proceeds directly to the startNodeComponent.
@@ -26,10 +25,15 @@ Item {
     Layout.fillWidth: true
     Layout.fillHeight: true
 
-    property var backend: MockBackend
+    QtObject {
+        id: d
+        readonly property var backend: typeof logos !== "undefined" && logos ? logos.module(mod) : null
+        readonly property string mod: "storage_ui"
+    }
 
     Connections {
-        target: root.backend
+        target: typeof logos !== "undefined" && logos ? logos : null
+        ignoreUnknownSignals: true
 
         // When the onboarding is completed,
         // the user should have a config save in his
@@ -37,12 +41,19 @@ Item {
         // After the config is loaded, the node will be
         // started and the storeComponent will replace
         // the stackView item immediatly.
-        function onReady() {
-            if (settings.onboardingCompleted) {
-                root.backend.loadUserConfig()
+        function onViewModuleReadyChanged(moduleName, ready) {
+            if (moduleName !== d.mod || !ready)
+                return
+            if (settings.onboardingCompleted && d.backend) {
+                d.backend.loadUserConfig()
                 stackView.replace(storageComponent, StackView.Immediate)
             }
         }
+    }
+
+    Connections {
+        target: d.backend
+        ignoreUnknownSignals: true
 
         // If there is any error, display it in a toast view
         function onError(message) {
@@ -50,10 +61,12 @@ Item {
         }
 
         function onOnboardingRestarted() {
-            root.backend.onStopCompleted.connect(function () {
+            function handleStopped() {
+                d.backend.onStopCompleted.disconnect(handleStopped)
                 stackView.replace(modeSelectorComponent, StackView.Immediate)
-            })
-            root.backend.stop()
+            }
+            d.backend.onStopCompleted.connect(handleStopped)
+            d.backend.stop()
         }
     }
 
@@ -88,7 +101,7 @@ Item {
         id: onboardingComponent
 
         OnBoarding {
-            backend: root.backend
+            backend: d.backend
 
             onBack: stackView.pop()
 
@@ -106,7 +119,7 @@ Item {
         id: advancedSetupComponent
 
         AdvancedSetup {
-            backend: root.backend
+            backend: d.backend
 
             onBack: stackView.pop()
 
@@ -121,7 +134,7 @@ Item {
         id: storageComponent
 
         StorageView {
-            backend: root.backend
+            backend: d.backend
         }
     }
 
@@ -129,7 +142,7 @@ Item {
         id: startNodeComponent
 
         StartNode {
-            backend: root.backend
+            backend: d.backend
 
             onBack: {
                 stackView.pop()
@@ -146,7 +159,7 @@ Item {
         id: portForwardingComponent
 
         PortForwarding {
-            backend: root.backend
+            backend: d.backend
             loading: false
 
             onBack: {

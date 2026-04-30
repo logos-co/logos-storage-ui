@@ -17,7 +17,19 @@ Popup {
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     // Reload the live config every time the popup opens
-    onOpened: jsonEditor.load(root.backend.getUserConfig() || "{}")
+    onOpened: {
+        if (root.backend.isMock) {
+            jsonEditor.load(root.backend.getUserConfig() || "{}")
+        } else if (typeof logos !== "undefined" && logos) {
+            logos.watch(root.backend.getUserConfig(), function (text) {
+                jsonEditor.load(text || "{}")
+            }, function (err) {
+                console.warn("getUserConfig:", err)
+            })
+        } else {
+            jsonEditor.load("{}")
+        }
+    }
 
     background: Rectangle {
         color: Theme.palette.backgroundSecondary
