@@ -306,6 +306,7 @@ Card {
                                         }
 
                                         MouseArea {
+                                            objectName: "downloadButton"
                                             anchors.fill: parent
                                             enabled: root.running
                                             cursorShape: Qt.PointingHandCursor
@@ -351,6 +352,7 @@ Card {
                                         }
 
                                         MouseArea {
+                                            objectName: "deleteButton"
                                             anchors.fill: parent
                                             enabled: root.running
                                             cursorShape: Qt.PointingHandCursor
@@ -407,6 +409,7 @@ Card {
 
         FileDialog {
             id: saveDialog
+            objectName: "saveDialog"
 
             property var pendingManifest: null
 
