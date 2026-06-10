@@ -28,6 +28,7 @@ LogosStorageLayout {
 
     FileDialog {
         id: uploadDialog
+        objectName: "uploadDialog"
         modality: Qt.NonModal
         onAccepted: root.backend.uploadFile(selectedFile)
         currentFolder: StandardPaths.standardLocations(

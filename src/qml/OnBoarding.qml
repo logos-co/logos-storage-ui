@@ -61,6 +61,7 @@ OnBoardingLayout {
             spacing: Theme.spacing.medium
 
             OnBoardingCard {
+                objectName: "upnpCard"
                 Layout.fillWidth: true
                 title: "UPnP"
                 description: "Atuomatic port forwarding via UPnP Router."
@@ -70,6 +71,7 @@ OnBoardingLayout {
             }
 
             OnBoardingCard {
+                objectName: "portForwardingCard"
                 Layout.fillWidth: true
                 title: "Port Fowarding"
                 description: "Atuomatic port Manual TCP port configuration on your Router. via UPnP Router."

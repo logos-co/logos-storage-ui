@@ -295,6 +295,7 @@ Card {
     }
 
     MouseArea {
+        objectName: "uploadButton"
         anchors.fill: parent
         cursorShape: root.running ? Qt.PointingHandCursor : Qt.ArrowCursor
         enabled: !root.isUploading && !root.isDone && root.running

@@ -54,6 +54,7 @@ Rectangle {
     }
 
     MouseArea {
+        objectName: parent.objectName + "MouseArea"
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
         onClicked: function () {

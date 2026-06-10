@@ -34,6 +34,7 @@ OnBoardingLayout {
             spacing: Theme.spacing.medium
 
             OnBoardingCard {
+                objectName: "guidedCard"
                 Layout.fillWidth: true
                 title: "Guided"
                 description: "Step-by-step guided wizard to setup your node with the appropriate settings."
@@ -43,6 +44,7 @@ OnBoardingLayout {
             }
 
             OnBoardingCard {
+                objectName: "advancedCard"
                 Layout.fillWidth: true
                 title: "Advanced"
                 description: "Manual JSON configuration for experienced users."
