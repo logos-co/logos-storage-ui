@@ -322,7 +322,7 @@ void StorageBackend::uploadFile(QUrl url) {
     debug(QString("Starting upload of file: %1 bytes").arg(totalBytes));
     emit uploadStarted(totalBytes);
 
-    LogosResult result = m_logos->storage_module.uploadUrl(url);
+    LogosResult result = m_logos->storage_module.uploadUrl(url, 65536);
 
     if (!result.success) {
         reportError("Failed to upload file:" + result.getError());
@@ -348,7 +348,7 @@ void StorageBackend::downloadFile(QString cid, QUrl url, qint64 totalBytes) {
               .arg(totalBytes));
     emit downloadStarted(cid, filename, totalBytes);
 
-    LogosResult result = m_logos->storage_module.downloadToUrl(cid, url, false);
+    LogosResult result = m_logos->storage_module.downloadToUrl(cid, url, false, 65536);
 
     if (!result.success) {
         reportError("Failed to download file:" + result.getError());
