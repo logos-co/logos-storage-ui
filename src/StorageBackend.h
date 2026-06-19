@@ -20,6 +20,7 @@ static const QString USER_CONFIG_PATH = APP_HOME + "/config.json";
 
 static const int DEFAULT_LISTEN_PORT = 8500;
 static const int DEFAULT_DISC_PORT = 9090;
+static const int DEFAULT_CHUNK_SIZE = 1024 * 64;
 
 // Add manual SPR from https://spr.codex.storage/devnet
 static const QStringList BOOTSTRAP_NODES = {

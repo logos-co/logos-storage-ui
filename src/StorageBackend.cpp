@@ -95,10 +95,11 @@ void StorageBackend::init(QString configJson) {
     setStatus(Stopped);
 
     if (!m_logos->storage_module.on("storageStart", [this](const QVariantList& data) {
-            bool success = data[0].toBool();
+            QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
+            bool success = payload["success"].toBool();
 
             if (!success) {
-                QString message = data[1].toString();
+                QString message = payload["message"].toString();
                 setStatus(Stopped);
 
                 emit startFailed(message);
@@ -118,12 +119,13 @@ void StorageBackend::init(QString configJson) {
     }
 
     if (!m_logos->storage_module.on("storageStop", [this](const QVariantList& data) {
-            bool success = data[0].toBool();
+            QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
+            bool success = payload["success"].toBool();
 
             if (!success) {
                 setStatus(Running);
 
-                QString message = data[1].toString();
+                QString message = payload["message"].toString();
                 reportError("Failed to stop Storage module:" + message);
             } else {
                 setStatus(Stopped);
@@ -137,13 +139,14 @@ void StorageBackend::init(QString configJson) {
     }
 
     if (!m_logos->storage_module.on("storageUploadProgress", [this](const QVariantList& data) {
-            bool success = data[0].toBool();
+            QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
+            bool success = payload["success"].toBool();
 
             if (!success) {
-                QString message = data[1].toString();
+                QString message = payload["error"].toString();
                 reportError("Failure during upload progress: " + message);
             } else {
-                qint64 len = data[2].toLongLong();
+                qint64 len = payload["bytes"].toInteger();
                 emit uploadChunk(len);
             }
         })) {
@@ -151,14 +154,14 @@ void StorageBackend::init(QString configJson) {
     }
 
     if (!m_logos->storage_module.on("storageUploadDone", [this](const QVariantList& data) {
-            bool success = data[0].toBool();
+            QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
+            bool success = payload["success"].toBool();
 
             if (!success) {
-                QString message = data[1].toString();
+                QString message = payload["error"].toString();
                 reportError("Failed to upload: " + message);
             } else {
-                QString sessionId = data[1].toString();
-                QString cid = data[2].toString();
+                QString cid = payload["cid"].toString();
                 emit uploadCompleted(cid);
                 QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace, Qt::QueuedConnection);
                 QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
@@ -168,14 +171,14 @@ void StorageBackend::init(QString configJson) {
     }
 
     if (!m_logos->storage_module.on("storageDownloadProgress", [this](const QVariantList& data) {
-            bool success = data[0].toBool();
+            QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
+            bool success = payload["success"].toBool();
 
             if (!success) {
-                QString message = data[1].toString();
+                QString message = payload["error"].toString();
                 reportError("Failure during download progress: " + message);
             } else {
-                QString sessionId = data[1].toString();
-                qint64 len = data[2].toLongLong();
+                qint64 len = payload["bytes"].toInteger();
                 emit downloadChunk(len);
             }
         })) {
@@ -183,20 +186,21 @@ void StorageBackend::init(QString configJson) {
     }
 
     if (!m_logos->storage_module.on("storageDownloadDone", [this](const QVariantList& data) {
-            bool success = data[0].toBool();
+            QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
+            bool success = payload["success"].toBool();
 
             if (!success) {
-                QString message = data[1].toString();
+                QString message = payload["error"].toString();
                 reportError("Failed to download: " + message);
             } else {
-                QString sessionId = data[1].toString();
-                QString cid = data[2].toString();
+                // The download session id is the cid.
+                QString cid = payload["sessionId"].toString();
 
                 emit downloadCompleted(cid);
 
                 QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace, Qt::QueuedConnection);
 
-                debug("Download completed for session " + sessionId + " with CID " + cid);
+                debug("Download completed for cid " + cid);
             }
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageDownloadDone events";
@@ -322,7 +326,7 @@ void StorageBackend::uploadFile(QUrl url) {
     debug(QString("Starting upload of file: %1 bytes").arg(totalBytes));
     emit uploadStarted(totalBytes);
 
-    LogosResult result = m_logos->storage_module.uploadUrl(url);
+    LogosResult result = m_logos->storage_module.uploadUrl(url.toLocalFile(), DEFAULT_CHUNK_SIZE);
 
     if (!result.success) {
         reportError("Failed to upload file:" + result.getError());
@@ -348,7 +352,7 @@ void StorageBackend::downloadFile(QString cid, QUrl url, qint64 totalBytes) {
               .arg(totalBytes));
     emit downloadStarted(cid, filename, totalBytes);
 
-    LogosResult result = m_logos->storage_module.downloadToUrl(cid, url, false);
+    LogosResult result = m_logos->storage_module.downloadToUrl(cid, url.toLocalFile(), false, DEFAULT_CHUNK_SIZE);
 
     if (!result.success) {
         reportError("Failed to download file:" + result.getError());
@@ -615,6 +619,7 @@ QJsonDocument StorageBackend::defaultConfig() {
     obj["data-dir"] = DEFAULT_DATA_DIR;
     obj["listen-port"] = DEFAULT_LISTEN_PORT;
     obj["disc-port"] = DEFAULT_DISC_PORT;
+    obj["nat"] = "none";
 
     return QJsonDocument(obj);
 }
