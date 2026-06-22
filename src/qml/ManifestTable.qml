@@ -62,6 +62,10 @@ Card {
             function onDownloadCompleted(cid) {
                 root.isDownloading = false
             }
+
+            function onError(message) {
+                root.isDownloading = false
+            }
         }
 
         // ── Title row ─────────────────────────────────────────────────────────
@@ -320,7 +324,7 @@ Card {
                                             enabled: root.running && !root.isDownloading
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
-                                                const dest = root.downloadFolderPath.replace(/\/$/, "") + "/" + modelData.filename
+                                                const dest = root.downloadFolderPath.replace(/\/$/, "") + "/" + (modelData.filename || modelData.cid || "download")
                                                 root.backend.downloadFile(
                                                             modelData.cid,
                                                             dest,
