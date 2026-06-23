@@ -29,49 +29,35 @@ ColumnLayout {
 
             LogosStorageButton {
                 text: "Debug"
-                implicitHeight: 24
+                implicitHeight: 32
                 implicitWidth: 70
                 enabled: root.running
                 onClicked: root.backend.logDebugInfo()
             }
             LogosStorageButton {
-                text: "Peer ID"
-                implicitHeight: 24
-                implicitWidth: 80
-                enabled: root.running
-                onClicked: root.backend.logPeerId()
-            }
-            LogosStorageButton {
                 text: "Data dir"
-                implicitHeight: 24
+                implicitHeight: 32
                 implicitWidth: 80
                 enabled: root.running
                 onClicked: root.backend.logDataDir()
             }
             LogosStorageButton {
-                text: "SPR"
-                implicitHeight: 24
-                implicitWidth: 60
-                enabled: root.running
-                onClicked: root.backend.logSpr()
-            }
-            LogosStorageButton {
                 text: "Version"
-                implicitHeight: 24
+                implicitHeight: 32
                 implicitWidth: 80
                 enabled: root.running
                 onClicked: root.backend.logVersion()
             }
             LogosStorageButton {
-                text: "List settings"
-                implicitHeight: 24
-                implicitWidth: 150
+                text: "Settings"
+                implicitHeight: 32
+                implicitWidth: 90
                 enabled: root.running
                 onClicked: root.backend.listSettings()
             }
             LogosStorageButton {
                 text: "Restart onboarding"
-                implicitHeight: 24
+                implicitHeight: 32
                 implicitWidth: 150
                 enabled: root.running
                 onClicked: root.backend.restartOnboarding()
