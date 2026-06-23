@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
@@ -84,57 +83,6 @@ Card {
                         }
                     }
                 }
-
-                RowLayout {
-                    id: mixRow
-                    Layout.fillWidth: true
-                    Layout.rightMargin: Theme.spacing.small
-                    spacing: Theme.spacing.small
-
-                    // True after enabling Mix in the config while the node still
-                    // runs without it: the switch shows on but greyed until the
-                    // node is restarted.
-                    property bool restartPending: false
-
-                    LogosStorageSwitch {
-                        text: "Mix"
-                        checked: root.backend.mixRunning
-                        enabled: !mixRow.restartPending
-                        onToggled: {
-                            if (root.backend.mixRunning) {
-                                root.backend.togglePrivateQueries(checked)
-                            } else {
-                                root.backend.configureMix(checked)
-                                mixRow.restartPending = checked
-                            }
-                        }
-                    }
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
-
-                    LogosText {
-                        visible: mixRow.restartPending
-                        text: "ⓘ"
-                        color: Theme.palette.warning
-                        font.pixelSize: Theme.typography.primaryText
-                        Layout.alignment: Qt.AlignVCenter
-                        ToolTip.visible: infoHover.hovered
-                        ToolTip.text: "Restart the node to apply Mix"
-                        HoverHandler {
-                            id: infoHover
-                        }
-                    }
-
-                    Connections {
-                        target: root.backend
-                        function onMixRunningChanged() {
-                            if (root.backend.mixRunning)
-                                mixRow.restartPending = false
-                        }
-                    }
-                }
             }
 
             StorageIcon {
@@ -161,6 +109,11 @@ Card {
         }
 
         RowLayout {
+            id: actionRow
+
+            // True after enabling Mix in the config while the node still runs
+            // without it: the switch stays on but greyed until the node restarts.
+            property bool restartPending: false
 
             RowLayout {
                 spacing: Theme.spacing.medium
@@ -185,31 +138,65 @@ Card {
                              === StorageBackend.Running ? (root.blinkOn ? 1.0 : 0.15) : 1.0
                 }
 
-                LogosText {
-                    text: {
-                        switch (root.effectiveStatus) {
-                        case StorageBackend.Stopped:
-                            return "Stopped"
-                        case StorageBackend.Starting:
-                            return "Starting…"
-                        case StorageBackend.Running:
-                            return "Running"
-                        case StorageBackend.Stopping:
-                            return "Stopping…"
-                        case StorageBackend.Destroyed:
-                            return "Not initialised"
-                        default:
-                            return "Unknown"
-                        }
-                    }
-                    font.pixelSize: Theme.typography.primaryText
-                    color: Theme.palette.textSecondary
+                ColumnLayout {
+                    spacing: 0
                     Layout.alignment: Qt.AlignVCenter
+
+                    LogosText {
+                        text: {
+                            switch (root.effectiveStatus) {
+                            case StorageBackend.Stopped:
+                                return "Stopped"
+                            case StorageBackend.Starting:
+                                return "Starting…"
+                            case StorageBackend.Running:
+                                return "Running"
+                            case StorageBackend.Stopping:
+                                return "Stopping…"
+                            case StorageBackend.Destroyed:
+                                return "Not initialised"
+                            default:
+                                return "Unknown"
+                            }
+                        }
+                        font.pixelSize: Theme.typography.primaryText
+                        color: Theme.palette.textSecondary
+                    }
+
+                    LogosText {
+                        visible: actionRow.restartPending
+                        text: "needs restart"
+                        font.pixelSize: Theme.typography.secondaryText
+                        color: Theme.palette.warning
+                    }
                 }
             }
 
             Item {
                 Layout.fillWidth: true
+            }
+
+            LogosStorageSwitch {
+                text: "Mix"
+                checked: root.backend.mixRunning
+                enabled: !actionRow.restartPending
+                Layout.alignment: Qt.AlignVCenter
+                onToggled: {
+                    if (root.backend.mixRunning) {
+                        root.backend.togglePrivateQueries(checked)
+                    } else {
+                        root.backend.configureMix(checked)
+                        actionRow.restartPending = checked
+                    }
+                }
+            }
+
+            Connections {
+                target: root.backend
+                function onMixRunningChanged() {
+                    if (root.backend.mixRunning)
+                        actionRow.restartPending = false
+                }
             }
 
             LogosStorageButton {

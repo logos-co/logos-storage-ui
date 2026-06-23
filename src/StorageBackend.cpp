@@ -688,7 +688,18 @@ void StorageBackend::configureMix(bool enabled) {
 
     obj["mix-enabled"] = enabled;
     if (enabled) {
-        obj["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
+        QJsonArray proxies = QJsonArray::fromStringList(DHT_MIX_PROXY);
+        if (proxies.isEmpty()) {
+            // Temporary: with no preset proxy nodes, route Mix through our own
+            // node by using its SPR as the dht-mix-proxy.
+            LogosResult result = m_logos->storage_module.spr();
+            if (result.success) {
+                proxies.append(result.getString());
+            } else {
+                reportError("Failed to get own SPR for dht-mix-proxy: " + result.getError());
+            }
+        }
+        obj["dht-mix-proxy"] = proxies;
     }
 
     saveUserConfig(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented)));
