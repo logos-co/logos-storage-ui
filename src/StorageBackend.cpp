@@ -14,6 +14,10 @@
 #include <QSslSocket>
 #include <QSettings>
 
+#ifndef STORAGE_UI_VERSION
+#define STORAGE_UI_VERSION "unknown"
+#endif
+
 // StorageBackend is responsible for managing the interaction with the storage module.
 // It is mocked in the QML.
 // There are currently 2 ways to display debug information:
@@ -290,29 +294,15 @@ void StorageBackend::destroy() {
 void StorageBackend::logDebugInfo() {
     auto result = m_logos->storage_module.debug();
 
-    debug("Peer ID: " + result.getString("id"));
-    debug("SPR: " + result.getString("spr"));
-
-    QStringList addrs = result.getValue<QStringList>("addrs");
-    for (const QString& addr : addrs) {
-        debug("Listen address: " + addr);
+    if (!result.success) {
+        reportError("Failed to get debug info: " + result.getError());
+        return;
     }
 
-    QStringList announceAddresses = result.getValue<QStringList>("announceAddresses");
-    for (const QString& addr : announceAddresses) {
-        debug("Announce address: " + addr);
-    }
+    QVariantMap map = result.getMap();
+    debug(QString::fromUtf8(QJsonDocument::fromVariant(map).toJson(QJsonDocument::Indented)));
 
-    QVariantMap table = result.getValue<QVariantMap>("table");
-    QVariantList nodes = table["nodes"].toList();
-
-    for (const QVariant& nodeVar : nodes) {
-        QVariantMap node = nodeVar.toMap();
-        QString peerId = node["peerId"].toString();
-        bool seen = node["seen"].toBool();
-        debug("Peer found, peerId=" + peerId + ", seen=" + (seen ? "true" : "false"));
-    }
-
+    QVariantList nodes = map.value("table").toMap().value("nodes").toList();
     emit peersUpdated(nodes.size());
 }
 
@@ -418,7 +408,10 @@ void StorageBackend::logVersion() {
         return;
     }
 
-    debug("Version: " + result.getString());
+    // Module version is hardcoded until the module exposes it through the API.
+    debug("Logos Storage Module=1.0.0");
+    debug("Logos Storage Nim=" + result.getString().section('-', -1));
+    debug("Logos Storage UI=1.0.0");
 }
 
 void StorageBackend::listSettings() {

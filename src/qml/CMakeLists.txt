@@ -40,6 +40,11 @@ endif()
 set(METADATA_JSON "${CMAKE_CURRENT_SOURCE_DIR}/../../metadata.json")
 set(PLUGIN_UI_BUILD_DIR "${CMAKE_BINARY_DIR}/generated_code")
 
+# Expose the UI version (from metadata.json) to StorageBackend at compile time.
+file(READ "${METADATA_JSON}" _ui_metadata)
+string(REGEX MATCH "\"version\"[ \t]*:[ \t]*\"([^\"]+)\"" _ "${_ui_metadata}")
+add_compile_definitions(STORAGE_UI_VERSION="${CMAKE_MATCH_1}")
+
 if(NOT EXISTS "${PLUGIN_UI_BUILD_DIR}/logos_sdk.cpp")
     find_program(LOGOS_CPP_GENERATOR logos-cpp-generator REQUIRED)
     file(MAKE_DIRECTORY "${PLUGIN_UI_BUILD_DIR}")
