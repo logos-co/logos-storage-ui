@@ -9,9 +9,10 @@ OnBoardingLayout {
     property var backend: MockBackend
 
     signal back
-    signal completed(bool upnpEnabled)
+    signal completed(bool upnpEnabled, bool mixEnabled)
 
     property int selectedMode: -1
+    property bool mixEnabled: false
 
     OnBoardingContainer {
 
@@ -81,6 +82,25 @@ OnBoardingLayout {
             }
         }
 
+        ColumnLayout {
+            Layout.fillWidth: true
+            spacing: Theme.spacing.tiny
+
+            LogosStorageSwitch {
+                text: "Enable Mix"
+                checked: root.mixEnabled
+                onToggled: root.mixEnabled = checked
+            }
+
+            LogosText {
+                text: "Use the Mix privacy network for DHT queries. You can change this later in the app."
+                font.pixelSize: Theme.typography.secondaryText
+                color: Theme.palette.textSecondary
+                wrapMode: Text.WordWrap
+                Layout.fillWidth: true
+            }
+        }
+
         Item {
             Layout.preferredHeight: Theme.spacing.small
         }
@@ -109,7 +129,7 @@ OnBoardingLayout {
                     if (root.selectedMode === 0) {
                         root.backend.enableUpnpConfig()
                     }
-                    root.completed(root.selectedMode === 0)
+                    root.completed(root.selectedMode === 0, root.mixEnabled)
                 }
             }
         }

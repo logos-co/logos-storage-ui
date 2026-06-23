@@ -25,8 +25,9 @@ Item {
     Layout.fillWidth: true
     Layout.fillHeight: true
 
-    // Mix choice made on the ModeSelector screen. Applied to the config at the
-    // end of onboarding (after all config rebuilds) so it is not overwritten.
+    // Mix choice made on the OnBoarding (UPnP / port-forwarding) screen. Applied
+    // to the config at the end of onboarding (after all config rebuilds) so it
+    // is not overwritten.
     property bool pendingMixEnabled: false
 
     QtObject {
@@ -116,8 +117,7 @@ Item {
         id: modeSelectorComponent
 
         ModeSelector {
-            onCompleted: function (isGuide, mixEnabled) {
-                root.pendingMixEnabled = mixEnabled
+            onCompleted: function (isGuide) {
                 if (isGuide) {
                     stackView.push(onboardingComponent)
                 } else {
@@ -135,7 +135,8 @@ Item {
 
             onBack: stackView.pop()
 
-            onCompleted: function (upnpEnabled) {
+            onCompleted: function (upnpEnabled, mixEnabled) {
+                root.pendingMixEnabled = mixEnabled
                 if (upnpEnabled) {
                     stackView.push(startNodeComponent)
                 } else {

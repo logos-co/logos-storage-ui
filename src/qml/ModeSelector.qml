@@ -6,10 +6,9 @@ import Logos.Controls
 OnBoardingLayout {
     id: root
 
-    signal completed(bool isGuide, bool mixEnabled)
+    signal completed(bool isGuide)
 
     property int selectedMode: 0
-    property bool mixEnabled: false
 
     OnBoardingContainer {
 
@@ -55,26 +54,6 @@ OnBoardingLayout {
             }
         }
 
-        ColumnLayout {
-            Layout.fillWidth: true
-            Layout.topMargin: Theme.spacing.small
-            spacing: Theme.spacing.tiny
-
-            LogosStorageSwitch {
-                text: "Enable Mix"
-                checked: root.mixEnabled
-                onToggled: root.mixEnabled = checked
-            }
-
-            LogosText {
-                text: "Routes DHT queries through the Mix privacy network. You can also enable it later in Settings."
-                font.pixelSize: Theme.typography.secondaryText
-                color: Theme.palette.textMuted
-                wrapMode: Text.WordWrap
-                Layout.fillWidth: true
-            }
-        }
-
         RowLayout {
             Layout.fillWidth: true
 
@@ -107,7 +86,7 @@ OnBoardingLayout {
                 variant: "primary"
                 iconSource: "assets/arrow-right.png"
                 iconPosition: "right"
-                onClicked: root.completed(root.selectedMode === 0, root.mixEnabled)
+                onClicked: root.completed(root.selectedMode === 0)
             }
         }
     }
