@@ -7,6 +7,7 @@ QtObject {
     property int status: 0
     property string debugLogs: "Hello!"
     property int defaultListenPort: 8500
+    property bool mixRunning: false
 
     signal ready
     signal startCompleted
@@ -62,6 +63,10 @@ QtObject {
     function enableUpnpConfig() {}
     function enableNatExtConfig(tcpPort) {
         natExtConfigCompleted()
+    }
+    function configureMix(enabled) {}
+    function togglePrivateQueries(enabled) {
+        return false
     }
     function configJson() {
         return "{}"

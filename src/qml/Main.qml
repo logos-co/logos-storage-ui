@@ -25,6 +25,10 @@ Item {
     Layout.fillWidth: true
     Layout.fillHeight: true
 
+    // Mix choice made on the ModeSelector screen. Applied to the config at the
+    // end of onboarding (after all config rebuilds) so it is not overwritten.
+    property bool pendingMixEnabled: false
+
     QtObject {
         id: d
         readonly property var backend: typeof logos !== "undefined" && logos ? logos.module(mod) : null
@@ -112,7 +116,8 @@ Item {
         id: modeSelectorComponent
 
         ModeSelector {
-            onCompleted: function (isGuide) {
+            onCompleted: function (isGuide, mixEnabled) {
+                root.pendingMixEnabled = mixEnabled
                 if (isGuide) {
                     stackView.push(onboardingComponent)
                 } else {
@@ -173,6 +178,9 @@ Item {
             }
 
             onNext: {
+                if (root.pendingMixEnabled && d.backend) {
+                    d.backend.configureMix(true)
+                }
                 settings.onboardingCompleted = true
                 stackView.replace(storageComponent, StackView.Immediate)
             }

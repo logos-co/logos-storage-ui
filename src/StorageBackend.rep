@@ -16,6 +16,10 @@ class StorageBackend
     PROP(int defaultListenPort READONLY)
     PROP(QString defaultConfigJson READONLY)
 
+    // True when the running node was initialised with mix-enabled. Reflects the
+    // config the node currently runs with, not the persisted one.
+    PROP(bool mixRunning READONLY)
+
     // Lifecycle
     SLOT(void init(QString configJson))
     SLOT(void start())
@@ -47,6 +51,15 @@ class StorageBackend
     SLOT(void enableNatExtConfig(int tcpPort))
     SLOT(void checkNodeIsUp())
     SLOT(void restartOnboarding())
+
+    // Mix
+    // Persist mix-enabled (+ the dht-mix-proxy preset when enabling) into the
+    // user config without restarting. Takes effect on the next node (re)start.
+    SLOT(void configureMix(bool enabled))
+    // Toggle routing of DHT queries over Mix on the running node. Requires the
+    // node to run with mix-enabled and a non-empty dht-mix-proxy, else fails.
+    // Returns true on success.
+    SLOT(bool togglePrivateQueries(bool enabled))
 
     // Widgets / Debug
     SLOT(void fetchWidgetsData())

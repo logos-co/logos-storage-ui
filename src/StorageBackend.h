@@ -27,6 +27,10 @@ static const int DEFAULT_CHUNK_SIZE = 1024 * 64;
 // bootstrap nodes, so a config carrying "network" needs no "bootstrap-node".
 static const QString DEFAULT_NETWORK_PRESET = "logos.test";
 
+// SPRs used as dht-mix-proxy destinations when Mix is enabled. Empty for now;
+// populated like LEGACY_BOOTSTRAP_NODES once proxy nodes are available.
+static const QStringList DHT_MIX_PROXY = {};
+
 // The bootstrap nodes the UI used to write into config.json before the module
 // switched to network presets. Kept only to detect un-migrated user configs.
 static const QStringList LEGACY_BOOTSTRAP_NODES = {
@@ -145,6 +149,15 @@ class StorageBackend : public StorageBackendSimpleSource {
     // and re-create a context with the new configuration
     // Emit natExtConfigCompleted
     void enableNatExtConfig(int tcpPort) override;
+
+    // Persist mix-enabled (and the dht-mix-proxy preset when enabling) into the
+    // user config without restarting. Applied on the next node (re)start.
+    void configureMix(bool enabled) override;
+
+    // Toggle private DHT queries over Mix on the running node.
+    // Requires the node to run with mix-enabled and a non-empty dht-mix-proxy.
+    // Emit error(message) and return false on failure.
+    bool togglePrivateQueries(bool enabled) override;
 
     // This method will ensure that the node is ready to be used.
     //

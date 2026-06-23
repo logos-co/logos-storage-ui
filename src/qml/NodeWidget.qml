@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
@@ -80,6 +81,57 @@ Card {
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: settingsPopup.open()
                             }
+                        }
+                    }
+                }
+
+                RowLayout {
+                    id: mixRow
+                    Layout.fillWidth: true
+                    Layout.rightMargin: Theme.spacing.small
+                    spacing: Theme.spacing.small
+
+                    // True after enabling Mix in the config while the node still
+                    // runs without it: the switch shows on but greyed until the
+                    // node is restarted.
+                    property bool restartPending: false
+
+                    LogosStorageSwitch {
+                        text: "Mix"
+                        checked: root.backend.mixRunning
+                        enabled: !mixRow.restartPending
+                        onToggled: {
+                            if (root.backend.mixRunning) {
+                                root.backend.togglePrivateQueries(checked)
+                            } else {
+                                root.backend.configureMix(checked)
+                                mixRow.restartPending = checked
+                            }
+                        }
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                    LogosText {
+                        visible: mixRow.restartPending
+                        text: "ⓘ"
+                        color: Theme.palette.warning
+                        font.pixelSize: Theme.typography.primaryText
+                        Layout.alignment: Qt.AlignVCenter
+                        ToolTip.visible: infoHover.hovered
+                        ToolTip.text: "Restart the node to apply Mix"
+                        HoverHandler {
+                            id: infoHover
+                        }
+                    }
+
+                    Connections {
+                        target: root.backend
+                        function onMixRunningChanged() {
+                            if (root.backend.mixRunning)
+                                mixRow.restartPending = false
                         }
                     }
                 }
