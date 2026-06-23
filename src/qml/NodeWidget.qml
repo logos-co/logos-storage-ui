@@ -111,10 +111,6 @@ Card {
         RowLayout {
             id: actionRow
 
-            // True after enabling Mix in the config while the node still runs
-            // without it: the switch stays on but greyed until the node restarts.
-            property bool restartPending: false
-
             RowLayout {
                 spacing: Theme.spacing.medium
 
@@ -163,12 +159,6 @@ Card {
                         color: Theme.palette.textSecondary
                     }
 
-                    LogosText {
-                        visible: actionRow.restartPending
-                        text: "needs restart"
-                        font.pixelSize: Theme.typography.secondaryText
-                        color: Theme.palette.warning
-                    }
                 }
             }
 
@@ -177,27 +167,26 @@ Card {
             }
 
             LogosStorageSwitch {
+                id: mixSwitch
                 text: "Mix"
-                checked: root.backend.mixRunning
-                // Dimmed (not disabled) while a restart is pending so the user
-                // can still toggle it back off to cancel the change.
-                opacity: actionRow.restartPending ? 0.5 : 1.0
+                // Mix is always configured; private queries default on when the
+                // node runs. The toggle only flips them live, no reconfigure.
+                property bool privateQueriesEnabled: true
+                checked: mixSwitch.privateQueriesEnabled
+                enabled: root.effectiveStatus === StorageBackend.Running
                 Layout.alignment: Qt.AlignVCenter
                 onToggled: {
-                    if (root.backend.mixRunning) {
-                        root.backend.togglePrivateQueries(checked)
-                    } else {
-                        root.backend.configureMix(checked)
-                        actionRow.restartPending = checked
-                    }
+                    mixSwitch.privateQueriesEnabled = checked
+                    root.backend.togglePrivateQueries(checked)
                 }
             }
 
             Connections {
                 target: root.backend
                 function onMixRunningChanged() {
+                    // A (re)start resets private queries to their default-on state.
                     if (root.backend.mixRunning)
-                        actionRow.restartPending = false
+                        mixSwitch.privateQueriesEnabled = true
                 }
             }
 

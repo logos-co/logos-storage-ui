@@ -25,11 +25,6 @@ Item {
     Layout.fillWidth: true
     Layout.fillHeight: true
 
-    // Mix choice made on the OnBoarding (UPnP / port-forwarding) screen. Applied
-    // to the config at the end of onboarding (after all config rebuilds) so it
-    // is not overwritten.
-    property bool pendingMixEnabled: false
-
     QtObject {
         id: d
         readonly property var backend: typeof logos !== "undefined" && logos ? logos.module(mod) : null
@@ -135,8 +130,7 @@ Item {
 
             onBack: stackView.pop()
 
-            onCompleted: function (upnpEnabled, mixEnabled) {
-                root.pendingMixEnabled = mixEnabled
+            onCompleted: function (upnpEnabled) {
                 if (upnpEnabled) {
                     stackView.push(startNodeComponent)
                 } else {
@@ -179,9 +173,6 @@ Item {
             }
 
             onNext: {
-                if (root.pendingMixEnabled && d.backend) {
-                    d.backend.configureMix(true)
-                }
                 settings.onboardingCompleted = true
                 stackView.replace(storageComponent, StackView.Immediate)
             }

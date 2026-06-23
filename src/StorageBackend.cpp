@@ -256,6 +256,15 @@ void StorageBackend::start() {
 
     migrateUserConfigFile();
 
+    // Mix is on by default but ships with no preset proxy: inject our own SPR
+    // so the running node has a usable dht-mix-proxy. configureMix persists it;
+    // the reloadIfChanged below then applies it.
+    QJsonObject cfg = QJsonDocument::fromJson(getUserConfig().toUtf8()).object();
+    if (cfg.value("mix-enabled").toBool(false) &&
+        cfg.value("dht-mix-proxy").toArray().isEmpty()) {
+        configureMix(true);
+    }
+
     QFile file(USER_CONFIG_PATH);
 
     if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -618,7 +627,7 @@ QJsonDocument StorageBackend::defaultConfig() {
     obj["disc-port"] = DEFAULT_DISC_PORT;
     obj["nat"] = "none";
 
-    obj["mix-enabled"] = false;
+    obj["mix-enabled"] = true;
     obj["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
 
     return QJsonDocument(obj);
