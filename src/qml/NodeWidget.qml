@@ -179,7 +179,9 @@ Card {
             LogosStorageSwitch {
                 text: "Mix"
                 checked: root.backend.mixRunning
-                enabled: !actionRow.restartPending
+                // Dimmed (not disabled) while a restart is pending so the user
+                // can still toggle it back off to cancel the change.
+                opacity: actionRow.restartPending ? 0.5 : 1.0
                 Layout.alignment: Qt.AlignVCenter
                 onToggled: {
                     if (root.backend.mixRunning) {
