@@ -4,6 +4,7 @@
 #include "rep_StorageBackend_source.h"
 #include <QDir>
 #include <QFile>
+#include <QJsonArray>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -22,8 +23,13 @@ static const int DEFAULT_LISTEN_PORT = 8500;
 static const int DEFAULT_DISC_PORT = 9090;
 static const int DEFAULT_CHUNK_SIZE = 1024 * 64;
 
-// Add manual SPR from https://spr.codex.storage/devnet
-static const QStringList BOOTSTRAP_NODES = {
+// Default network preset of the storage module. The preset bundles its own
+// bootstrap nodes, so a config carrying "network" needs no "bootstrap-node".
+static const QString DEFAULT_NETWORK_PRESET = "logos.test";
+
+// The bootstrap nodes the UI used to write into config.json before the module
+// switched to network presets. Kept only to detect un-migrated user configs.
+static const QStringList LEGACY_BOOTSTRAP_NODES = {
     "spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-"
     "EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-"
     "uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE",
@@ -163,6 +169,18 @@ class StorageBackend : public StorageBackendSimpleSource {
   private:
     // Provide a default config for onboarding
     static QJsonDocument defaultConfig();
+
+    // Rewrite the persisted config.json in place if it still uses the legacy
+    // "bootstrap-node" default instead of the "network" preset.
+    void migrateUserConfigFile();
+
+    // Pure transform: return configJson migrated to the network preset format,
+    // or unchanged if already migrated or carrying a custom bootstrap list.
+    QString migrateConfig(QString configJson);
+
+    // True when the array matches the bootstrap list the UI used to ship,
+    // i.e. the user never set their own bootstrap nodes.
+    static bool isLegacyBootstrap(const QJsonArray& bootstrap);
 
     // Display debug (or message) in the terminal and
     // add it to the debugLogs to make it accessible

@@ -67,7 +67,7 @@ OnBoardingLayout {
 
         OnBoardingProgress {
             Layout.fillWidth: true
-            currentStep: root.started ? 3 : 2
+            currentStep: 2
             Layout.topMargin: Theme.spacing.small
         }
 

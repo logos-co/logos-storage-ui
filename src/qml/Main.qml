@@ -77,10 +77,35 @@ Item {
         property bool onboardingCompleted: false
     }
 
+    // Opaque themed backdrop so the bare (white) window is never visible behind
+    // the StackView during startup transitions.
+    Rectangle {
+        anchors.fill: parent
+        color: Theme.palette.background
+    }
+
     StackView {
         id: stackView
         anchors.fill: parent
-        initialItem: modeSelectorComponent
+        initialItem: loadingComponent
+
+        Component.onCompleted: {
+            // Settings is loaded by now, so onboardingCompleted is reliable here
+            // (unlike during initialItem evaluation). A returning user stays on
+            // the neutral loading screen until the module is ready
+            // (see onViewModuleReadyChanged).
+            if (!settings.onboardingCompleted) {
+                replace(modeSelectorComponent, StackView.Immediate)
+            }
+        }
+    }
+
+    Component {
+        id: loadingComponent
+
+        Rectangle {
+            color: Theme.palette.background
+        }
     }
 
     Component {
@@ -124,8 +149,7 @@ Item {
             onBack: stackView.pop()
 
             onCompleted: function () {
-                settings.onboardingCompleted = true
-                stackView.replace(storageComponent, StackView.Immediate)
+                stackView.push(downloadFolderComponent)
             }
         }
     }
@@ -135,6 +159,23 @@ Item {
 
         StorageView {
             backend: d.backend
+        }
+    }
+
+    Component {
+        id: downloadFolderComponent
+
+        DownloadFolder {
+            backend: root.backend
+
+            onBack: {
+                stackView.pop()
+            }
+
+            onNext: {
+                settings.onboardingCompleted = true
+                stackView.replace(storageComponent, StackView.Immediate)
+            }
         }
     }
 
@@ -149,8 +190,8 @@ Item {
             }
 
             onNext: {
-                settings.onboardingCompleted = true
-                stackView.push(storageComponent)
+                //settings.onboardingCompleted = true
+                stackView.push(downloadFolderComponent)
             }
         }
     }

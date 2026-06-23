@@ -214,6 +214,8 @@ void StorageBackend::init(QString configJson) {
 void StorageBackend::start() {
     qDebug() << "StorageBackend: start method called";
 
+    migrateUserConfigFile();
+
     QFile file(USER_CONFIG_PATH);
 
     if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -610,11 +612,7 @@ QJsonDocument StorageBackend::defaultConfig() {
     QJsonDocument doc = QJsonDocument();
     QJsonObject obj = doc.object();
 
-    QJsonArray bootstrapArray;
-    for (const QString& node : BOOTSTRAP_NODES) {
-        bootstrapArray.append(node);
-    }
-    obj["bootstrap-node"] = bootstrapArray;
+    obj["network"] = DEFAULT_NETWORK_PRESET;
 
     obj["data-dir"] = DEFAULT_DATA_DIR;
     obj["listen-port"] = DEFAULT_LISTEN_PORT;
@@ -622,6 +620,62 @@ QJsonDocument StorageBackend::defaultConfig() {
     obj["nat"] = "none";
 
     return QJsonDocument(obj);
+}
+
+bool StorageBackend::isLegacyBootstrap(const QJsonArray& bootstrap) {
+    if (bootstrap.size() != LEGACY_BOOTSTRAP_NODES.size()) {
+        return false;
+    }
+    for (const QJsonValue& node : bootstrap) {
+        if (!LEGACY_BOOTSTRAP_NODES.contains(node.toString())) {
+            return false;
+        }
+    }
+    return true;
+}
+
+QString StorageBackend::migrateConfig(QString configJsonStr) {
+    QJsonDocument doc = QJsonDocument::fromJson(configJsonStr.toUtf8());
+    if (!doc.isObject()) {
+        return configJsonStr;
+    }
+
+    QJsonObject obj = doc.object();
+
+    // Already on the new format: the "network" preset field is present.
+    if (obj.contains("network")) {
+        return configJsonStr;
+    }
+
+    // A custom bootstrap list means the user joined their own network: keep it,
+    // it intentionally overrides the preset.
+    QJsonArray bootstrap = obj.value("bootstrap-node").toArray();
+    if (!bootstrap.isEmpty() && !isLegacyBootstrap(bootstrap)) {
+        return configJsonStr;
+    }
+
+    // Default (or empty) bootstrap list: drop it so the network preset applies.
+    obj.remove("bootstrap-node");
+    obj["network"] = DEFAULT_NETWORK_PRESET;
+
+    return QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented));
+}
+
+void StorageBackend::migrateUserConfigFile() {
+    QFile file(USER_CONFIG_PATH);
+    if (!file.exists() || !file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return;
+    }
+    QString current = QString::fromUtf8(file.readAll());
+    file.close();
+
+    QString migrated = migrateConfig(current);
+    if (migrated == current) {
+        return;
+    }
+
+    saveUserConfig(migrated);
+    debug("Migrated user config to the network preset format.");
 }
 
 void StorageBackend::enableUpnpConfig() {
@@ -773,6 +827,8 @@ void StorageBackend::fetchWidgetsData() {
 
 void StorageBackend::loadUserConfig() {
     qDebug() << "StorageBackend::loadUserConfig called.";
+
+    migrateUserConfigFile();
 
     QFile file(USER_CONFIG_PATH);
 
