@@ -32,6 +32,7 @@ OnBoardingLayout {
 
         JsonEditor {
             id: jsonEditor
+            objectName: "configEditor"
             Layout.fillWidth: true
             Layout.fillHeight: false
             Layout.preferredHeight: 250
