@@ -256,13 +256,20 @@ void StorageBackend::start() {
 
     migrateUserConfigFile();
 
-    // Mix is on by default but ships with no preset proxy: inject our own SPR
-    // so the running node has a usable dht-mix-proxy. configureMix persists it;
-    // the reloadIfChanged below then applies it.
+    // Migration: Mix must run with a populated dht-mix-proxy. Verify each key
+    // independently and backfill old configs with the preset before starting.
     QJsonObject cfg = QJsonDocument::fromJson(getUserConfig().toUtf8()).object();
-    if (cfg.value("mix-enabled").toBool(false) &&
-        cfg.value("dht-mix-proxy").toArray().isEmpty()) {
-        configureMix(true);
+    bool changed = false;
+    if (!cfg.value("mix-enabled").toBool(false)) {
+        cfg["mix-enabled"] = true;
+        changed = true;
+    }
+    if (cfg.value("dht-mix-proxy").toArray().isEmpty()) {
+        cfg["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
+        changed = true;
+    }
+    if (changed) {
+        saveUserConfig(QString::fromUtf8(QJsonDocument(cfg).toJson(QJsonDocument::Indented)));
     }
 
     QFile file(USER_CONFIG_PATH);
@@ -687,31 +694,6 @@ void StorageBackend::migrateUserConfigFile() {
 
     saveUserConfig(migrated);
     debug("Migrated user config to the network preset format.");
-}
-
-void StorageBackend::configureMix(bool enabled) {
-    qDebug() << "StorageBackend::configureMix called with" << enabled;
-
-    QJsonDocument doc = QJsonDocument::fromJson(getUserConfig().toUtf8());
-    QJsonObject obj = doc.object();
-
-    obj["mix-enabled"] = enabled;
-    if (enabled) {
-        QJsonArray proxies = QJsonArray::fromStringList(DHT_MIX_PROXY);
-        if (proxies.isEmpty()) {
-            // Temporary: with no preset proxy nodes, route Mix through our own
-            // node by using its SPR as the dht-mix-proxy.
-            LogosResult result = m_logos->storage_module.spr();
-            if (result.success) {
-                proxies.append(result.getString());
-            } else {
-                reportError("Failed to get own SPR for dht-mix-proxy: " + result.getError());
-            }
-        }
-        obj["dht-mix-proxy"] = proxies;
-    }
-
-    saveUserConfig(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented)));
 }
 
 bool StorageBackend::togglePrivateQueries(bool enabled) {

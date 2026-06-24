@@ -64,7 +64,6 @@ QtObject {
     function enableNatExtConfig(tcpPort) {
         natExtConfigCompleted()
     }
-    function configureMix(enabled) {}
     function togglePrivateQueries(enabled) {
         return false
     }

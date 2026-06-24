@@ -53,9 +53,6 @@ class StorageBackend
     SLOT(void restartOnboarding())
 
     // Mix
-    // Persist mix-enabled (+ the dht-mix-proxy preset when enabling) into the
-    // user config without restarting. Takes effect on the next node (re)start.
-    SLOT(void configureMix(bool enabled))
     // Toggle routing of DHT queries over Mix on the running node. Requires the
     // node to run with mix-enabled and a non-empty dht-mix-proxy, else fails.
     // Returns true on success.
