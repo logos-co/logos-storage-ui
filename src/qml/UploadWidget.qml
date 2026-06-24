@@ -50,6 +50,10 @@ Card {
             root.uploadedBytes = root.totalBytes
             root.uploadedCid = cid
         }
+
+        function onError(message) {
+            root.reset()
+        }
     }
 
     // ── Idle ──────────────────────────────────────────────────────────────────
