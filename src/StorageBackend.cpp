@@ -459,10 +459,12 @@ void StorageBackend::logVersion() {
         return;
     }
 
-    // Module version is hardcoded until the module exposes it through the API.
-    debug("Logos Storage Module=1.1.0");
+    debug("Logos Storage Module=" + m_logos->storage_module.moduleVersion());
     debug("Logos Storage Nim=" + result.getString().section('-', -1));
-    debug("Logos Storage UI=1.0.0");
+    debug("Logos Storage UI=" STORAGE_UI_VERSION);
+
+    QString network = m_config.object().value("network").toString();
+    debug("Network=" + (network.isEmpty() ? QStringLiteral("custom") : network));
 }
 
 void StorageBackend::restartOnboarding() {
@@ -641,9 +643,6 @@ QJsonDocument StorageBackend::defaultConfig() {
 }
 
 bool StorageBackend::isLegacyBootstrap(const QJsonArray& bootstrap) {
-    if (bootstrap.size() != LEGACY_BOOTSTRAP_NODES.size()) {
-        return false;
-    }
     for (const QJsonValue& node : bootstrap) {
         if (!LEGACY_BOOTSTRAP_NODES.contains(node.toString())) {
             return false;
