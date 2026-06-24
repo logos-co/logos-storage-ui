@@ -255,7 +255,7 @@ Card {
                             }
 
                             Text {
-                                text: modelData.filename
+                                text: modelData.filename || ""
                                 color: Theme.palette.text
                                 font.pixelSize: Theme.typography.secondaryText
                                 elide: Text.ElideRight
@@ -263,7 +263,7 @@ Card {
                             }
 
                             Text {
-                                text: modelData.mimetype
+                                text: modelData.mimetype || ""
                                 color: Theme.palette.text
                                 font.pixelSize: Theme.typography.secondaryText
                                 elide: Text.ElideRight

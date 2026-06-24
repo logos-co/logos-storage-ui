@@ -409,7 +409,7 @@ void StorageBackend::logVersion() {
     }
 
     // Module version is hardcoded until the module exposes it through the API.
-    debug("Logos Storage Module=1.0.0");
+    debug("Logos Storage Module=1.1.0");
     debug("Logos Storage Nim=" + result.getString().section('-', -1));
     debug("Logos Storage UI=1.0.0");
 }
