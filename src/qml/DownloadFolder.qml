@@ -138,6 +138,7 @@ OnBoardingLayout {
 
             LogosStorageButton {
                 text: "Continue"
+                objectName: "downloadFolderContinue"
                 iconSource: "assets/arrow-right.png"
                 iconPosition: "right"
                 variant: "primary"
