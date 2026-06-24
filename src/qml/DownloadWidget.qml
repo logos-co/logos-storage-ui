@@ -7,6 +7,7 @@ import "Utils.js" as Utils
 // qmllint disable unqualified
 Card {
     id: root
+    objectName: "downloadWidget"
 
     implicitWidth: 300
     implicitHeight: 180
