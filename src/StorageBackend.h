@@ -77,7 +77,6 @@ class StorageBackend : public StorageBackendSimpleSource {
     // Other log methods for debug
     void logDataDir() override;
     void logVersion() override;
-    void listSettings() override;
     void restartOnboarding() override;
     void logSpr() override;
     void logPeerId() override;

@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtCore
 import Logos.Theme
 import Logos.Controls
 
@@ -10,6 +11,24 @@ ColumnLayout {
     property var backend: MockBackend
     property bool isOpen: false
     property bool running: false
+
+    Settings {
+        id: storageSettings
+        category: "Storage"
+
+        property bool onboardingCompleted: false
+        property string downloadFolderPath: ""
+    }
+
+    onRunningChanged: {
+        if (!root.running)
+            return
+        const cfg = StandardPaths.writableLocation(StandardPaths.GenericConfigLocation)
+        console.log("[QML] settings file =",
+                    cfg + "/" + Qt.application.organization + "/" + Qt.application.name + ".conf")
+        console.log("[QML] Storage/onboardingCompleted =", storageSettings.onboardingCompleted)
+        console.log("[QML] Storage/downloadFolderPath =", storageSettings.downloadFolderPath)
+    }
 
     anchors.fill: parent
     visible: root.isOpen
@@ -47,13 +66,6 @@ ColumnLayout {
                 implicitWidth: 80
                 enabled: root.running
                 onClicked: root.backend.logVersion()
-            }
-            LogosStorageButton {
-                text: "Settings"
-                implicitHeight: 32
-                implicitWidth: 90
-                enabled: root.running
-                onClicked: root.backend.listSettings()
             }
             LogosStorageButton {
                 text: "Restart onboarding"

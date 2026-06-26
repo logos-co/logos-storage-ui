@@ -54,7 +54,6 @@ QtObject {
     function logDataDir() {}
     function logSpr() {}
     function logVersion() {}
-    function listSettings() {}
     function restartOnboarding() {}
     function saveUserConfig(json) {}
     function saveCurrentConfig() {}

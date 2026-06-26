@@ -53,7 +53,6 @@ class StorageBackend
     SLOT(void logDebugInfo())
     SLOT(void logDataDir())
     SLOT(void logVersion())
-    SLOT(void listSettings())
     SLOT(void logSpr())
     SLOT(void logPeerId())
 
