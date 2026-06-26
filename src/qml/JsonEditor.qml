@@ -33,12 +33,8 @@ Rectangle {
 
     function validate() {
         try {
-            const cfg = JSON.parse(jsonArea.text)
-            const bootstrap = cfg["bootstrap-node"]
-            // "bootstrap-node" overrides "network", so setting both conflicts.
-            const conflict = !!cfg["network"] && Array.isArray(bootstrap)
-                    && bootstrap.length > 0
-            isValid = !conflict
+            JSON.parse(jsonArea.text)
+            isValid = true
         } catch (e) {
             isValid = false
         }
