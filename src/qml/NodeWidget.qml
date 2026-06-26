@@ -14,6 +14,7 @@ Card {
     property var backend: MockBackend
     property bool nodeIsUp: false
     property bool blinkOn: false
+    readonly property bool busy: root.backend && root.backend.busy
     readonly property int effectiveStatus: root.backend ? root.backend.status : StorageBackend.Destroyed
 
     property string downloadFolderPath: ""
@@ -77,6 +78,7 @@ Card {
 
                             MouseArea {
                                 anchors.fill: parent
+                                enabled: !root.busy
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: settingsPopup.open()
                             }
@@ -165,7 +167,9 @@ Card {
                 variant: "secondary"
                 implicitHeight: 32
                 implicitWidth: 65
-                enabled: root.backend
+                enabled: root.backend && !root.busy
+                         && (root.effectiveStatus === StorageBackend.Running
+                             || root.effectiveStatus === StorageBackend.Stopped)
                 onClicked: {
                     if (!root.backend)
                         return
@@ -178,6 +182,7 @@ Card {
         SettingsPopup {
             id: settingsPopup
             backend: root.backend
+            busy: root.busy
             downloadFolderPath: root.downloadFolderPath
             onFolderPathChanged: function(path) { root.folderPathChanged(path) }
         }

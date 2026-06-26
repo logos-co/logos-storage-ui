@@ -12,6 +12,7 @@ Card {
 
     property var backend: MockBackend
     property bool running: false
+    property bool busy: false
     property real totalBytes: 0
     property real uploadedBytes: 0
     property string uploadedCid: ""
@@ -59,7 +60,7 @@ Card {
         anchors.right: parent.right
         anchors.bottom: uploadBottomTitle.top
         visible: !root.isUploading && !root.isDone
-        opacity: root.running ? 1.0 : 0.4
+        opacity: root.running && !root.busy ? 1.0 : 0.4
 
         Behavior on opacity {
             NumberAnimation { duration: 200 }
@@ -297,8 +298,8 @@ Card {
     MouseArea {
         objectName: "uploadButton"
         anchors.fill: parent
-        cursorShape: root.running ? Qt.PointingHandCursor : Qt.ArrowCursor
-        enabled: !root.isUploading && !root.isDone && root.running
+        cursorShape: root.running && !root.busy ? Qt.PointingHandCursor : Qt.ArrowCursor
+        enabled: !root.isUploading && !root.isDone && root.running && !root.busy
         onClicked: root.uploadRequested()
     }
 }

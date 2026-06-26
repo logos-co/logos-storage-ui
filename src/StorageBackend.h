@@ -6,9 +6,11 @@
 #include <QFile>
 #include <QJsonArray>
 #include <QObject>
+#include <QQueue>
 #include <QString>
 #include <QStringList>
 #include <QTimer>
+#include <functional>
 
 static const int RET_OK = 0;
 static const int RET_PROGRESS = 3;
@@ -192,10 +194,43 @@ class StorageBackend : public StorageBackendSimpleSource {
     // Display log and add it to debugLogs
     // Emit error(message)
     void reportError(const QString& message);
+    void logLifecyclePeers(const QString& phase);
+
+    void enqueueStorageOp(std::function<void()> op);
+    void runNextStorageOp();
+    void updateBusy();
+    void requestWidgetRefresh();
+    void enqueueWidgetManifestRefresh(int attempt = 0);
+
+    void doInit(QString configJson);
+    void doStart();
+    void doDestroy();
+    void doStop();
+    void doLogDebugInfo();
+    void doLogDataDir();
+    void doLogVersion();
+    void doLogSpr();
+    void doLogPeerId();
+    void doExists(QString cid);
+    void doRemove(QString cid);
+    void doFetch(QString cid);
+    void doUploadFile(QUrl url);
+    void doDownloadFile(QString cid, QUrl url, qint64 totalBytes);
+    void doDownloadManifest(QString cid);
+    bool doDownloadManifests(bool reportErrors = true);
+    void doRefreshSpace();
+    void doReloadIfChanged(QString configJson);
+    void doCheckNodeIsUp();
 
     // Logos related variables
     LogosAPI* m_logosAPI;
     LogosModules* m_logos;
+
+    QQueue<std::function<void()>> m_storageOps;
+    bool m_storageOpRunning = false;
+    bool m_widgetRefreshQueued = false;
+    bool m_contextInitialized = false;
+    bool m_eventsSubscribed = false;
 
     // Internal configuration object. It can be updated by
     // upnp or port forwarning methods.

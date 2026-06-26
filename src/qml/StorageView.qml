@@ -13,6 +13,7 @@ LogosStorageLayout {
     property var backend: MockBackend
 
     readonly property bool running: backend && backend.status === StorageBackend.Running
+    readonly property bool busy: backend && backend.busy
 
     Settings {
         id: settings
@@ -39,7 +40,10 @@ LogosStorageLayout {
         id: uploadDialog
         objectName: "uploadDialog"
         modality: Qt.NonModal
-        onAccepted: root.backend.uploadFile(selectedFile)
+        onAccepted: {
+            if (!root.busy)
+                root.backend.uploadFile(selectedFile)
+        }
         currentFolder: StandardPaths.standardLocations(
                            StandardPaths.HomeLocation)[0]
     }
@@ -90,6 +94,7 @@ LogosStorageLayout {
                         Layout.fillHeight: true
                         backend: root.backend
                         running: root.running
+                        busy: root.busy
                         onUploadRequested: uploadDialog.open()
                     }
 
@@ -98,6 +103,7 @@ LogosStorageLayout {
                         Layout.fillHeight: true
                         backend: root.backend
                         running: root.running
+                        busy: root.busy
                     }
                 }
 
@@ -135,6 +141,7 @@ LogosStorageLayout {
             Layout.minimumHeight: 0
             backend: root.backend
             running: root.running
+            busy: root.busy
             downloadFolderPath: settings.downloadFolderPath
         }
     }

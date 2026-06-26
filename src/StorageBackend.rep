@@ -13,6 +13,7 @@ class StorageBackend
 
     PROP(QString debugLogs READONLY)
     PROP(StorageStatus status READONLY)
+    PROP(bool busy READONLY)
     PROP(int defaultListenPort READONLY)
     PROP(QString defaultConfigJson READONLY)
 

@@ -13,6 +13,7 @@ OnBoardingLayout {
     property bool starting: true
     property bool success: false
     property bool started: false
+    readonly property bool busy: root.backend && root.backend.busy
 
     signal back
     signal next
@@ -139,7 +140,7 @@ OnBoardingLayout {
                 iconSource: "assets/arrow-left.png"
                 iconPosition: "left"
                 text: "Back"
-                enabled: !root.starting
+                enabled: !root.starting && !root.busy
                 onClicked: {
                     root.backend.stop()
                     root.back()
@@ -154,7 +155,7 @@ OnBoardingLayout {
                 iconSource: "assets/arrow-right.png"
                 iconPosition: "right"
                 text: "Continue"
-                enabled: root.success
+                enabled: root.success && !root.busy
                 onClicked: {
                     root.backend.saveCurrentConfig()
                     root.next()
