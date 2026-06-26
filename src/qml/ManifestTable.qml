@@ -15,6 +15,7 @@ Card {
     property var manifests: []
     property bool panelOpen: false
     property bool isDownloading: false
+    property bool busy: false
     property string downloadFolderPath: ""
 
     // property var manifests: [{
@@ -298,7 +299,7 @@ Card {
                                         border.color: dlHover.hovered
                                                       && root.running && !root.isDownloading ? Theme.palette.primary : Theme.palette.borderInteractive
                                         border.width: 1
-                                        opacity: root.running && !root.isDownloading ? 1.0 : 0.35
+                                        opacity: root.running && !root.isDownloading && !root.busy ? 1.0 : 0.35
 
                                         Behavior on opacity {
                                             NumberAnimation {
@@ -321,7 +322,7 @@ Card {
                                         MouseArea {
                                             objectName: "downloadButton"
                                             anchors.fill: parent
-                                            enabled: root.running && !root.isDownloading
+                                            enabled: root.running && !root.isDownloading && !root.busy
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
                                                 const dest = root.downloadFolderPath.replace(/\/$/, "") + "/" + (modelData.filename || modelData.cid || "download")
@@ -341,9 +342,9 @@ Card {
                                         radius: Theme.spacing.radiusXlarge * 2
                                         color: Theme.palette.backgroundButton
                                         border.color: rmHover.hovered
-                                                      && root.running ? Theme.palette.primary : Theme.palette.borderInteractive
+                                                      && root.running && !root.busy && !root.isDownloading ? Theme.palette.primary : Theme.palette.borderInteractive
                                         border.width: 1
-                                        opacity: root.running ? 1.0 : 0.35
+                                        opacity: root.running && !root.busy && !root.isDownloading ? 1.0 : 0.35
 
                                         Behavior on opacity {
                                             NumberAnimation {
@@ -366,7 +367,7 @@ Card {
                                         MouseArea {
                                             objectName: "deleteButton"
                                             anchors.fill: parent
-                                            enabled: root.running
+                                            enabled: root.running && !root.busy && !root.isDownloading
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
                                                 if (modelData.cid.length > 0) {
@@ -415,6 +416,7 @@ Card {
             DebugPanel {
                 backend: root.backend
                 running: root.running
+                busy: root.busy
                 isOpen: panelOpen
             }
         }

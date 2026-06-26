@@ -10,6 +10,7 @@ ColumnLayout {
     property var backend: MockBackend
     property bool isOpen: false
     property bool running: false
+    property bool busy: false
 
     anchors.fill: parent
     visible: root.isOpen
@@ -31,35 +32,35 @@ ColumnLayout {
                 text: "Debug"
                 implicitHeight: 32
                 implicitWidth: 70
-                enabled: root.running
+                enabled: root.running && !root.busy
                 onClicked: root.backend.logDebugInfo()
             }
             LogosStorageButton {
                 text: "Data dir"
                 implicitHeight: 32
                 implicitWidth: 80
-                enabled: root.running
+                enabled: root.running && !root.busy
                 onClicked: root.backend.logDataDir()
             }
             LogosStorageButton {
                 text: "Version"
                 implicitHeight: 32
                 implicitWidth: 80
-                enabled: root.running
+                enabled: root.running && !root.busy
                 onClicked: root.backend.logVersion()
             }
             LogosStorageButton {
                 text: "Settings"
                 implicitHeight: 32
                 implicitWidth: 90
-                enabled: root.running
+                enabled: root.running && !root.busy
                 onClicked: root.backend.listSettings()
             }
             LogosStorageButton {
                 text: "Restart onboarding"
                 implicitHeight: 32
                 implicitWidth: 150
-                enabled: root.running
+                enabled: root.running && !root.busy
                 onClicked: root.backend.restartOnboarding()
             }
 

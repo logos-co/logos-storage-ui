@@ -198,6 +198,7 @@ class StorageBackend : public StorageBackendSimpleSource {
 
     void enqueueStorageOp(std::function<void()> op);
     void runNextStorageOp();
+    void updateBusy();
     void requestWidgetRefresh();
     void enqueueWidgetManifestRefresh(int attempt = 0);
 

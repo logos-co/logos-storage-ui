@@ -9,6 +9,7 @@ OnBoardingLayout {
     property var backend: MockBackend
     property var tcpPort: backend.defaultListenPort
     property bool loading: false
+    readonly property bool busy: root.backend && root.backend.busy
 
     signal back
     signal completed(int port)
@@ -101,7 +102,7 @@ OnBoardingLayout {
                     id: tcpPortTextField
                     placeholderText: "Enter the TCP port"
                     text: root.tcpPort
-                    enabled: !root.loading
+                    enabled: !root.loading && !root.busy
                     isValid: {
                         const val = parseInt(text)
                         return !isNaN(val) && val >= 0 && val <= 65535
@@ -122,7 +123,7 @@ OnBoardingLayout {
 
             LogosStorageButton {
                 text: "Back"
-                enabled: !root.loading
+                enabled: !root.loading && !root.busy
                 onClicked: root.back()
                 iconSource: "assets/arrow-left.png"
                 iconPosition: "left"
@@ -134,7 +135,7 @@ OnBoardingLayout {
 
             LogosStorageButton {
                 text: "Continue"
-                enabled: !root.loading && tcpPortTextField.isValid
+                enabled: !root.loading && !root.busy && tcpPortTextField.isValid
                 iconSource: "assets/arrow-right.png"
                 iconPosition: "right"
                 variant: "primary"

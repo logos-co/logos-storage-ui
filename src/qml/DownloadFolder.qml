@@ -10,6 +10,7 @@ OnBoardingLayout {
     id: root
 
     property var backend: MockBackend
+    readonly property bool busy: root.backend && root.backend.busy
     property url downloadFolder: {
         const p = StandardPaths.standardLocations(
                     StandardPaths.HomeLocation)[0].toString()
@@ -114,6 +115,7 @@ OnBoardingLayout {
 
                     MouseArea {
                         anchors.fill: parent
+                        enabled: !root.busy
                         cursorShape: Qt.PointingHandCursor
                         onClicked: uploadDialog.open()
                     }
@@ -127,6 +129,7 @@ OnBoardingLayout {
 
             LogosStorageButton {
                 text: "Back"
+                enabled: !root.busy
                 onClicked: root.back()
                 iconSource: "assets/arrow-left.png"
                 iconPosition: "left"
@@ -142,6 +145,7 @@ OnBoardingLayout {
                 iconSource: "assets/arrow-right.png"
                 iconPosition: "right"
                 variant: "primary"
+                enabled: !root.busy
                 onClicked: {
                     settings.downloadFolderPath = root.downloadFolder.toString()
                     root.next()

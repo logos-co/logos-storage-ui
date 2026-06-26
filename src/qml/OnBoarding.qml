@@ -7,6 +7,7 @@ OnBoardingLayout {
     id: root
 
     property var backend: MockBackend
+    readonly property bool busy: root.backend && root.backend.busy
 
     signal back
     signal completed(bool upnpEnabled)
@@ -92,6 +93,7 @@ OnBoardingLayout {
                 text: "Back"
                 iconSource: "assets/arrow-left.png"
                 iconPosition: "left"
+                enabled: !root.busy
                 onClicked: root.back()
             }
 
@@ -104,7 +106,7 @@ OnBoardingLayout {
                 variant: "primary"
                 iconSource: "assets/arrow-right.png"
                 iconPosition: "right"
-                enabled: root.selectedMode !== -1
+                enabled: root.selectedMode !== -1 && !root.busy
                 onClicked: {
                     if (root.selectedMode === 0) {
                         root.backend.enableUpnpConfig()

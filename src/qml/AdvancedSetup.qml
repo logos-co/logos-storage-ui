@@ -8,6 +8,7 @@ OnBoardingLayout {
     id: root
 
     property var backend: MockBackend
+    readonly property bool busy: root.backend && root.backend.busy
 
     signal back
     signal completed
@@ -45,6 +46,7 @@ OnBoardingLayout {
 
             LogosStorageButton {
                 text: "Back"
+                enabled: !root.busy
                 onClicked: root.back()
                 iconSource: "assets/arrow-left.png"
                 iconPosition: "left"
@@ -57,7 +59,7 @@ OnBoardingLayout {
             LogosStorageButton {
                 text: "Validate"
                 variant: "primary"
-                enabled: jsonEditor.isValid
+                enabled: jsonEditor.isValid && !root.busy
                 iconSource: "assets/arrow-right.png"
                 iconPosition: "right"
                 onClicked: {

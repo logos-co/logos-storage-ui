@@ -5,6 +5,7 @@ import QtQuick
 QtObject {
     readonly property bool isMock: true
     property int status: 0
+    property bool busy: false
     property string debugLogs: "Hello!"
     property int defaultListenPort: 8500
 

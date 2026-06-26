@@ -92,6 +92,7 @@ void StorageBackend::logLifecyclePeers(const QString& phase) {
 
 void StorageBackend::enqueueStorageOp(std::function<void()> op) {
     m_storageOps.enqueue(std::move(op));
+    updateBusy();
 
     if (!m_storageOpRunning) {
         QTimer::singleShot(0, this, &StorageBackend::runNextStorageOp);
@@ -100,17 +101,24 @@ void StorageBackend::enqueueStorageOp(std::function<void()> op) {
 
 void StorageBackend::runNextStorageOp() {
     if (m_storageOpRunning || m_storageOps.isEmpty()) {
+        updateBusy();
         return;
     }
 
     m_storageOpRunning = true;
+    updateBusy();
     auto op = m_storageOps.dequeue();
     op();
     m_storageOpRunning = false;
+    updateBusy();
 
     if (!m_storageOps.isEmpty()) {
         QTimer::singleShot(0, this, &StorageBackend::runNextStorageOp);
     }
+}
+
+void StorageBackend::updateBusy() {
+    setBusy(m_storageOpRunning || !m_storageOps.isEmpty());
 }
 
 void StorageBackend::requestWidgetRefresh() {

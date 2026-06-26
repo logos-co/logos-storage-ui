@@ -11,6 +11,7 @@ Card {
 
     property var backend: MockBackend
     property bool running: false
+    property bool busy: false
     property bool enabled: true
 
     RowLayout {
@@ -20,7 +21,7 @@ Card {
         anchors.bottom: bottomTitle.top
         anchors.bottomMargin: Theme.spacing.small
         spacing: Theme.spacing.medium
-        opacity: root.running ? 1.0 : 0.4
+        opacity: root.running && !root.busy ? 1.0 : 0.4
 
         Behavior on opacity {
             NumberAnimation {
@@ -34,7 +35,7 @@ Card {
             Layout.alignment: Qt.AlignTop
             placeholderText: "CID"
             isValid: true
-            enabled: root.running
+            enabled: root.running && !root.busy
         }
 
         LogosStorageButton {
@@ -43,7 +44,7 @@ Card {
             implicitHeight: 42
             variant: "secondary"
             Layout.alignment: Qt.AlignTop
-            enabled: cidInput.text.length > 0 && root.running && root.enabled
+            enabled: cidInput.text.length > 0 && root.running && root.enabled && !root.busy
             onClicked: {
                 root.enabled = false
                 root.backend.downloadManifest(cidInput.text)

@@ -11,6 +11,7 @@ Popup {
 
     property var backend: MockBackend
     property string downloadFolderPath: ""
+    property bool busy: false
 
     signal folderPathChanged(string path)
 
@@ -99,6 +100,7 @@ Popup {
 
                 MouseArea {
                     anchors.fill: parent
+                    enabled: !root.busy
                     cursorShape: Qt.PointingHandCursor
                     onClicked: folderDialog.open()
                 }
@@ -117,7 +119,7 @@ Popup {
             LogosStorageButton {
                 text: "Save"
                 variant: "primary"
-                enabled: jsonEditor.isValid
+                enabled: jsonEditor.isValid && !root.busy
                 onClicked: {
                     root.backend.saveUserConfig(jsonEditor.text)
                     root.close()
