@@ -18,6 +18,9 @@
 #define STORAGE_UI_VERSION "unknown"
 #endif
 
+static constexpr int STORAGE_READINESS_RETRIES = 2;
+static constexpr int STORAGE_READINESS_RETRY_DELAY_MS = 500;
+
 // StorageBackend is responsible for managing the interaction with the storage module.
 // It is mocked in the QML.
 // There are currently 2 ways to display debug information:
@@ -105,9 +108,30 @@ void StorageBackend::requestWidgetRefresh() {
 
     m_widgetRefreshQueued = true;
     enqueueStorageOp([this]() { doRefreshSpace(); });
-    enqueueStorageOp([this]() {
-        doDownloadManifests();
-        m_widgetRefreshQueued = false;
+    enqueueWidgetManifestRefresh();
+}
+
+void StorageBackend::enqueueWidgetManifestRefresh(int attempt) {
+    enqueueStorageOp([this, attempt]() {
+        if (status() != Running) {
+            m_widgetRefreshQueued = false;
+            return;
+        }
+
+        const bool finalAttempt = attempt >= STORAGE_READINESS_RETRIES;
+        if (doDownloadManifests(finalAttempt)) {
+            m_widgetRefreshQueued = false;
+            return;
+        }
+
+        if (finalAttempt) {
+            m_widgetRefreshQueued = false;
+            return;
+        }
+
+        QTimer::singleShot(STORAGE_READINESS_RETRY_DELAY_MS, this, [this, attempt]() {
+            enqueueWidgetManifestRefresh(attempt + 1);
+        });
     });
 }
 
@@ -173,6 +197,7 @@ void StorageBackend::doInit(QString configJson) {
                 reportError("Failed to stop Storage module:" + message);
             } else {
                 setStatus(Stopped);
+                m_widgetRefreshQueued = false;
 
                 debug("Storage module stopped.");
             }
@@ -605,17 +630,25 @@ void StorageBackend::downloadManifests() {
     enqueueStorageOp([this]() { doDownloadManifests(); });
 }
 
-void StorageBackend::doDownloadManifests() {
+bool StorageBackend::doDownloadManifests(bool reportErrors) {
     qDebug() << "StorageBackend::downloadManifests called";
+
+    if (status() != Running) {
+        qDebug() << "StorageBackend::downloadManifests skipped because storage is not running";
+        return true;
+    }
 
     LogosResult result = m_logos->storage_module.manifests();
 
     if (!result.success) {
-        reportError("Failed to download manifests: " + result.getError());
-        return;
+        if (reportErrors) {
+            reportError("Failed to download manifests: " + result.getError());
+        }
+        return false;
     }
 
     emit manifestsUpdated(result.getList());
+    return true;
 }
 
 void StorageBackend::refreshSpace() {
@@ -624,6 +657,11 @@ void StorageBackend::refreshSpace() {
 
 void StorageBackend::doRefreshSpace() {
     qDebug() << "StorageBackend::refreshSpace called";
+
+    if (status() != Running) {
+        qDebug() << "StorageBackend::refreshSpace skipped because storage is not running";
+        return;
+    }
 
     LogosResult result = m_logos->storage_module.space();
 

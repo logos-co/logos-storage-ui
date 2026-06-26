@@ -198,6 +198,7 @@ class StorageBackend : public StorageBackendSimpleSource {
     void enqueueStorageOp(std::function<void()> op);
     void runNextStorageOp();
     void requestWidgetRefresh();
+    void enqueueWidgetManifestRefresh(int attempt = 0);
 
     void doInit(QString configJson);
     void doStart();
@@ -214,7 +215,7 @@ class StorageBackend : public StorageBackendSimpleSource {
     void doUploadFile(QUrl url);
     void doDownloadFile(QString cid, QUrl url, qint64 totalBytes);
     void doDownloadManifest(QString cid);
-    void doDownloadManifests();
+    bool doDownloadManifests(bool reportErrors = true);
     void doRefreshSpace();
     void doReloadIfChanged(QString configJson);
     void doCheckNodeIsUp();
