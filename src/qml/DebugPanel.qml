@@ -20,12 +20,24 @@ ColumnLayout {
         property string downloadFolderPath: ""
     }
 
+    function settingsLocation() {
+        const org = Qt.application.organization
+        const app = Qt.application.name
+        const domain = Qt.application.domain
+        if (Qt.platform.os === "osx") {
+            const rev = domain ? domain.split(".").reverse().join(".") : org
+            return "~/Library/Preferences/" + rev + "." + app + ".plist"
+        }
+        if (Qt.platform.os === "windows")
+            return "HKEY_CURRENT_USER\\Software\\" + org + "\\" + app
+        const cfg = StandardPaths.writableLocation(StandardPaths.GenericConfigLocation)
+        return cfg + "/" + org + "/" + app + ".conf"
+    }
+
     onRunningChanged: {
         if (!root.running)
             return
-        const cfg = StandardPaths.writableLocation(StandardPaths.GenericConfigLocation)
-        console.log("[QML] settings file =",
-                    cfg + "/" + Qt.application.organization + "/" + Qt.application.name + ".conf")
+        console.log("[QML] settings file =", root.settingsLocation())
         console.log("[QML] Storage/onboardingCompleted =", storageSettings.onboardingCompleted)
         console.log("[QML] Storage/downloadFolderPath =", storageSettings.downloadFolderPath)
     }
