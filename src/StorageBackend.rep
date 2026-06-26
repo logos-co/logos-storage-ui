@@ -78,6 +78,8 @@ class StorageBackend
 
     // Manifests
     SIGNAL(manifestsUpdated(QVariantList manifests))
+    SIGNAL(manifestFetchStarted(QString cid))
+    SIGNAL(manifestFetchFailed(QString cid, QString error))
 
     // Network / Onboarding
     SIGNAL(onboardingRestarted())

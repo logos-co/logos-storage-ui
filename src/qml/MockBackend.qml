@@ -24,6 +24,8 @@ QtObject {
     signal downloadCompleted(string cid)
     signal spaceUpdated(real total, real used)
     signal manifestsUpdated(var manifests)
+    signal manifestFetchStarted(string cid)
+    signal manifestFetchFailed(string cid, string error)
     signal stopCompleted
     signal onboardingRestarted
 
@@ -38,7 +40,9 @@ QtObject {
     function fetchWidgetsData() {}
     function uploadFile(url) {}
     function downloadFile(cid, url, totalBytes) {}
-    function downloadManifest(cid) {}
+    function downloadManifest(cid) {
+        manifestFetchStarted(cid)
+    }
     function downloadManifests() {}
     function remove(cid) {}
     function logDebugInfo() {}

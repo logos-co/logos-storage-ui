@@ -17,6 +17,56 @@ Card {
     property bool isDownloading: false
     property string downloadFolderPath: ""
 
+    // Background manifest fetches in progress / failed. Each entry:
+    // { cid, status: "fetching" | "error", error }. Shown as rows above the
+    // real manifests until the fetch resolves (success refreshes the list and
+    // prunes the row; failure switches it to "error" until dismissed).
+    property var pending: []
+    property var rows: root.pending.concat(root.manifests)
+
+    function addPending(cid) {
+        for (var i = 0; i < root.pending.length; i++)
+            if (root.pending[i].cid === cid)
+                return
+        var p = root.pending.slice()
+        p.unshift({
+            "cid": cid,
+            "status": "fetching",
+            "error": ""
+        })
+        root.pending = p
+    }
+
+    function failPending(cid, error) {
+        var p = root.pending.slice()
+        for (var i = 0; i < p.length; i++) {
+            if (p[i].cid === cid) {
+                p[i] = {
+                    "cid": cid,
+                    "status": "error",
+                    "error": error
+                }
+                root.pending = p
+                return
+            }
+        }
+    }
+
+    function dismissPending(cid) {
+        root.pending = root.pending.filter(function (e) {
+            return e.cid !== cid
+        })
+    }
+
+    function prunePending() {
+        var existing = {}
+        for (var i = 0; i < root.manifests.length; i++)
+            existing[root.manifests[i].cid] = true
+        root.pending = root.pending.filter(function (e) {
+            return !(e.status === "fetching" && existing[e.cid])
+        })
+    }
+
     // property var manifests: [{
     //         "cid": "1234",
     //         "filename": "Claude.jpg",
@@ -53,6 +103,15 @@ Card {
 
             function onManifestsUpdated(manifests) {
                 root.manifests = manifests
+                root.prunePending()
+            }
+
+            function onManifestFetchStarted(cid) {
+                root.addPending(cid)
+            }
+
+            function onManifestFetchFailed(cid, error) {
+                root.failPending(cid, error)
             }
 
             function onDownloadStarted(cid, filename, total) {
@@ -157,7 +216,7 @@ Card {
                     id: manifestList
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    model: root.manifests
+                    model: root.rows
                     clip: true
 
                     delegate: Rectangle {
@@ -178,8 +237,28 @@ Card {
                                     id: typeIcon
                                     anchors.left: parent.left
                                     anchors.verticalCenter: parent.verticalCenter
+                                    visible: !modelData.status
                                     source: root.mimetypeIcon(
                                                 modelData.mimetype)
+                                    width: 32
+                                    height: 32
+                                    fillMode: Image.PreserveAspectFit
+                                }
+
+                                BusyIndicator {
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 32
+                                    height: 32
+                                    running: visible
+                                    visible: modelData.status === "fetching"
+                                }
+
+                                Image {
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    visible: modelData.status === "error"
+                                    source: "assets/close-circle.png"
                                     width: 32
                                     height: 32
                                     fillMode: Image.PreserveAspectFit
@@ -255,11 +334,17 @@ Card {
                             }
 
                             Text {
-                                text: modelData.filename || ""
-                                color: Theme.palette.text
+                                text: modelData.status === "fetching" ? "Fetching…" : (modelData.status === "error" ? (modelData.error || "Failed") : (modelData.filename || ""))
+                                color: modelData.status === "error" ? Theme.palette.textMuted : Theme.palette.text
                                 font.pixelSize: Theme.typography.secondaryText
                                 elide: Text.ElideRight
+                                ToolTip.visible: modelData.status === "error" && statusHover.hovered
+                                ToolTip.text: modelData.error || ""
                                 Layout.preferredWidth: 140
+
+                                HoverHandler {
+                                    id: statusHover
+                                }
                             }
 
                             Text {
@@ -271,7 +356,7 @@ Card {
                             }
 
                             Text {
-                                text: Utils.formatBytes(
+                                text: modelData.status ? "" : Utils.formatBytes(
                                           parseInt(modelData.datasetSize))
                                 color: Theme.palette.text
                                 font.pixelSize: Theme.typography.secondaryText
@@ -282,6 +367,7 @@ Card {
                                 color: Theme.palette.backgroundInset
                                 radius: Theme.spacing.radiusLarge
                                 Layout.alignment: Qt.AlignVCenter
+                                visible: !modelData.status
                                 implicitWidth: actionsRow.implicitWidth + Theme.spacing.medium * 2
                                 implicitHeight: actionsRow.implicitHeight + Theme.spacing.small * 2
 
@@ -376,6 +462,36 @@ Card {
                                             }
                                         }
                                     }
+                                }
+                            }
+
+                            Rectangle {
+                                Layout.alignment: Qt.AlignVCenter
+                                visible: modelData.status === "error"
+                                implicitWidth: 40
+                                implicitHeight: 40
+                                radius: Theme.spacing.radiusXlarge * 2
+                                color: Theme.palette.backgroundButton
+                                border.color: dismissHover.hovered ? Theme.palette.primary : Theme.palette.borderInteractive
+                                border.width: 1
+
+                                Image {
+                                    anchors.centerIn: parent
+                                    source: "assets/close-circle.png"
+                                    width: 20
+                                    height: 20
+                                    fillMode: Image.PreserveAspectFit
+                                }
+
+                                HoverHandler {
+                                    id: dismissHover
+                                }
+
+                                MouseArea {
+                                    objectName: "dismissButton"
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.dismissPending(modelData.cid)
                                 }
                             }
                         }

@@ -210,6 +210,23 @@ void StorageBackend::init(QString configJson) {
         qWarning() << "StorageWidget: failed to subscribe to storageDownloadDone events";
     }
 
+    if (!m_logos->storage_module.on("storageDownloadManifestDone", [this](const QVariantList& data) {
+            QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
+            bool success = payload["success"].toBool();
+            QString cid = payload["cid"].toString();
+
+            if (!success) {
+                QString message = payload["error"].toString();
+                emit manifestFetchFailed(cid, message);
+                reportError("Failed to fetch manifest: " + message);
+            } else {
+                debug("Manifest fetched for cid " + cid);
+                QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
+            }
+        })) {
+        qWarning() << "StorageWidget: failed to subscribe to storageDownloadManifestDone events";
+    }
+
     debug("new config is: " + configJson);
 
     emit initCompleted(true, QString());
@@ -486,25 +503,14 @@ void StorageBackend::downloadManifest(QString cid) {
     LogosResult result = m_logos->storage_module.downloadManifest(cid);
 
     if (!result.success) {
-        reportError("Failed to download manifest cid " + cid + ": " + result.getError());
+        reportError("Failed to fetch manifest cid " + cid + ": " + result.getError());
         return;
     }
 
-    QString treeCid = result.getString("treeCid");
-    qint64 datasetSize = result.getInt("datasetSize");
-    qint64 blockSize = result.getInt("blockSize");
-    QString filename = result.getString("filename");
-    QString mimetype = result.getString("mimetype");
-
-    QVariantMap manifest;
-    manifest["cid"]         = cid;
-    manifest["treeCid"]     = treeCid;
-    manifest["filename"]    = filename;
-    manifest["mimetype"]    = mimetype;
-    manifest["datasetSize"] = datasetSize;
-    manifest["blockSize"]   = blockSize;
-
-    downloadManifests();
+    // The fetch runs in the background: the manifest arrives later via the
+    // "storageDownloadManifestDone" event. Signal the start so the UI can show
+    // a pending row.
+    emit manifestFetchStarted(cid);
 }
 
 void StorageBackend::downloadManifests() {
