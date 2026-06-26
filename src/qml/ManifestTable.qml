@@ -258,7 +258,7 @@ Card {
                                     anchors.left: parent.left
                                     anchors.verticalCenter: parent.verticalCenter
                                     visible: modelData.status === "error"
-                                    source: "assets/close-circle.png"
+                                    source: "assets/error.png"
                                     width: 32
                                     height: 32
                                     fillMode: Image.PreserveAspectFit
@@ -334,8 +334,8 @@ Card {
                             }
 
                             Text {
-                                text: modelData.status === "fetching" ? "Fetching…" : (modelData.status === "error" ? (modelData.error || "Failed") : (modelData.filename || ""))
-                                color: modelData.status === "error" ? Theme.palette.textMuted : Theme.palette.text
+                                text: modelData.status === "fetching" ? "Fetching..." : (modelData.status === "error" ? (modelData.error || "Failed") : (modelData.filename || ""))
+                                color: modelData.status === "error" ? Theme.palette.error : Theme.palette.text
                                 font.pixelSize: Theme.typography.secondaryText
                                 elide: Text.ElideRight
                                 ToolTip.visible: modelData.status === "error" && statusHover.hovered
@@ -348,7 +348,7 @@ Card {
                             }
 
                             Text {
-                                text: modelData.mimetype || ""
+                                text: modelData.status ? "-" : (modelData.mimetype || "")
                                 color: Theme.palette.text
                                 font.pixelSize: Theme.typography.secondaryText
                                 elide: Text.ElideRight
@@ -356,142 +356,176 @@ Card {
                             }
 
                             Text {
-                                text: modelData.status ? "" : Utils.formatBytes(
+                                text: modelData.status ? "-" : Utils.formatBytes(
                                           parseInt(modelData.datasetSize))
                                 color: Theme.palette.text
                                 font.pixelSize: Theme.typography.secondaryText
                                 Layout.preferredWidth: 80
                             }
 
-                            Rectangle {
-                                color: Theme.palette.backgroundInset
-                                radius: Theme.spacing.radiusLarge
+                            Item {
+                                // Actions column — fixed width (the download +
+                                // delete pill) so fetching / error rows keep the
+                                // same column alignment as normal rows.
                                 Layout.alignment: Qt.AlignVCenter
-                                visible: !modelData.status
-                                implicitWidth: actionsRow.implicitWidth + Theme.spacing.medium * 2
-                                implicitHeight: actionsRow.implicitHeight + Theme.spacing.small * 2
+                                Layout.preferredWidth: actionsPill.implicitWidth
+                                implicitHeight: actionsPill.implicitHeight
 
-                                Row {
-                                    id: actionsRow
-                                    anchors.centerIn: parent
-                                    spacing: Theme.spacing.medium
+                                Rectangle {
+                                    id: actionsPill
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Theme.palette.backgroundInset
+                                    radius: Theme.spacing.radiusLarge
+                                    visible: !modelData.status
+                                    implicitWidth: actionsRow.implicitWidth + Theme.spacing.medium * 2
+                                    implicitHeight: actionsRow.implicitHeight + Theme.spacing.small * 2
 
-                                    Rectangle {
-                                        width: 40
-                                        height: 40
-                                        radius: Theme.spacing.radiusXlarge * 2
-                                        color: Theme.palette.backgroundButton
-                                        border.color: dlHover.hovered
-                                                      && root.running && !root.isDownloading ? Theme.palette.primary : Theme.palette.borderInteractive
-                                        border.width: 1
-                                        opacity: root.running && !root.isDownloading ? 1.0 : 0.35
+                                    Row {
+                                        id: actionsRow
+                                        anchors.centerIn: parent
+                                        spacing: Theme.spacing.medium
 
-                                        Behavior on opacity {
-                                            NumberAnimation {
-                                                duration: 200
+                                        Rectangle {
+                                            width: 40
+                                            height: 40
+                                            radius: Theme.spacing.radiusXlarge * 2
+                                            color: Theme.palette.backgroundButton
+                                            border.color: dlHover.hovered
+                                                          && root.running && !root.isDownloading ? Theme.palette.primary : Theme.palette.borderInteractive
+                                            border.width: 1
+                                            opacity: root.running && !root.isDownloading ? 1.0 : 0.35
+
+                                            Behavior on opacity {
+                                                NumberAnimation {
+                                                    duration: 200
+                                                }
+                                            }
+
+                                            Image {
+                                                anchors.centerIn: parent
+                                                source: "assets/download.png"
+                                                width: 24
+                                                height: 24
+                                                fillMode: Image.PreserveAspectFit
+                                            }
+
+                                            HoverHandler {
+                                                id: dlHover
+                                            }
+
+                                            MouseArea {
+                                                objectName: "downloadButton"
+                                                anchors.fill: parent
+                                                enabled: root.running && !root.isDownloading
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    const dest = root.downloadFolderPath.replace(/\/$/, "") + "/" + (modelData.filename || modelData.cid || "download")
+                                                    root.backend.downloadFile(
+                                                                modelData.cid,
+                                                                dest,
+                                                                parseInt(
+                                                                    modelData.datasetSize)
+                                                                || 0)
+                                                }
                                             }
                                         }
 
-                                        Image {
-                                            anchors.centerIn: parent
-                                            source: "assets/download.png"
-                                            width: 24
-                                            height: 24
-                                            fillMode: Image.PreserveAspectFit
-                                        }
+                                        Rectangle {
+                                            width: 40
+                                            height: 40
+                                            radius: Theme.spacing.radiusXlarge * 2
+                                            color: Theme.palette.backgroundButton
+                                            border.color: rmHover.hovered
+                                                          && root.running ? Theme.palette.primary : Theme.palette.borderInteractive
+                                            border.width: 1
+                                            opacity: root.running ? 1.0 : 0.35
 
-                                        HoverHandler {
-                                            id: dlHover
-                                        }
-
-                                        MouseArea {
-                                            objectName: "downloadButton"
-                                            anchors.fill: parent
-                                            enabled: root.running && !root.isDownloading
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: {
-                                                const dest = root.downloadFolderPath.replace(/\/$/, "") + "/" + (modelData.filename || modelData.cid || "download")
-                                                root.backend.downloadFile(
-                                                            modelData.cid,
-                                                            dest,
-                                                            parseInt(
-                                                                modelData.datasetSize)
-                                                            || 0)
+                                            Behavior on opacity {
+                                                NumberAnimation {
+                                                    duration: 200
+                                                }
                                             }
-                                        }
-                                    }
 
-                                    Rectangle {
-                                        width: 40
-                                        height: 40
-                                        radius: Theme.spacing.radiusXlarge * 2
-                                        color: Theme.palette.backgroundButton
-                                        border.color: rmHover.hovered
-                                                      && root.running ? Theme.palette.primary : Theme.palette.borderInteractive
-                                        border.width: 1
-                                        opacity: root.running ? 1.0 : 0.35
-
-                                        Behavior on opacity {
-                                            NumberAnimation {
-                                                duration: 200
+                                            Image {
+                                                anchors.centerIn: parent
+                                                source: "assets/delete.png"
+                                                width: 20
+                                                height: 20
+                                                fillMode: Image.PreserveAspectFit
                                             }
-                                        }
 
-                                        Image {
-                                            anchors.centerIn: parent
-                                            source: "assets/delete.png"
-                                            width: 20
-                                            height: 20
-                                            fillMode: Image.PreserveAspectFit
-                                        }
+                                            HoverHandler {
+                                                id: rmHover
+                                            }
 
-                                        HoverHandler {
-                                            id: rmHover
-                                        }
-
-                                        MouseArea {
-                                            objectName: "deleteButton"
-                                            anchors.fill: parent
-                                            enabled: root.running
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: {
-                                                if (modelData.cid.length > 0) {
-                                                    root.backend.remove(
-                                                                modelData.cid)
+                                            MouseArea {
+                                                objectName: "deleteButton"
+                                                anchors.fill: parent
+                                                enabled: root.running
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: {
+                                                    if (modelData.cid.length > 0) {
+                                                        root.backend.remove(
+                                                                    modelData.cid)
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
-                            }
 
-                            Rectangle {
-                                Layout.alignment: Qt.AlignVCenter
-                                visible: modelData.status === "error"
-                                implicitWidth: 40
-                                implicitHeight: 40
-                                radius: Theme.spacing.radiusXlarge * 2
-                                color: Theme.palette.backgroundButton
-                                border.color: dismissHover.hovered ? Theme.palette.primary : Theme.palette.borderInteractive
-                                border.width: 1
-
-                                Image {
+                                Text {
                                     anchors.centerIn: parent
-                                    source: "assets/close-circle.png"
-                                    width: 20
-                                    height: 20
-                                    fillMode: Image.PreserveAspectFit
+                                    visible: modelData.status === "fetching"
+                                    text: "-"
+                                    color: Theme.palette.text
+                                    font.pixelSize: Theme.typography.secondaryText
                                 }
 
-                                HoverHandler {
-                                    id: dismissHover
-                                }
+                                Rectangle {
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: Theme.palette.backgroundInset
+                                    radius: Theme.spacing.radiusLarge
+                                    visible: modelData.status === "error"
+                                    implicitWidth: dismissRow.implicitWidth + Theme.spacing.medium * 2
+                                    implicitHeight: dismissRow.implicitHeight + Theme.spacing.small * 2
 
-                                MouseArea {
-                                    objectName: "dismissButton"
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    onClicked: root.dismissPending(modelData.cid)
+                                    Row {
+                                        id: dismissRow
+                                        anchors.centerIn: parent
+                                        spacing: Theme.spacing.medium
+
+                                        Rectangle {
+                                            width: 40
+                                            height: 40
+                                            radius: Theme.spacing.radiusXlarge * 2
+                                            color: Theme.palette.backgroundButton
+                                            border.color: dismissHover.hovered ? Theme.palette.primary : Theme.palette.borderInteractive
+                                            border.width: 1
+
+                                            Image {
+                                                anchors.centerIn: parent
+                                                source: "assets/close-circle.png"
+                                                width: 20
+                                                height: 20
+                                                opacity: 0.6
+                                                fillMode: Image.PreserveAspectFit
+                                            }
+
+                                            HoverHandler {
+                                                id: dismissHover
+                                            }
+
+                                            MouseArea {
+                                                objectName: "dismissButton"
+                                                anchors.fill: parent
+                                                cursorShape: Qt.PointingHandCursor
+                                                onClicked: root.dismissPending(modelData.cid)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }

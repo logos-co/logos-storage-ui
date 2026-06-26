@@ -1292,10 +1292,7 @@
       "inputs": {
         "logos-lidl": "logos-lidl",
         "logos-nix": "logos-nix",
-        "logos-protocol": [
-          "logos-module-builder",
-          "logos-protocol"
-        ],
+        "logos-protocol": ["logos-module-builder", "logos-protocol"],
         "nixpkgs": [
           "logos-module-builder",
           "logos-cpp-sdk",
@@ -4046,11 +4043,7 @@
     },
     "logos-lidl": {
       "inputs": {
-        "logos-nix": [
-          "logos-module-builder",
-          "logos-cpp-sdk",
-          "logos-nix"
-        ],
+        "logos-nix": ["logos-module-builder", "logos-cpp-sdk", "logos-nix"],
         "nixpkgs": [
           "logos-module-builder",
           "logos-cpp-sdk",
@@ -4407,11 +4400,7 @@
     },
     "logos-lidl_2": {
       "inputs": {
-        "logos-nix": [
-          "logos-module-builder",
-          "logos-qt-sdk",
-          "logos-nix"
-        ],
+        "logos-nix": ["logos-module-builder", "logos-qt-sdk", "logos-nix"],
         "nixpkgs": [
           "logos-module-builder",
           "logos-qt-sdk",
@@ -4675,11 +4664,7 @@
     },
     "logos-lidl_3": {
       "inputs": {
-        "logos-nix": [
-          "logos-module-builder",
-          "logos-rust-sdk",
-          "logos-nix"
-        ],
+        "logos-nix": ["logos-module-builder", "logos-rust-sdk", "logos-nix"],
         "nixpkgs": [
           "logos-module-builder",
           "logos-rust-sdk",
@@ -4942,11 +4927,7 @@
         "logos-test-framework": "logos-test-framework_7",
         "nix-bundle-lgx": "nix-bundle-lgx_20",
         "nix-bundle-logos-module-install": "nix-bundle-logos-module-install_7",
-        "nixpkgs": [
-          "logos-module-builder",
-          "logos-nix",
-          "nixpkgs"
-        ],
+        "nixpkgs": ["logos-module-builder", "logos-nix", "nixpkgs"],
         "rust-overlay": "rust-overlay_2"
       },
       "locked": {
@@ -20368,12 +20349,7 @@
     "logos-package_36": {
       "inputs": {
         "logos-nix": "logos-nix_297",
-        "nixpkgs": [
-          "nix-bundle-lgx",
-          "logos-package",
-          "logos-nix",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["nix-bundle-lgx", "logos-package", "logos-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1781872378,
@@ -22979,11 +22955,7 @@
           "logos-standalone-app",
           "logos-nix"
         ],
-        "nixpkgs": [
-          "logos-module-builder",
-          "logos-standalone-app",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["logos-module-builder", "logos-standalone-app", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1782490644,
@@ -23068,11 +23040,7 @@
           "logos-test-framework",
           "logos-nix"
         ],
-        "nixpkgs": [
-          "logos-module-builder",
-          "logos-test-framework",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["logos-module-builder", "logos-test-framework", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1782490644,
@@ -23509,16 +23477,10 @@
     },
     "logos-qt-sdk": {
       "inputs": {
-        "logos-cpp-sdk": [
-          "logos-module-builder",
-          "logos-cpp-sdk"
-        ],
+        "logos-cpp-sdk": ["logos-module-builder", "logos-cpp-sdk"],
         "logos-lidl": "logos-lidl_2",
         "logos-nix": "logos-nix_9",
-        "logos-protocol": [
-          "logos-module-builder",
-          "logos-protocol"
-        ],
+        "logos-protocol": ["logos-module-builder", "logos-protocol"],
         "nixpkgs": [
           "logos-module-builder",
           "logos-qt-sdk",
@@ -23913,11 +23875,7 @@
           "logos-standalone-app",
           "logos-protocol"
         ],
-        "nixpkgs": [
-          "logos-module-builder",
-          "logos-standalone-app",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["logos-module-builder", "logos-standalone-app", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1782493580,
@@ -23993,11 +23951,7 @@
           "logos-test-framework",
           "logos-protocol"
         ],
-        "nixpkgs": [
-          "logos-module-builder",
-          "logos-test-framework",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["logos-module-builder", "logos-test-framework", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1782493580,
@@ -24097,22 +24051,10 @@
     "logos-rust-sdk": {
       "inputs": {
         "logos-lidl": "logos-lidl_3",
-        "logos-logoscore-cli": [
-          "logos-module-builder",
-          "logos-cpp-sdk"
-        ],
-        "logos-module-builder": [
-          "logos-module-builder",
-          "logos-cpp-sdk"
-        ],
-        "logos-module-client": [
-          "logos-module-builder",
-          "logos-cpp-sdk"
-        ],
-        "logos-nix": [
-          "logos-module-builder",
-          "logos-nix"
-        ],
+        "logos-logoscore-cli": ["logos-module-builder", "logos-cpp-sdk"],
+        "logos-module-builder": ["logos-module-builder", "logos-cpp-sdk"],
+        "logos-module-client": ["logos-module-builder", "logos-cpp-sdk"],
+        "logos-nix": ["logos-module-builder", "logos-nix"],
         "nixpkgs": [
           "logos-module-builder",
           "logos-rust-sdk",
@@ -24209,11 +24151,7 @@
           "logos-module-builder",
           "logos-cpp-sdk"
         ],
-        "logos-nix": [
-          "storage_module",
-          "logos-module-builder",
-          "logos-nix"
-        ],
+        "logos-nix": ["storage_module", "logos-module-builder", "logos-nix"],
         "nixpkgs": [
           "storage_module",
           "logos-module-builder",
@@ -25274,10 +25212,7 @@
     },
     "logos-test-framework_7": {
       "inputs": {
-        "logos-cpp-sdk": [
-          "logos-module-builder",
-          "logos-cpp-sdk"
-        ],
+        "logos-cpp-sdk": ["logos-module-builder", "logos-cpp-sdk"],
         "logos-nix": "logos-nix_283",
         "logos-protocol": "logos-protocol_9",
         "logos-qt-sdk": "logos-qt-sdk_7",
@@ -28225,12 +28160,7 @@
     "nix-bundle-dir_50": {
       "inputs": {
         "logos-nix": "logos-nix_298",
-        "nixpkgs": [
-          "nix-bundle-lgx",
-          "nix-bundle-dir",
-          "logos-nix",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["nix-bundle-lgx", "nix-bundle-dir", "logos-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1776974030,
@@ -30382,11 +30312,7 @@
         "logos-nix": "logos-nix_296",
         "logos-package": "logos-package_36",
         "nix-bundle-dir": "nix-bundle-dir_50",
-        "nixpkgs": [
-          "nix-bundle-lgx",
-          "logos-nix",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["nix-bundle-lgx", "logos-nix", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1781872587,
@@ -41725,10 +41651,7 @@
     },
     "rust-overlay_2": {
       "inputs": {
-        "nixpkgs": [
-          "logos-module-builder",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["logos-module-builder", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1782271078,
@@ -41771,11 +41694,7 @@
     },
     "rust-overlay_4": {
       "inputs": {
-        "nixpkgs": [
-          "storage_module",
-          "logos-module-builder",
-          "nixpkgs"
-        ]
+        "nixpkgs": ["storage_module", "logos-module-builder", "nixpkgs"]
       },
       "locked": {
         "lastModified": 1782271078,
@@ -41807,6 +41726,7 @@
       "original": {
         "owner": "logos-co",
         "repo": "logos-storage-module",
+        "rev": "fb0c3b910534fe2648562c72ee458396b67b390d",
         "type": "github"
       }
     }
