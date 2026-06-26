@@ -30,7 +30,43 @@ static const QString DEFAULT_NETWORK_PRESET = "logos.test";
 // SPRs used as dht-mix-proxy destinations when Mix is enabled. Temporary
 // single proxy until the network ships a preset of proxy nodes.
 static const QStringList DHT_MIX_PROXY = {
-    "spr:CiUIAhIhA6rD-Sa1mJqHOoYMk8yad7B4BYDEI_toNwb1z0cYIRu6EgIDARpJCicAJQgCEiEDqsP5JrWYmoc6hgyTzJp3sHgFgMQj-2g3BvXPRxghG7oQmY7V0QYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDPSV17jA4LkrMuavGvPHDwkVa0x9ykvOs_Z8qZ8EaSmwIgEtG33lTX5sKz-u4rL-uwQuTCfDe1Bh-DEUZDVm5uuGw"};
+      "spr:CiUIAhIhAlPbmW9J08tDI6pIV-C-XvvFTCDN_Vih8I3ZTOeOuf5rEgIDARo7CicAJQgCEiECU9uZb0nTy0MjqkhX4L5e-8VMIM39WKHwjdlM5465_msQ9tr10QYaCgoIBKX1-QUGH5AqRzBFAiEA3CSkMf8I8SMiM7F01OdfgyontOhd5GMa6SckSLwuJAYCIHkaIukQL1eB54G-kMg9-Vx3ALMlMtzzRJQtU4ySRvmZ",
+      "spr:CiUIAhIhA4_xqh_E3HDnV4Gbe159LCAuv03UxcDoGloH1Dhoqy_qEgIDARo7CicAJQgCEiEDj_GqH8TccOdXgZt7Xn0sIC6_TdTFwOgaWgfUOGirL-oQltv10QYaCgoIBKRc8f0GH5AqRzBFAiEAhB-XTjnQoT7is8_DGzsAiBVCgwdobOPnF2X7hu7zXhICIEQ7GDRR6Wm_yIucbPwvacSYitZoBYtvAYOED7B4BFv8",
+      "spr:CiUIAhIhAj5vZtyN69MB1cmKhnbxlUo4sp7KfeK1sMipjKpBD47dEgIDARo7CicAJQgCEiECPm9m3I3r0wHVyYqGdvGVSjiynsp94rWwyKmMqkEPjt0Qltv10QYaCgoIBC5lcMkGH5AqRzBFAiEAxXURxGqV4csw2uKITjNS4Rq64nbVBr7dTmhNwvQ_9zQCIDNQvVpQwrV42WbRFGa-ZrPANpaKUZQG20LAOGmd2mLG",
+      "spr:CiUIAhIhAgX6x7NWUskBQ1a5CvhQ9qe6nAcgE-C6GLjAfnpyRK_6EgIDARo7CicAJQgCEiECBfrHs1ZSyQFDVrkK-FD2p7qcByAT4LoYuMB-enJEr_oQltv10QYaCgoIBKX194YGH5AqRjBEAiBskHSppya4Dah6QGTlYnvAG72mUbEyxO6QfDW5cNOTygIgVmHL40bgnGqxpZtDGI0jyNo5mk_DkriCmoDpreZ6x5o"
+};
+
+// Bundled Mix relay pool, passed inline to the module via the "mix-pool-json"
+// config key (takes precedence over the "mix-pool" file path).
+static const QString MIX_POOL_JSON = R"JSON({
+  "version": 1,
+  "relays": [
+    {
+      "peerId": "16Uiu2HAm1522ucToKCsrwrusNHbtkww8YPBBqF2e3RWHMf6EREe6",
+      "multiAddr": "/ip4/165.245.249.5/tcp/8080",
+      "mixPubKey": "6ec39559bd7ca3ca099852a1d41557d6111b77114c713558dcaf3ec819b3114e",
+      "libp2pPubKey": "0253db996f49d3cb4323aa4857e0be5efbc54c20cdfd58a1f08dd94ce78eb9fe6b"
+    },
+    {
+      "peerId": "16Uiu2HAmNLtP38EA2CMwqsoSninKFgA4sxcsV7AgPnR49dqDuTFw",
+      "multiAddr": "/ip4/164.92.241.253/tcp/8080",
+      "mixPubKey": "cf5e1396edb26b6e42a48b979108f481fa1737184a33252724977ac9b2bf995a",
+      "libp2pPubKey": "038ff1aa1fc4dc70e757819b7b5e7d2c202ebf4dd4c5c0e81a5a07d43868ab2fea"
+    },
+    {
+      "peerId": "16Uiu2HAkydPnHVbxBGsrxidSwL4TzT2vRkbiEzFTM1hNSG9HisUG",
+      "multiAddr": "/ip4/46.101.112.201/tcp/8080",
+      "mixPubKey": "2f95107b6db1f5eaebc6ae06e96539d9c66da0ac71daec5de17788dad1faac43",
+      "libp2pPubKey": "023e6f66dc8debd301d5c98a8676f1954a38b29eca7de2b5b0c8a98caa410f8edd"
+    },
+    {
+      "peerId": "16Uiu2HAkuq1ouxs1ACX8kMBykVQML9DkenLB6zYVf9sJjS8tvbr1",
+      "multiAddr": "/ip4/165.245.247.134/tcp/8080",
+      "mixPubKey": "cd28b4fd848bd064fe68c2ff524f10608809876997bf382ef7e1aadfa3c9a115",
+      "libp2pPubKey": "0205fac7b35652c9014356b90af850f6a7ba9c072013e0ba18b8c07e7a7244affa"
+    }
+  ]
+})JSON";
 
 // The bootstrap nodes the UI used to write into config.json before the module
 // switched to network presets. Kept only to detect un-migrated user configs.

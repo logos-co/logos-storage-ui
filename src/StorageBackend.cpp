@@ -256,18 +256,26 @@ void StorageBackend::start() {
 
     migrateUserConfigFile();
 
-    // Migration: Mix must run with a populated dht-mix-proxy. Verify each key
-    // independently and backfill old configs with the preset before starting.
+    // Migration: Mix must run with the bundled dht-mix-proxy and relay pool.
+    // Override stale values so old configs pick up the current presets.
     QJsonObject cfg = QJsonDocument::fromJson(getUserConfig().toUtf8()).object();
     bool changed = false;
     if (!cfg.value("mix-enabled").toBool(false)) {
         cfg["mix-enabled"] = true;
         changed = true;
     }
-    if (cfg.value("dht-mix-proxy").toArray().isEmpty()) {
-        cfg["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
+    QJsonArray mixProxy = QJsonArray::fromStringList(DHT_MIX_PROXY);
+    if (cfg.value("dht-mix-proxy").toArray() != mixProxy) {
+        cfg["dht-mix-proxy"] = mixProxy;
         changed = true;
     }
+    QString mixPoolJson = QString::fromUtf8(
+        QJsonDocument::fromJson(MIX_POOL_JSON.toUtf8()).toJson(QJsonDocument::Compact));
+    if (cfg.value("mix-pool-json").toString() != mixPoolJson) {
+        cfg["mix-pool-json"] = mixPoolJson;
+        changed = true;
+    }
+
     if (changed) {
         saveUserConfig(QString::fromUtf8(QJsonDocument(cfg).toJson(QJsonDocument::Indented)));
     }
@@ -638,6 +646,8 @@ QJsonDocument StorageBackend::defaultConfig() {
 
     obj["mix-enabled"] = true;
     obj["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
+    obj["mix-pool-json"] = QString::fromUtf8(
+        QJsonDocument::fromJson(MIX_POOL_JSON.toUtf8()).toJson(QJsonDocument::Compact));
 
     return QJsonDocument(obj);
 }
