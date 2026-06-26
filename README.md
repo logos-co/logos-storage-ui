@@ -1,4 +1,4 @@
-# logos-storage-ui
+# Logos Storage UI
 
 The Logos Storage UI is a file sharing application built on top of the [Logos Storage Module](https://github.com/logos-co/logos-storage-module) to showcase its capabilities.
 
