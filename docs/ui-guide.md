@@ -34,7 +34,7 @@ string with other people to allow them to download the file.
 ## Downloading a File
 
 To download a file, you must first paste the file's CID into the `Fetch manifest` panel and click `Fetch`. This will download the file's metadata from the network.
-Once the metadata is downloaded, you will see an entry appearing in the `Manifests` list at the bottom of the UI. To download the file, click on the download
+Once the metadata is downloaded, you will see an entry appearing in the `Manifests` list at the bottom of the UI. To download the file, click on the download icon
 next to the entry and a file selector will open, allowing you to choose where to save the file. Once you select a location, the file will be downloaded.
 The download progress widget will show progress in real-time.
 

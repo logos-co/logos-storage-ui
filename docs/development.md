@@ -41,7 +41,7 @@ Enable CMake debug logging, add `--log-level=DEBUG` in `Projects` -> `Imported K
 
 Ensure that `clangd` is enabled for your project. Go to `Projects` on the left, then click on `Manage Kits` at the top. Select the `C++` tab and open the last tab, `Clangd`. Check `Use clangd` and, if needed, configure it to use the `clangd` installed on your system.
 
-Then go to `Projects `-> `qml` -> `Build` -> `Build Environment`. Click Add to create a new variable, set the name to `QML_IMPORT_TYPE`, and set the value to the absolute path of your QML build directory (for example, /path/to/your/project/src/qml/build/qml).
+Then go to `Projects` -> `qml` -> `Build` -> `Build Environment`. Click Add to create a new variable, set the name to `QML_IMPORT_TYPE`, and set the value to the absolute path of your QML build directory (for example, /path/to/your/project/src/qml/build/qml).
 
 That's it. The configuration defined in `CMakeLists.txt` should allow the project to build correctly.
 

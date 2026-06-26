@@ -65,7 +65,7 @@ If you don't have flakes enabled globally, add experimental flags:
 nix build --extra-experimental-features 'nix-command flakes'
 ```
 
-To enable globally so you don't need these flag for each command, add the following to `~/.config/nix/nix.conf` (create if it doesn't exist):
+To enable globally so you don't need these flags for each command, add the following to `~/.config/nix/nix.conf` (create if it doesn't exist):
 ```ini
 experimental-features = nix-command flakes
 ```
@@ -80,7 +80,7 @@ If you are using Linux with SELinux enabled, you will not be able to install Nix
 
 You can access to the [Storage Module documentation](https://logos-co.github.io/logos-storage-module/latest) to get more context about the Storage Module and its configuration. 
 
-You also refer to our [UI Guide](docs/ui-guide.md) for information about the usage of the Storage UI.
+You can also refer to our [UI Guide](docs/ui-guide.md) for information about the usage of the Storage UI.
 
 If you prefer a technical approach, you can refer to our [doctest using automated tests](https://logos-co.github.io/logos-doctest-hub/#logos-storage-module/ubuntu-latest/driving-the-storage-ui-against-this-module).
 
@@ -93,7 +93,7 @@ After onboarding, settings are saved to a file whose location depends on the OS:
 | Linux   | `~/.config/Logos/LogosStandalone.conf`           |
 | macOS   | `~/Library/Preferences/co.logos.LogosStandalone.plist` |
 
-if you are running this UI inside the Basecamp application, the location of the preferences files will be: 
+If you are running this UI inside the Basecamp application, the location of the preferences files will be:
 
 | OS      | Path                                             |
 |---------|--------------------------------------------------|
