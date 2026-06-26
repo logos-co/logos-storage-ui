@@ -6,9 +6,11 @@
 #include <QFile>
 #include <QJsonArray>
 #include <QObject>
+#include <QQueue>
 #include <QString>
 #include <QStringList>
 #include <QTimer>
+#include <functional>
 
 static const int RET_OK = 0;
 static const int RET_PROGRESS = 3;
@@ -193,11 +195,37 @@ class StorageBackend : public StorageBackendSimpleSource {
     // Emit error(message)
     void reportError(const QString& message);
 
-    void refreshWidgetsData();
+    void enqueueStorageOp(std::function<void()> op);
+    void runNextStorageOp();
+    void requestWidgetRefresh();
+
+    void doInit(QString configJson);
+    void doStart();
+    void doDestroy();
+    void doStop();
+    void doLogDebugInfo();
+    void doLogDataDir();
+    void doLogVersion();
+    void doLogSpr();
+    void doLogPeerId();
+    void doExists(QString cid);
+    void doRemove(QString cid);
+    void doFetch(QString cid);
+    void doUploadFile(QUrl url);
+    void doDownloadFile(QString cid, QUrl url, qint64 totalBytes);
+    void doDownloadManifest(QString cid);
+    void doDownloadManifests();
+    void doRefreshSpace();
+    void doReloadIfChanged(QString configJson);
+    void doCheckNodeIsUp();
 
     // Logos related variables
     LogosAPI* m_logosAPI;
     LogosModules* m_logos;
+
+    QQueue<std::function<void()>> m_storageOps;
+    bool m_storageOpRunning = false;
+    bool m_widgetRefreshQueued = false;
 
     // Internal configuration object. It can be updated by
     // upnp or port forwarning methods.

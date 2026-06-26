@@ -75,7 +75,47 @@ void StorageBackend::debug(const QString& log, const QString& level) {
     }
 }
 
+void StorageBackend::enqueueStorageOp(std::function<void()> op) {
+    m_storageOps.enqueue(std::move(op));
+
+    if (!m_storageOpRunning) {
+        QTimer::singleShot(0, this, &StorageBackend::runNextStorageOp);
+    }
+}
+
+void StorageBackend::runNextStorageOp() {
+    if (m_storageOpRunning || m_storageOps.isEmpty()) {
+        return;
+    }
+
+    m_storageOpRunning = true;
+    auto op = m_storageOps.dequeue();
+    op();
+    m_storageOpRunning = false;
+
+    if (!m_storageOps.isEmpty()) {
+        QTimer::singleShot(0, this, &StorageBackend::runNextStorageOp);
+    }
+}
+
+void StorageBackend::requestWidgetRefresh() {
+    if (m_widgetRefreshQueued) {
+        return;
+    }
+
+    m_widgetRefreshQueued = true;
+    enqueueStorageOp([this]() { doRefreshSpace(); });
+    enqueueStorageOp([this]() {
+        doDownloadManifests();
+        m_widgetRefreshQueued = false;
+    });
+}
+
 void StorageBackend::init(QString configJson) {
+    enqueueStorageOp([this, configJson]() { doInit(configJson); });
+}
+
+void StorageBackend::doInit(QString configJson) {
     qDebug() << "StorageBackend::initStorage called";
 
     m_config = QJsonDocument::fromJson(configJson.toUtf8());
@@ -114,7 +154,7 @@ void StorageBackend::init(QString configJson) {
 
                 debug("Storage module started.");
 
-                StorageBackend::fetchWidgetsData();
+                fetchWidgetsData();
 
                 emit startCompleted();
             }
@@ -167,7 +207,7 @@ void StorageBackend::init(QString configJson) {
             } else {
                 QString cid = payload["cid"].toString();
                 emit uploadCompleted(cid);
-                refreshWidgetsData();
+                requestWidgetRefresh();
             }
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageUploadDone events";
@@ -215,6 +255,10 @@ void StorageBackend::init(QString configJson) {
 }
 
 void StorageBackend::start() {
+    enqueueStorageOp([this]() { doStart(); });
+}
+
+void StorageBackend::doStart() {
     qDebug() << "StorageBackend: start method called";
 
     migrateUserConfigFile();
@@ -223,7 +267,7 @@ void StorageBackend::start() {
 
     if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QString configJsonStr = QString::fromUtf8(file.readAll());
-        reloadIfChanged(configJsonStr);
+        doReloadIfChanged(configJsonStr);
     } else {
         debug("Cannot open the user config file.", "warning");
     }
@@ -250,6 +294,10 @@ void StorageBackend::start() {
 }
 
 void StorageBackend::stop() {
+    enqueueStorageOp([this]() { doStop(); });
+}
+
+void StorageBackend::doStop() {
     qDebug() << "StorageBackend: stop method called";
 
     if (status() == Stopping) {
@@ -278,6 +326,10 @@ void StorageBackend::stop() {
 }
 
 void StorageBackend::destroy() {
+    enqueueStorageOp([this]() { doDestroy(); });
+}
+
+void StorageBackend::doDestroy() {
     qDebug() << "StorageBackend: destroy method called";
 
     auto result = m_logos->storage_module.destroy();
@@ -291,6 +343,10 @@ void StorageBackend::destroy() {
 }
 
 void StorageBackend::logDebugInfo() {
+    enqueueStorageOp([this]() { doLogDebugInfo(); });
+}
+
+void StorageBackend::doLogDebugInfo() {
     auto result = m_logos->storage_module.debug();
 
     if (!result.success) {
@@ -306,6 +362,10 @@ void StorageBackend::logDebugInfo() {
 }
 
 void StorageBackend::uploadFile(QUrl url) {
+    enqueueStorageOp([this, url]() { doUploadFile(url); });
+}
+
+void StorageBackend::doUploadFile(QUrl url) {
     qDebug() << "StorageBackend: uploadFile called";
 
     if (!url.isLocalFile()) {
@@ -330,6 +390,10 @@ void StorageBackend::uploadFile(QUrl url) {
 }
 
 void StorageBackend::downloadFile(QString cid, QUrl url, qint64 totalBytes) {
+    enqueueStorageOp([this, cid, url, totalBytes]() { doDownloadFile(cid, url, totalBytes); });
+}
+
+void StorageBackend::doDownloadFile(QString cid, QUrl url, qint64 totalBytes) {
     qDebug() << "StorageBackend: downloadFile called";
 
     if (!url.isLocalFile()) {
@@ -356,6 +420,10 @@ void StorageBackend::downloadFile(QString cid, QUrl url, qint64 totalBytes) {
 }
 
 void StorageBackend::exists(QString cid) {
+    enqueueStorageOp([this, cid]() { doExists(cid); });
+}
+
+void StorageBackend::doExists(QString cid) {
     qDebug() << "StorageBackend::exists called";
 
     LogosResult result = m_logos->storage_module.exists(cid);
@@ -369,20 +437,29 @@ void StorageBackend::exists(QString cid) {
 }
 
 void StorageBackend::remove(QString cid) {
+    enqueueStorageOp([this, cid]() { doRemove(cid); });
+}
+
+void StorageBackend::doRemove(QString cid) {
     qDebug() << "StorageBackend::remove called with cid=" << cid;
 
     LogosResult result = m_logos->storage_module.remove(cid);
     if (!result.success) {
         reportError("Failed to remove " + cid + ": " + result.getError());
+        requestWidgetRefresh();
         return;
     }
 
     debug("Cid " + cid + " removed from local storage.");
 
-    refreshWidgetsData();
+    requestWidgetRefresh();
 }
 
 void StorageBackend::fetch(QString cid) {
+    enqueueStorageOp([this, cid]() { doFetch(cid); });
+}
+
+void StorageBackend::doFetch(QString cid) {
     qDebug() << "StorageBackend::fetch called";
 
     LogosResult result = m_logos->storage_module.fetch(cid);
@@ -396,6 +473,10 @@ void StorageBackend::fetch(QString cid) {
 }
 
 void StorageBackend::logVersion() {
+    enqueueStorageOp([this]() { doLogVersion(); });
+}
+
+void StorageBackend::doLogVersion() {
     qDebug() << "StorageBackend::version called";
 
     LogosResult result = m_logos->storage_module.version();
@@ -439,6 +520,10 @@ void StorageBackend::restartOnboarding() {
 }
 
 void StorageBackend::logPeerId() {
+    enqueueStorageOp([this]() { doLogPeerId(); });
+}
+
+void StorageBackend::doLogPeerId() {
     qDebug() << "StorageBackend::peerId called";
 
     LogosResult result = m_logos->storage_module.peerId();
@@ -452,6 +537,10 @@ void StorageBackend::logPeerId() {
 }
 
 void StorageBackend::logSpr() {
+    enqueueStorageOp([this]() { doLogSpr(); });
+}
+
+void StorageBackend::doLogSpr() {
     qDebug() << "StorageBackend::spr called";
 
     LogosResult result = m_logos->storage_module.spr();
@@ -465,6 +554,10 @@ void StorageBackend::logSpr() {
 }
 
 void StorageBackend::logDataDir() {
+    enqueueStorageOp([this]() { doLogDataDir(); });
+}
+
+void StorageBackend::doLogDataDir() {
     qDebug() << "StorageBackend::dataDir called";
 
     LogosResult result = m_logos->storage_module.dataDir();
@@ -478,6 +571,10 @@ void StorageBackend::logDataDir() {
 }
 
 void StorageBackend::downloadManifest(QString cid) {
+    enqueueStorageOp([this, cid]() { doDownloadManifest(cid); });
+}
+
+void StorageBackend::doDownloadManifest(QString cid) {
     qDebug() << "StorageBackend::downloadManifest called with cid=" << cid;
 
     LogosResult result = m_logos->storage_module.downloadManifest(cid);
@@ -501,10 +598,14 @@ void StorageBackend::downloadManifest(QString cid) {
     manifest["datasetSize"] = datasetSize;
     manifest["blockSize"]   = blockSize;
 
-    downloadManifests();
+    requestWidgetRefresh();
 }
 
 void StorageBackend::downloadManifests() {
+    enqueueStorageOp([this]() { doDownloadManifests(); });
+}
+
+void StorageBackend::doDownloadManifests() {
     qDebug() << "StorageBackend::downloadManifests called";
 
     LogosResult result = m_logos->storage_module.manifests();
@@ -518,6 +619,10 @@ void StorageBackend::downloadManifests() {
 }
 
 void StorageBackend::refreshSpace() {
+    enqueueStorageOp([this]() { doRefreshSpace(); });
+}
+
+void StorageBackend::doRefreshSpace() {
     qDebug() << "StorageBackend::refreshSpace called";
 
     LogosResult result = m_logos->storage_module.space();
@@ -535,6 +640,10 @@ void StorageBackend::refreshSpace() {
 }
 
 void StorageBackend::reloadIfChanged(QString configJsonStr) {
+    enqueueStorageOp([this, configJsonStr]() { doReloadIfChanged(configJsonStr); });
+}
+
+void StorageBackend::doReloadIfChanged(QString configJsonStr) {
     QJsonDocument config = QJsonDocument::fromJson(configJsonStr.toUtf8());
     if (config.isNull()) {
         debug("Invalid json detected !");
@@ -565,7 +674,7 @@ void StorageBackend::reloadIfChanged(QString configJsonStr) {
         }
     }
 
-    init(configJsonStr);
+    doInit(configJsonStr);
 
     m_config = config;
     saveUserConfig(configJsonStr);
@@ -716,6 +825,10 @@ void StorageBackend::enableNatExtConfig(int tcpPort) {
 }
 
 void StorageBackend::checkNodeIsUp() {
+    enqueueStorageOp([this]() { doCheckNodeIsUp(); });
+}
+
+void StorageBackend::doCheckNodeIsUp() {
     qDebug() << "StorageBackend::checkNodeIsUp called.";
 
     LogosResult result = m_logos->storage_module.debug();
@@ -767,60 +880,53 @@ void StorageBackend::checkNodeIsUp() {
         return;
     }
 
-    qDebug() << "Checking reachability for " << endpoints.size() << "endpoint(s)...";
+    QTimer::singleShot(0, this, [this, endpoints, nat]() {
+        qDebug() << "Checking reachability for " << endpoints.size() << "endpoint(s)...";
 
-    bool foundReachable = false;
-    for (const auto& [ip, port] : endpoints) {
-        QNetworkAccessManager manager;
-        const QUrl url(QString("%1/%2/%3").arg(PORT_CHECKER_PROVIDER).arg(ip).arg(port));
-        QNetworkReply* reply = manager.get(QNetworkRequest(url));
+        bool foundReachable = false;
+        for (const auto& [ip, port] : endpoints) {
+            QNetworkAccessManager manager;
+            const QUrl url(QString("%1/%2/%3").arg(PORT_CHECKER_PROVIDER).arg(ip).arg(port));
+            QNetworkReply* reply = manager.get(QNetworkRequest(url));
 
-        QEventLoop loop;
-        connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-        loop.exec();
+            QEventLoop loop;
+            connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+            loop.exec();
 
-        if (reply->error() == QNetworkReply::NoError) {
-            const bool reachable = reply->readAll() == "True";
+            if (reply->error() == QNetworkReply::NoError) {
+                const bool reachable = reply->readAll() == "True";
 
-            QString statusStr = reachable ? "reachable" : "not reachable";
-            qDebug() << "StorageBackend::checkNodeIsUp " << ip << ":" << port << statusStr;
+                QString statusStr = reachable ? "reachable" : "not reachable";
+                qDebug() << "StorageBackend::checkNodeIsUp " << ip << ":" << port << statusStr;
 
-            if (reachable) {
-                foundReachable = true;
+                if (reachable) {
+                    foundReachable = true;
+                }
+            } else {
+                qDebug() << "StorageBackend::checkNodeIsUp Port check failed for" << ip << ":" << port
+                         << reply->errorString();
             }
-        } else {
-            qDebug() << "StorageBackend::checkNodeIsUp Port check failed for" << ip << ":" << port
-                     << reply->errorString();
+
+            reply->deleteLater();
         }
 
-        reply->deleteLater();
-    }
-
-    if (foundReachable) {
-        emit nodeIsUp();
-    } else {
-        if (nat == "upnp") {
-            emit nodeIsntUp("UPnP is configured but the node is not reachable from the internet. "
-                            "Try going back and configure port forwarding manually on your router.");
+        if (foundReachable) {
+            emit nodeIsUp();
         } else {
-            emit nodeIsntUp("No ports are reachable from the internet. "
-                            "Try going back and check your port forwarding configuration.");
+            if (nat == "upnp") {
+                emit nodeIsntUp("UPnP is configured but the node is not reachable from the internet. "
+                                "Try going back and configure port forwarding manually on your router.");
+            } else {
+                emit nodeIsntUp("No ports are reachable from the internet. "
+                                "Try going back and check your port forwarding configuration.");
+            }
         }
-    }
+    });
 }
 
 void StorageBackend::fetchWidgetsData() {
-    QMetaObject::invokeMethod(this, [this]() {
-        logDebugInfo();
-        refreshWidgetsData();
-    }, Qt::QueuedConnection);
-}
-
-void StorageBackend::refreshWidgetsData() {
-    QMetaObject::invokeMethod(this, [this]() {
-        refreshSpace();
-        QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
-    }, Qt::QueuedConnection);
+    enqueueStorageOp([this]() { doLogDebugInfo(); });
+    requestWidgetRefresh();
 }
 
 void StorageBackend::loadUserConfig() {
