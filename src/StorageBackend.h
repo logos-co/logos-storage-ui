@@ -194,6 +194,7 @@ class StorageBackend : public StorageBackendSimpleSource {
     // Display log and add it to debugLogs
     // Emit error(message)
     void reportError(const QString& message);
+    void logLifecyclePeers(const QString& phase);
 
     void enqueueStorageOp(std::function<void()> op);
     void runNextStorageOp();
@@ -227,6 +228,8 @@ class StorageBackend : public StorageBackendSimpleSource {
     QQueue<std::function<void()>> m_storageOps;
     bool m_storageOpRunning = false;
     bool m_widgetRefreshQueued = false;
+    bool m_contextInitialized = false;
+    bool m_eventsSubscribed = false;
 
     // Internal configuration object. It can be updated by
     // upnp or port forwarning methods.
