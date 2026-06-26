@@ -41716,17 +41716,17 @@
         "logos-storage": "logos-storage"
       },
       "locked": {
-        "lastModified": 1782499404,
-        "narHash": "sha256-0/CR0JeZuNx6fLHZW1EGljzitFdleJd1mDpykvBirB8=",
+        "lastModified": 1782482655,
+        "narHash": "sha256-J8cHtMy21l/DIJ8aVVeL1iN3EJoqhxtK0RAvmEj6adc=",
         "owner": "logos-co",
         "repo": "logos-storage-module",
-        "rev": "4234612c065402685cc2a944b3b53ed7c04f8320",
+        "rev": "ce112dd351037fb30d7dc21399a6878ac316bdbe",
         "type": "github"
       },
       "original": {
         "owner": "logos-co",
         "repo": "logos-storage-module",
-        "rev": "fb0c3b910534fe2648562c72ee458396b67b390d",
+        "rev": "ce112dd351037fb30d7dc21399a6878ac316bdbe",
         "type": "github"
       }
     }
