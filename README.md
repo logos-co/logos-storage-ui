@@ -4,7 +4,7 @@ The Logos Storage UI is a file sharing application built on top of the [Logos St
 
 ## How to Run 
 
-The easiest way to run the app is using the standalone runner:
+Run the app using the standalone runner:
 
 ```bash
 nix run
@@ -16,23 +16,16 @@ You can override a dependency by using a local version with `--override-input`. 
 nix run --override-input storage_module/logos-storage git+file:///somewhere/logos-storage-nim?submodules=1
 ```
 
-If you prefer running from `result/` after `nix build`:
-
-```bash
-./result/bin/logos-storage-ui-app
-```
-
 ## How to Build
 
 ### Build the app
 
 ```bash
-# Build the app
 nix build
 ```
 
 The result will include:
-- `/lib/storage_ui.dylib` (or `.so` on Linux) - The Storage UI plugin
+- `/lib/storage_ui_plugin.dylib` (or `.so` on Linux) - The Storage UI plugin
 
 ### Build packages
 
@@ -40,7 +33,7 @@ The result will include:
 nix build '.#lgx'
 ```
 
-Troubleshooting:
+### Troubleshooting:
 
 If you encounter the following error during the build process:
 
@@ -61,7 +54,6 @@ After setting these values, retry to build.
 ### Development Shell
 
 ```bash
-# Enter development shell with all dependencies
 nix develop
 ```
 
@@ -82,7 +74,7 @@ The compiled artifacts can be found at `result/`
 
 ### SELinux
 
-If you are using Linux with SELinux enabled, you will not be able to install Nix without disabling it. A common workaround is to install Nix inside a Toolbox container. In that case, if you are using Qt Creator, you may also need to configure the project using submodules.
+If you are using Linux with SELinux enabled, you will not be able to install Nix without disabling it. A common workaround is to install Nix inside a Toolbox container. 
 
 ## Guidance 
 
@@ -111,7 +103,7 @@ if you are running this UI inside the Basecamp application, the location of the 
 
 The settings are saved to the preferences file to preserve the onboarding defaults, but the active configuration is stored in `${HOME}/.logos_storage/config.json`. You can tweak the values there directly. Note that running the onboarding again will override any onboarding-related values.
 
-To restart the onboarding process, simply delete the preferences file and relaunch the application.
+To restart the onboarding process, simply delete the preferences file and relaunch the application or use the debug panel (ctrl + d) to reset the onboarding state.
 
 The debug panel also provides access to the module's configuration JSON for runtime configuration tweaks. See the module's [API reference](https://logos-co.github.io/logos-storage-module/latest/api_reference.html) for a list of configuration options. To apply changes, restart the Storage Module.
 
