@@ -193,6 +193,8 @@ class StorageBackend : public StorageBackendSimpleSource {
     // Emit error(message)
     void reportError(const QString& message);
 
+    void refreshWidgetsData();
+
     // Logos related variables
     LogosAPI* m_logosAPI;
     LogosModules* m_logos;

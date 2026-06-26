@@ -167,8 +167,7 @@ void StorageBackend::init(QString configJson) {
             } else {
                 QString cid = payload["cid"].toString();
                 emit uploadCompleted(cid);
-                QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace, Qt::QueuedConnection);
-                QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
+                refreshWidgetsData();
             }
         })) {
         qWarning() << "StorageWidget: failed to subscribe to storageUploadDone events";
@@ -380,9 +379,7 @@ void StorageBackend::remove(QString cid) {
 
     debug("Cid " + cid + " removed from local storage.");
 
-    QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace,
-                              Qt::QueuedConnection);
-    QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
+    refreshWidgetsData();
 }
 
 void StorageBackend::fetch(QString cid) {
@@ -813,9 +810,17 @@ void StorageBackend::checkNodeIsUp() {
 }
 
 void StorageBackend::fetchWidgetsData() {
-    QMetaObject::invokeMethod(this, &StorageBackend::logDebugInfo, Qt::QueuedConnection);
-    QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace, Qt::QueuedConnection);
-    QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
+    QMetaObject::invokeMethod(this, [this]() {
+        logDebugInfo();
+        refreshWidgetsData();
+    }, Qt::QueuedConnection);
+}
+
+void StorageBackend::refreshWidgetsData() {
+    QMetaObject::invokeMethod(this, [this]() {
+        refreshSpace();
+        QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
+    }, Qt::QueuedConnection);
 }
 
 void StorageBackend::loadUserConfig() {
