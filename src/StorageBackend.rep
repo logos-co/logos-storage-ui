@@ -81,6 +81,10 @@ class StorageBackend
     SIGNAL(manifestFetchStarted(QString cid))
     SIGNAL(manifestFetchFailed(QString cid, QString error))
 
+    // Remove
+    SIGNAL(removeStarted(QString cid))
+    SIGNAL(removeFailed(QString cid, QString error))
+
     // Network / Onboarding
     SIGNAL(onboardingRestarted())
     SIGNAL(natExtConfigCompleted())
