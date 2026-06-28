@@ -34,8 +34,9 @@ Card {
         var d = {}
         for (var i = 0; i < root.manifests.length; i++) {
             var cid = root.manifests[i].cid
-            if (root.deleting[cid])
+            if (root.deleting[cid]) {
                 d[cid] = true
+            }
         }
         root.deleting = d
     }
