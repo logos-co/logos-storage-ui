@@ -31,13 +31,12 @@ Card {
     }
 
     function pruneDeleting() {
-        var existing = {}
-        for (var i = 0; i < root.manifests.length; i++)
-            existing[root.manifests[i].cid] = true
         var d = {}
-        for (var cid in root.deleting)
-            if (existing[cid])
+        for (var i = 0; i < root.manifests.length; i++) {
+            var cid = root.manifests[i].cid
+            if (root.deleting[cid])
                 d[cid] = true
+        }
         root.deleting = d
     }
 
