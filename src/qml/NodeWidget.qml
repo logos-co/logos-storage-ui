@@ -165,7 +165,8 @@ Card {
                 variant: "secondary"
                 implicitHeight: 32
                 implicitWidth: 65
-                enabled: root.backend
+                enabled: root.backend && (root.effectiveStatus === StorageBackend.Running
+                                          || root.effectiveStatus === StorageBackend.Stopped)
                 onClicked: {
                     if (!root.backend)
                         return

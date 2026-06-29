@@ -90,13 +90,21 @@ void StorageBackend::init(QString configJson) {
     qDebug() << "StorageBackend::initStorage: init";
 
     if (!result) {
+        m_contextInitialized = false;
         setStatus(Destroyed);
         reportError("Failed to init storage");
         emit initCompleted(false, "Failed to init storage");
         return;
     }
 
+    m_contextInitialized = true;
     setStatus(Stopped);
+
+    if (m_eventsSubscribed) {
+        debug("new config is: " + configJson);
+        emit initCompleted(true, QString());
+        return;
+    }
 
     if (!m_logos->storage_module.on("storageStart", [this](const QVariantList& data) {
             QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
@@ -132,9 +140,27 @@ void StorageBackend::init(QString configJson) {
                 QString message = payload["message"].toString();
                 reportError("Failed to stop Storage module:" + message);
             } else {
-                setStatus(Stopped);
-
                 debug("Storage module stopped.");
+                QTimer::singleShot(0, this, [this]() {
+                    LogosResult destroyResult = m_logos->storage_module.destroy();
+                    if (!destroyResult.success) {
+                        const QString error = destroyResult.getError();
+                        if (error.isEmpty()) {
+                            qWarning() << "StorageBackend: destroy after stop returned an empty failed result;"
+                                       << "assuming the stopped context was destroyed.";
+                            m_contextInitialized = false;
+                        } else {
+                            reportError("Error when trying to destroy stopped context: " + error);
+                        }
+                    } else {
+                        m_contextInitialized = false;
+                        qDebug() << "StorageBackend: Storage module destroyed after stop.";
+                    }
+
+                    setStatus(Stopped);
+                    emit stopCompleted();
+                });
+                return;
             }
 
             emit stopCompleted();
@@ -246,6 +272,7 @@ void StorageBackend::init(QString configJson) {
     }
 
     debug("new config is: " + configJson);
+    m_eventsSubscribed = true;
 
     emit initCompleted(true, QString());
 }
@@ -262,6 +289,16 @@ void StorageBackend::start() {
         reloadIfChanged(configJsonStr);
     } else {
         debug("Cannot open the user config file.", "warning");
+    }
+
+    if (status() == Stopped && !m_contextInitialized) {
+        if (m_config.isNull()) {
+            debug("The Storage Module is not initialised properly.");
+            emit startFailed("The Storage Module is not initialised properly.");
+            return;
+        }
+
+        init(QString::fromUtf8(m_config.toJson(QJsonDocument::Compact)));
     }
 
     if (status() != Stopped) {
@@ -316,6 +353,11 @@ void StorageBackend::stop() {
 void StorageBackend::destroy() {
     qDebug() << "StorageBackend: destroy method called";
 
+    if (!m_contextInitialized) {
+        qDebug() << "StorageBackend: Storage module context already destroyed.";
+        return;
+    }
+
     auto result = m_logos->storage_module.destroy();
 
     if (!result.success) {
@@ -323,6 +365,7 @@ void StorageBackend::destroy() {
         return;
     }
 
+    m_contextInitialized = false;
     qDebug() << "StorageBackend: Storage module destroyed.";
 }
 
@@ -562,13 +605,14 @@ void StorageBackend::reloadIfChanged(QString configJsonStr) {
         return;
     }
 
-    if (status() == Stopped) {
+    if (status() == Stopped && m_contextInitialized) {
         LogosResult result = m_logos->storage_module.destroy();
 
         if (!result.success) {
             reportError("Failed to destroy the context error=" + result.getError());
             return;
         } else {
+            m_contextInitialized = false;
             setStatus(Destroyed);
         }
     }
