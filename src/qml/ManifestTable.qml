@@ -17,6 +17,8 @@ Card {
     property bool isDownloading: false
     property string downloadFolderPath: ""
 
+    signal downloadRequested
+
     // Background manifest fetches in progress / failed. Each entry:
     // { cid, status: "fetching" | "error", error }. Shown as rows above the
     // real manifests until the fetch resolves (success refreshes the list and
@@ -421,6 +423,7 @@ Card {
                                                 cursorShape: Qt.PointingHandCursor
                                                 onClicked: {
                                                     const dest = root.downloadFolderPath.replace(/\/$/, "") + "/" + (modelData.filename || modelData.cid || "download")
+                                                    root.downloadRequested()
                                                     root.backend.downloadFile(
                                                                 modelData.cid,
                                                                 dest,

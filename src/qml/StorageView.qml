@@ -136,6 +136,7 @@ LogosStorageLayout {
             backend: root.backend
             running: root.running
             downloadFolderPath: settings.downloadFolderPath
+            onDownloadRequested: downloadWidget.startLooking()
         }
     }
 }
