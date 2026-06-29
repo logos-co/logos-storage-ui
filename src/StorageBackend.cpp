@@ -145,18 +145,20 @@ void StorageBackend::init(QString configJson) {
                     LogosResult destroyResult = m_logos->storage_module.destroy();
                     if (!destroyResult.success) {
                         const QString error = destroyResult.getError();
-                        if (error.isEmpty()) {
-                            qWarning() << "StorageBackend: destroy after stop returned an empty failed result;"
-                                       << "assuming the stopped context was destroyed.";
-                            m_contextInitialized = false;
-                        } else {
+                        if (!error.isEmpty()) {
                             reportError("Error when trying to destroy stopped context: " + error);
+                            setStatus(Stopped);
+                            emit stopCompleted();
+                            return;
                         }
+
+                        qWarning() << "StorageBackend: destroy after stop returned an empty failed result;"
+                                   << "forcing re-init on next start.";
                     } else {
-                        m_contextInitialized = false;
                         qDebug() << "StorageBackend: Storage module destroyed after stop.";
                     }
 
+                    m_contextInitialized = false;
                     setStatus(Stopped);
                     emit stopCompleted();
                 });
