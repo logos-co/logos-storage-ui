@@ -49,13 +49,6 @@ ColumnLayout {
                 onClicked: root.backend.logVersion()
             }
             LogosStorageButton {
-                text: "Settings"
-                implicitHeight: 32
-                implicitWidth: 90
-                enabled: root.running
-                onClicked: root.backend.listSettings()
-            }
-            LogosStorageButton {
                 text: "Restart onboarding"
                 implicitHeight: 32
                 implicitWidth: 150

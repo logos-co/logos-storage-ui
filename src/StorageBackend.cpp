@@ -448,30 +448,12 @@ void StorageBackend::logVersion() {
     debug("Logos Storage UI=1.0.0");
 }
 
-void StorageBackend::listSettings() {
-    qDebug() << "StorageBackend::listSettings called";
-
-    QSettings settings;
-
-    debug("Settings file: " + settings.fileName());
-
-    QStringList lines;
-    for (const QString &key : settings.allKeys()) {
-        if (key.startsWith("Storage")){
-          lines << key + " = " + settings.value(key).toString();
-        }
-    }
-    QString all = lines.join("\n");
-    debug("All settings:\n" + all);
-}
-
 void StorageBackend::restartOnboarding() {
     qDebug() << "StorageBackend::restartOnboarding called";
 
     QSettings settings;
     settings.setValue("Storage/onboardingCompleted", false);
     settings.sync();
-    StorageBackend::listSettings();
     emit onboardingRestarted();
 }
 
