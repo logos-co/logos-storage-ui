@@ -2,6 +2,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
+#include <QEventLoop>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -30,7 +31,8 @@ StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
     : StorageBackendSimpleSource(parent), m_logosAPI(nullptr), m_logos(nullptr) {
     qDebug() << "Initializing StorageBackend...";
 
-    setStatus(Destroyed);
+    m_config = defaultConfig();
+    setStatus(Stopped);
     setDefaultListenPort(DEFAULT_LISTEN_PORT);
     setDefaultConfigJson(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
 
@@ -75,28 +77,21 @@ void StorageBackend::debug(const QString& log, const QString& level) {
     }
 }
 
-void StorageBackend::init(QString configJson) {
-    qDebug() << "StorageBackend::initStorage called";
+void StorageBackend::loadConfig(QString configJson) {
+    qDebug() << "StorageBackend::loadConfig called";
 
     m_config = QJsonDocument::fromJson(configJson.toUtf8());
     if (m_config.isNull()) {
         reportError("Failed to create the storage: invalid JSON config:" + configJson);
-        emit initCompleted(false, "Failed to create the storage, invalid json config");
-        return;
-    }
-
-    bool result = m_logos->storage_module.init(configJson);
-
-    qDebug() << "StorageBackend::initStorage: init";
-
-    if (!result) {
-        setStatus(Destroyed);
-        reportError("Failed to init storage");
-        emit initCompleted(false, "Failed to init storage");
         return;
     }
 
     setStatus(Stopped);
+
+    if (m_eventsSubscribed) {
+        debug("new config is: " + configJson);
+        return;
+    }
 
     if (!m_logos->storage_module.on("storageStart", [this](const QVariantList& data) {
             QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
@@ -132,9 +127,14 @@ void StorageBackend::init(QString configJson) {
                 QString message = payload["message"].toString();
                 reportError("Failed to stop Storage module:" + message);
             } else {
+                debug("Storage module stopped.");
                 setStatus(Stopped);
 
-                debug("Storage module stopped.");
+                if (m_restartAfterStop) {
+                    m_restartAfterStop = false;
+                    QMetaObject::invokeMethod(this, &StorageBackend::start,
+                                              Qt::QueuedConnection);
+                }
             }
 
             emit stopCompleted();
@@ -246,8 +246,7 @@ void StorageBackend::init(QString configJson) {
     }
 
     debug("new config is: " + configJson);
-
-    emit initCompleted(true, QString());
+    m_eventsSubscribed = true;
 }
 
 void StorageBackend::start() {
@@ -259,7 +258,13 @@ void StorageBackend::start() {
 
     if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QString configJsonStr = QString::fromUtf8(file.readAll());
-        reloadIfChanged(configJsonStr);
+        QJsonDocument config = QJsonDocument::fromJson(configJsonStr.toUtf8());
+        if (config.isNull()) {
+            reportError("Failed to start storage: invalid JSON config:" + configJsonStr);
+            emit startFailed("Failed to start storage, invalid json config");
+            return;
+        }
+        m_config = config;
     } else {
         debug("Cannot open the user config file.", "warning");
     }
@@ -273,7 +278,7 @@ void StorageBackend::start() {
     setStatus(Starting);
     debug("Starting Storage module...");
 
-    auto result = m_logos->storage_module.start();
+    auto result = m_logos->storage_module.start(configJson());
 
     if (!result) {
         setStatus(Stopped);
@@ -311,19 +316,6 @@ void StorageBackend::stop() {
     }
 
     qDebug() << "StorageBackend: stop command sent, waiting for events.";
-}
-
-void StorageBackend::destroy() {
-    qDebug() << "StorageBackend: destroy method called";
-
-    auto result = m_logos->storage_module.destroy();
-
-    if (!result.success) {
-        reportError("Error when trying to destroy: " + result.getError());
-        return;
-    }
-
-    qDebug() << "StorageBackend: Storage module destroyed.";
 }
 
 void StorageBackend::logDebugInfo() {
@@ -542,44 +534,6 @@ void StorageBackend::refreshSpace() {
     emit spaceUpdated(total, used);
 }
 
-void StorageBackend::reloadIfChanged(QString configJsonStr) {
-    QJsonDocument config = QJsonDocument::fromJson(configJsonStr.toUtf8());
-    if (config.isNull()) {
-        debug("Invalid json detected !");
-        return;
-    }
-
-    if (m_config == config) {
-        debug("No change detected in the config");
-        return;
-    }
-
-    debug("New config detected");
-
-    if (status() == Running || status() == Stopping ||
-        status() == Starting) {
-        debug("Cannot reload the config while running, stopping or starting...");
-        return;
-    }
-
-    if (status() == Stopped) {
-        LogosResult result = m_logos->storage_module.destroy();
-
-        if (!result.success) {
-            reportError("Failed to destroy the context error=" + result.getError());
-            return;
-        } else {
-            setStatus(Destroyed);
-        }
-    }
-
-    init(configJsonStr);
-
-    m_config = config;
-    saveUserConfig(configJsonStr);
-    setStatus(Stopped);
-}
-
 void StorageBackend::saveCurrentConfig() {
     qDebug() << "StorageBackend::saveCurrentConfig";
     saveUserConfig(configJson());
@@ -587,6 +541,12 @@ void StorageBackend::saveCurrentConfig() {
 
 void StorageBackend::saveUserConfig(QString configJsonStr) {
     qDebug() << "StorageBackend::saveUserConfig";
+
+    QJsonDocument config = QJsonDocument::fromJson(configJsonStr.toUtf8());
+    if (config.isNull()) {
+        reportError("Invalid json config" + configJsonStr);
+        return;
+    }
 
     QString folderPath = QFileInfo(USER_CONFIG_PATH).absolutePath();
     QDir().mkpath(folderPath);
@@ -597,13 +557,41 @@ void StorageBackend::saveUserConfig(QString configJsonStr) {
         debug("Config saved to " + USER_CONFIG_PATH);
     } else {
         reportError("Failed to save config to " + USER_CONFIG_PATH);
+        return;
     }
+
+    m_config = config;
+}
+
+void StorageBackend::applyUserConfig(QString configJsonStr) {
+    qDebug() << "StorageBackend::applyUserConfig";
 
     QJsonDocument config = QJsonDocument::fromJson(configJsonStr.toUtf8());
     if (config.isNull()) {
         reportError("Invalid json config" + configJsonStr);
         return;
     }
+
+    if (status() == Starting || status() == Stopping) {
+        reportError("Cannot apply config while the Storage Module is starting or stopping.");
+        return;
+    }
+
+    const bool wasRunning = status() == Running;
+    const bool changed = m_config != config;
+    saveUserConfig(configJsonStr);
+
+    if (!wasRunning) {
+        setStatus(Stopped);
+        return;
+    }
+
+    if (!changed) {
+        return;
+    }
+
+    m_restartAfterStop = true;
+    stop();
 }
 
 QJsonDocument StorageBackend::defaultConfig() {
@@ -684,7 +672,7 @@ void StorageBackend::enableUpnpConfig() {
 
     obj["nat"] = "upnp";
 
-    reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented)));
+    saveUserConfig(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented)));
 }
 
 void StorageBackend::enableNatExtConfig(int tcpPort) {
@@ -717,7 +705,7 @@ void StorageBackend::enableNatExtConfig(int tcpPort) {
             obj["nat"] = "extip:" + ip;
         }
 
-        reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
+        saveUserConfig(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
 
         emit natExtConfigCompleted();
     });
@@ -831,10 +819,10 @@ void StorageBackend::loadUserConfig() {
     QFile file(USER_CONFIG_PATH);
 
     if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        init(QString::fromUtf8(file.readAll()));
+        loadConfig(QString::fromUtf8(file.readAll()));
     } else {
         debug("Failed to read the user config file, fallback to default config");
-        init(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
+        loadConfig(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
     }
 }
 

@@ -37,7 +37,6 @@ QtObject {
     function stop() {
         status = 0
     }
-    function destroy() {}
     function checkNodeIsUp() {}
     function fetchWidgetsData() {}
     function uploadFile(url) {}
@@ -56,9 +55,9 @@ QtObject {
     function logVersion() {}
     function restartOnboarding() {}
     function saveUserConfig(json) {}
+    function applyUserConfig(json) {}
     function saveCurrentConfig() {}
     function loadUserConfig() {}
-    function reloadIfChanged(json) {}
     function enableUpnpConfig() {}
     function enableNatExtConfig(tcpPort) {
         natExtConfigCompleted()
