@@ -45,9 +45,7 @@ Card {
             Layout.alignment: Qt.AlignTop
             enabled: cidInput.text.length > 0 && root.running && root.enabled
             onClicked: {
-                root.enabled = false
                 root.backend.downloadManifest(cidInput.text)
-                root.enabled = true
                 cidInput.clear()
             }
         }

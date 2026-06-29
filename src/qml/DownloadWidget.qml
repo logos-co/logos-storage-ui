@@ -17,6 +17,11 @@ Card {
     property string downloadCid: ""
     property real totalBytes: 0
     property real downloadedBytes: 0
+    property bool downloadInProgress: false
+
+    function startLooking() {
+        root.downloadInProgress = true
+    }
 
     readonly property real progress: totalBytes > 0 ? Math.min(
                                                           downloadedBytes / totalBytes,
@@ -37,6 +42,7 @@ Card {
         root.downloadFilename = ""
         root.totalBytes = 0
         root.downloadedBytes = 0
+        root.downloadInProgress = false
         root.initBlocks()
     }
 
@@ -91,6 +97,11 @@ Card {
 
         function onDownloadCompleted(cid) {
             root.downloadedBytes = root.totalBytes
+            root.downloadInProgress = false
+        }
+
+        function onError(message) {
+            root.downloadInProgress = false
         }
     }
 
@@ -181,7 +192,7 @@ Card {
         // ── BottomTitle — visible when idle ───────────────────────────────────
         BottomTitle {
             Layout.fillWidth: true
-            title: "No download in progress"
+            title: root.downloadInProgress ? "Looking for peers..." : "No download in progress"
             visible: !root.isDownloading && !root.isDone
         }
 
