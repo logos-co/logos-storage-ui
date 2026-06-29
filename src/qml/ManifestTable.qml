@@ -15,7 +15,32 @@ Card {
     property var manifests: []
     property bool panelOpen: false
     property bool isDownloading: false
+    property string downloadingCid: ""
     property string downloadFolderPath: ""
+    property var deleting: ({})
+
+    function markDeleting(cid) {
+        var d = Object.assign({}, root.deleting)
+        d[cid] = true
+        root.deleting = d
+    }
+
+    function unmarkDeleting(cid) {
+        var d = Object.assign({}, root.deleting)
+        delete d[cid]
+        root.deleting = d
+    }
+
+    function pruneDeleting() {
+        var d = {}
+        for (var i = 0; i < root.manifests.length; i++) {
+            var cid = root.manifests[i].cid
+            if (root.deleting[cid]) {
+                d[cid] = true
+            }
+        }
+        root.deleting = d
+    }
 
     signal downloadRequested
 
@@ -106,6 +131,15 @@ Card {
             function onManifestsUpdated(manifests) {
                 root.manifests = manifests
                 root.prunePending()
+                root.pruneDeleting()
+            }
+
+            function onRemoveStarted(cid) {
+                root.markDeleting(cid)
+            }
+
+            function onRemoveFailed(cid, error) {
+                root.unmarkDeleting(cid)
             }
 
             function onManifestFetchStarted(cid) {
@@ -118,14 +152,17 @@ Card {
 
             function onDownloadStarted(cid, filename, total) {
                 root.isDownloading = true
+                root.downloadingCid = cid
             }
 
             function onDownloadCompleted(cid) {
                 root.isDownloading = false
+                root.downloadingCid = ""
             }
 
             function onError(message) {
                 root.isDownloading = false
+                root.downloadingCid = ""
             }
         }
 
@@ -225,6 +262,9 @@ Card {
                         width: manifestList.width
                         height: 72
                         color: Theme.palette.backgroundSecondary
+
+                        readonly property bool rowDeleting: root.deleting[modelData.cid] === true
+                        readonly property bool rowDownloading: root.downloadingCid === modelData.cid
 
                         RowLayout {
                             anchors.fill: parent
@@ -336,7 +376,7 @@ Card {
                             }
 
                             Text {
-                                text: modelData.status === "fetching" ? "Fetching..." : (modelData.status === "error" ? (modelData.error || "Failed") : (modelData.filename || ""))
+                                text: modelData.status === "fetching" ? "Fetching..." : (modelData.status === "error" ? (modelData.error || "Failed") : (rowDeleting ? "Deleting..." : (modelData.filename || "")))
                                 color: modelData.status === "error" ? Theme.palette.error : Theme.palette.text
                                 font.pixelSize: Theme.typography.secondaryText
                                 elide: Text.ElideRight
@@ -394,9 +434,9 @@ Card {
                                             radius: Theme.spacing.radiusXlarge * 2
                                             color: Theme.palette.backgroundButton
                                             border.color: dlHover.hovered
-                                                          && root.running && !root.isDownloading ? Theme.palette.primary : Theme.palette.borderInteractive
+                                                          && root.running && !root.isDownloading && !rowDeleting ? Theme.palette.primary : Theme.palette.borderInteractive
                                             border.width: 1
-                                            opacity: root.running && !root.isDownloading ? 1.0 : 0.35
+                                            opacity: root.running && !root.isDownloading && !rowDeleting ? 1.0 : 0.35
 
                                             Behavior on opacity {
                                                 NumberAnimation {
@@ -419,7 +459,7 @@ Card {
                                             MouseArea {
                                                 objectName: "downloadButton"
                                                 anchors.fill: parent
-                                                enabled: root.running && !root.isDownloading
+                                                enabled: root.running && !root.isDownloading && !rowDeleting
                                                 cursorShape: Qt.PointingHandCursor
                                                 onClicked: {
                                                     const dest = root.downloadFolderPath.replace(/\/$/, "") + "/" + (modelData.filename || modelData.cid || "download")
@@ -440,9 +480,9 @@ Card {
                                             radius: Theme.spacing.radiusXlarge * 2
                                             color: Theme.palette.backgroundButton
                                             border.color: rmHover.hovered
-                                                          && root.running ? Theme.palette.primary : Theme.palette.borderInteractive
+                                                          && root.running && !rowDeleting && !rowDownloading ? Theme.palette.primary : Theme.palette.borderInteractive
                                             border.width: 1
-                                            opacity: root.running ? 1.0 : 0.35
+                                            opacity: root.running && !rowDeleting && !rowDownloading ? 1.0 : 0.35
 
                                             Behavior on opacity {
                                                 NumberAnimation {
@@ -465,7 +505,7 @@ Card {
                                             MouseArea {
                                                 objectName: "deleteButton"
                                                 anchors.fill: parent
-                                                enabled: root.running
+                                                enabled: root.running && !rowDeleting && !rowDownloading
                                                 cursorShape: Qt.PointingHandCursor
                                                 onClicked: {
                                                     if (modelData.cid.length > 0) {

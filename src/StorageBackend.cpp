@@ -227,6 +227,24 @@ void StorageBackend::init(QString configJson) {
         qWarning() << "StorageWidget: failed to subscribe to storageDownloadManifestDone events";
     }
 
+    if (!m_logos->storage_module.on("storageRemoveDone", [this](const QVariantList& data) {
+            QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
+            bool success = payload["success"].toBool();
+            QString cid = payload["cid"].toString();
+
+            if (!success) {
+                QString message = payload["error"].toString();
+                emit removeFailed(cid, message);
+                reportError("Failed to remove " + cid + ": " + message);
+            } else {
+                debug("Cid " + cid + " removed from local storage.");
+                QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace, Qt::QueuedConnection);
+                QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
+            }
+        })) {
+        qWarning() << "StorageWidget: failed to subscribe to storageRemoveDone events";
+    }
+
     debug("new config is: " + configJson);
 
     emit initCompleted(true, QString());
@@ -395,11 +413,10 @@ void StorageBackend::remove(QString cid) {
         return;
     }
 
-    debug("Cid " + cid + " removed from local storage.");
-
-    QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace,
-                              Qt::QueuedConnection);
-    QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
+    // The removal runs in the background: the outcome arrives later via the
+    // "storageRemoveDone" event. Signal the start so the UI can show a pending
+    // state.
+    emit removeStarted(cid);
 }
 
 void StorageBackend::fetch(QString cid) {

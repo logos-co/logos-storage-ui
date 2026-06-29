@@ -26,6 +26,8 @@ QtObject {
     signal manifestsUpdated(var manifests)
     signal manifestFetchStarted(string cid)
     signal manifestFetchFailed(string cid, string error)
+    signal removeStarted(string cid)
+    signal removeFailed(string cid, string error)
     signal stopCompleted
     signal onboardingRestarted
 
@@ -44,7 +46,9 @@ QtObject {
         manifestFetchStarted(cid)
     }
     function downloadManifests() {}
-    function remove(cid) {}
+    function remove(cid) {
+        removeStarted(cid)
+    }
     function logDebugInfo() {}
     function logPeerId() {}
     function logDataDir() {}
