@@ -91,14 +91,14 @@ After onboarding, settings are saved to a file whose location depends on the OS:
 | OS      | Path                                             |
 |---------|--------------------------------------------------|
 | Linux   | `~/.config/Logos/LogosStandalone.conf`           |
-| macOS   | `~/Library/Preferences/co.logos.LogosStandalone.plist` |
+| macOS   | `~/Library/Preferences/com.logos.LogosStandalone.plist` |
 
 If you are running this UI inside the Basecamp application, the location of the preferences files will be:
 
 | OS      | Path                                             |
 |---------|--------------------------------------------------|
 | Linux   | `~/.config/Logos/LogosBasecamp.conf`           |
-| macOS   | `~/Library/Preferences/co.logos.LogosBasecamp.plist` |
+| macOS   | `~/Library/Preferences/com.logos.LogosBasecamp.plist` |
 
 
 The settings are saved to the preferences file to preserve the onboarding defaults, but the active configuration is stored in `${HOME}/.logos_storage/config.json`. You can tweak the values there directly. Note that running the onboarding again will override any onboarding-related values.
