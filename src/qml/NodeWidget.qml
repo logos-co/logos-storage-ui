@@ -183,10 +183,11 @@ Card {
 
             Connections {
                 target: root.backend
-                function onMixRunningChanged() {
-                    // A (re)start resets private queries to their default-on state.
-                    if (root.backend.mixRunning)
-                        mixSwitch.privateQueriesEnabled = true
+                function onStartCompleted() {
+                    // The node re-enables private queries on every (re)start. If
+                    // the user turned them off, re-apply that choice once it's up.
+                    if (root.backend.mixRunning && !mixSwitch.privateQueriesEnabled)
+                        root.backend.togglePrivateQueries(false)
                 }
             }
 
