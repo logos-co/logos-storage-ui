@@ -57,6 +57,16 @@ void StorageBackend::reportError(const QString& message) {
     emit error(message);
 }
 
+static int seenPeerCount(const QVariantList& nodes) {
+    int count = 0;
+    for (const QVariant& node : nodes) {
+        if (node.toMap().value("seen").toBool()) {
+            ++count;
+        }
+    }
+    return count;
+}
+
 void StorageBackend::debug(const QString& log, const QString& level) {
     QString current = debugLogs();
     if (!current.isEmpty()) {
@@ -371,7 +381,7 @@ void StorageBackend::logDebugInfo() {
     debug(QString::fromUtf8(QJsonDocument::fromVariant(map).toJson(QJsonDocument::Indented)));
 
     QVariantList nodes = map.value("table").toMap().value("nodes").toList();
-    emit peersUpdated(nodes.size());
+    emit peersUpdated(seenPeerCount(nodes));
 }
 
 void StorageBackend::uploadFile(QUrl url) {
@@ -765,10 +775,12 @@ void StorageBackend::checkNodeIsUp() {
 
     QVariantMap table = result.getValue<QVariantMap>("table");
     QVariantList nodes = table["nodes"].toList();
+    const int peers = seenPeerCount(nodes);
+    emit peersUpdated(peers);
 
-    debug(QString("Connected peers: %1").arg(nodes.size()));
+    debug(QString("Connected peers: %1").arg(peers));
 
-    if (nodes.isEmpty()) {
+    if (peers == 0) {
         qWarning() << "StorageBackend::checkNodeIsUp No peers connected";
         emit nodeIsntUp("No peers connected. "
                         "Try modifying the discovery port (default 8090) in the advanced settings.");

@@ -74,7 +74,8 @@ Card {
             }
 
             LogosText {
-                text: "Peer connections are in good standing."
+                text: root.peers > 0 ? "Peer connections are in good standing."
+                                     : "No active peer connections."
                 font.pixelSize: Theme.typography.secondaryText
                 color: Theme.palette.textMuted
                 font.family: "monospace"
