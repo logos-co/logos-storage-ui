@@ -101,7 +101,7 @@ Card {
         }
 
         function onError(message) {
-            root.downloadInProgress = false
+            root.reset()
         }
     }
 

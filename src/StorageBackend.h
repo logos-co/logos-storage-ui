@@ -25,7 +25,62 @@ static const int DEFAULT_CHUNK_SIZE = 1024 * 64;
 
 // Default network preset of the storage module. The preset bundles its own
 // bootstrap nodes, so a config carrying "network" needs no "bootstrap-node".
-static const QString DEFAULT_NETWORK_PRESET = "logos.test";
+static const QString DEFAULT_NETWORK_PRESET = "logos.dev";
+
+// SPRs used as dht-mix-proxy destinations when Mix is enabled. Temporary
+// single proxy until the network ships a preset of proxy nodes.
+static const QStringList DHT_MIX_PROXY = {
+  "spr:CiUIAhIhA11LamlswboRlyrpEXBubPQAr2WRmqjgWRC4JsvFptrCEgIDARpHCicAJQgCEiEDXUtqaWzBuhGXKukRcG5s9ACvZZGaqOBZELgmy8Wm2sIQnO-N0gYaCgoIBBiQTsgGH5AaCgoIBBiQTsgGH5AqRjBEAiAjgWii--TgYd2tPwyekCu4H3yDw-qngLo1SfbmDcL7SAIgE2o_HdzRO3MXyn3MtMMmPJtUdnhBS3uMJrxGy6sf6xY",
+  "spr:CiUIAhIhAzZMgD-qjJe5tlKjSoF78qo7MM4sxRSLWPmgkye9R6YsEgIDARpHCicAJQgCEiEDNkyAP6qMl7m2UqNKgXvyqjswzizFFItY-aCTJ71HpiwQgOiN0gYaCgoIBLymyHcGH5AaCgoIBLymyHcGH5AqRjBEAiBx0mCFW3Zr2f7ck_VsZYCuzw2XhDlohttGnKOIB2OeMAIgCfE2efI0_GKYOKjxu5mSJJmQAV7Vnty_Ob_8kVhfLow",
+  "spr:CiUIAhIhAwi_g5xHmn-aLe9OVMxOaBADpkjm2uiQItF5cUbCqLQ9EgIDARpHCicAJQgCEiEDCL-DnEeaf5ot705UzE5oEAOmSOba6JAi0XlxRsKotD0Q5OaN0gYaCgoIBCIq5jsGH5AaCgoIBCIq5jsGH5AqRjBEAiATmAcBpRdG1_33TfuX_XlVqN6D7XLgvuNkl13Mv8hGLQIgAVVq_pLJUThfo_yXI5HaMXQIiT9cYx_vjyjGil6cqpE",
+  "spr:CiUIAhIhAiwKmSwu6gxwCcUU_EeE8dPdE_GJDlw17E5qORPHvjflEgIDARpHCicAJQgCEiECLAqZLC7qDHAJxRT8R4Tx090T8YkOXDXsTmo5E8e-N-UQyeiN0gYaCgoIBCI7UnMGH5AaCgoIBCI7UnMGH5AqRjBEAiBoss-6Bel-mSmeEAhWoF0VbIJ_TwEKBmeWDTy7RhCKaQIgByK8s5__HQ1iYxBL_1_iHiq0mfowhtTbntKBCL6F7PY",
+  "spr:CiUIAhIhAuc7v0KnrAyWlwcAw72SvOxVDRG0yAA3ldfwAz6ArdCOEgIDARpHCicAJQgCEiEC5zu_QqesDJaXBwDDvZK87FUNEbTIADeV1_ADPoCt0I4Qy-WN0gYaCgoIBC_u5W8GH5AaCgoIBC_u5W8GH5AqRzBFAiEA_23ADTmzzORJAxsGTt3apZi1J_Y9JPbTuCmbdzFAUlcCIEsnRXEKWLZKj0XgRSu5JVX8m51n4fCLv4L8JdNQn7Rj",
+  "spr:CiUIAhIhAm-BN7CX8n1CSWBqCX76J1ppr8R8Zwd0a6SVEZeiHvvSEgIDARpHCicAJQgCEiECb4E3sJfyfUJJYGoJfvonWmmvxHxnB3RrpJURl6Ie-9IQvueN0gYaCgoIBC9WIsoGH5AaCgoIBC9WIsoGH5AqRjBEAiAVW8C1zXUFM-dEq_RFdINy2EuxJHzm-OYpbpVCGX7R4AIgJ3T_qtFtEBY0-UCWEVxxpbJ-HYXq4yf8YmoH84nEcyM"
+};
+
+// Bundled Mix relay pool, passed inline to the module via the "mix-pool-json"
+// config key (takes precedence over the "mix-pool" file path).
+static const QString MIX_POOL_JSON = R"JSON({
+  "version": 1,
+  "relays": [
+    {
+      "peerId": "16Uiu2HAmJwAxtuRLfjP1SfjE7EWWr6zExFBFVLnUnTsc28fmvrpq",
+      "mixPubKey": "d2bad8ab91f9a63c8a60b1e305fc1045224891ed00719ada2991abe9bc627540",
+      "libp2pPubKey": "035d4b6a696cc1ba11972ae911706e6cf400af65919aa8e05910b826cbc5a6dac2",
+      "multiAddr": "/ip4/24.144.78.200/tcp/8080"
+    },
+    {
+      "peerId": "16Uiu2HAmGJx2MWRH66M2A1RcD5TcY5Z2kReNdddpF9kRyfykBFwy",
+      "mixPubKey": "410d987b608e5164ec1748b964a0ee6d636af4e62667a5a207e7fd766ec42268",
+      "libp2pPubKey": "03364c803faa8c97b9b652a34a817bf2aa3b30ce2cc5148b58f9a09327bd47a62c",
+      "multiAddr": "/ip4/188.166.200.119/tcp/8080"
+    },
+    {
+      "peerId": "16Uiu2HAmDF8zGjsuxM4h1N5x37hzUtGnDHtkVJ8jLiVty1DJyG92",
+      "mixPubKey": "0a9b87d4a03fca9ffd9b0d7b21dd9950741f08d72fc0716bf79c8ad83e702e34",
+      "libp2pPubKey": "0308bf839c479a7f9a2def4e54cc4e681003a648e6dae89022d1797146c2a8b43d",
+      "multiAddr": "/ip4/34.42.230.59/tcp/8080"
+    },
+    {
+      "peerId": "16Uiu2HAkxPbHtGidyULiTjtzRRfSbEL2DPX5cr8HgpvHsjA2T1WL",
+      "mixPubKey": "11fcb95bfe9932339eae0aeef85ecd7b51299a91a6c9ff58f8a1d7d423331614",
+      "libp2pPubKey": "022c0a992c2eea0c7009c514fc4784f1d3dd13f1890e5c35ec4e6a3913c7be37e5",
+      "multiAddr": "/ip4/34.59.82.115/tcp/8080"
+    },
+    {
+      "peerId": "16Uiu2HAmAzJztKiAAMSixFAhUjfWdKB3bGcXGfDFqaut6nc5PTRf",
+      "mixPubKey": "04dddf75ad5090f8975836f8617b7b87cf926a7f2938a5059c9f5e0000509513",
+      "libp2pPubKey": "02e73bbf42a7ac0c96970700c3bd92bcec550d11b4c8003795d7f0033e80add08e",
+      "multiAddr": "/ip4/47.238.229.111/tcp/8080"
+    },
+    {
+      "peerId": "16Uiu2HAm2vwWq3aoJsdk5ovigGJjDL7xDvXFckEyknpJzBL7YENd",
+      "mixPubKey": "cda3b372494a7310c214b2d58644d95410af9878740a0bfe8e998483819d755b",
+      "libp2pPubKey": "026f8137b097f27d4249606a097efa275a69afc47c6707746ba4951197a21efbd2",
+      "multiAddr": "/ip4/47.86.34.202/tcp/8080"
+    }
+  ]
+})JSON";
 
 // The bootstrap nodes the UI used to write into config.json before the module
 // switched to network presets. Kept only to detect un-migrated user configs.
@@ -145,6 +200,11 @@ class StorageBackend : public StorageBackendSimpleSource {
     // and re-create a context with the new configuration
     // Emit natExtConfigCompleted
     void enableNatExtConfig(int tcpPort) override;
+
+    // Toggle private DHT queries over Mix on the running node.
+    // Requires the node to run with mix-enabled and a non-empty dht-mix-proxy.
+    // Emit error(message) and return false on failure.
+    bool togglePrivateQueries(bool enabled) override;
 
     // This method will ensure that the node is ready to be used.
     //

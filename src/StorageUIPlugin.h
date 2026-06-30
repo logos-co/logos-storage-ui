@@ -25,7 +25,7 @@ public:
     ~StorageUIPlugin() override;
 
     QString name()    const override { return "storage_ui"; }
-    QString version() const override { return "1.0.0"; }
+    QString version() const override { return "2.0.0"; }
 
     // Called by ui-host after plugin load. Creates the backend and wires
     // it up with the provided LogosAPI.

@@ -109,6 +109,7 @@ Card {
         }
 
         RowLayout {
+            id: actionRow
 
             RowLayout {
                 spacing: Theme.spacing.medium
@@ -153,11 +154,58 @@ Card {
                     font.pixelSize: Theme.typography.primaryText
                     color: Theme.palette.textSecondary
                     Layout.alignment: Qt.AlignVCenter
+
+                    LogosText {
+                        text: {
+                            switch (root.effectiveStatus) {
+                            case StorageBackend.Stopped:
+                                return "Stopped"
+                            case StorageBackend.Starting:
+                                return "Starting…"
+                            case StorageBackend.Running:
+                                return "Running"
+                            case StorageBackend.Stopping:
+                                return "Stopping…"
+                            case StorageBackend.Destroyed:
+                                return "Not initialised"
+                            default:
+                                return "Unknown"
+                            }
+                        }
+                        font.pixelSize: Theme.typography.primaryText
+                        color: Theme.palette.textSecondary
+                    }
+
                 }
             }
 
             Item {
                 Layout.fillWidth: true
+            }
+
+            LogosStorageSwitch {
+                id: mixSwitch
+                text: "Mix"
+                // Mix is always configured; private queries default on when the
+                // node runs. The toggle only flips them live, no reconfigure.
+                property bool privateQueriesEnabled: true
+                checked: mixSwitch.privateQueriesEnabled
+                enabled: root.effectiveStatus === StorageBackend.Running
+                Layout.alignment: Qt.AlignVCenter
+                onToggled: {
+                    mixSwitch.privateQueriesEnabled = checked
+                    root.backend.togglePrivateQueries(checked)
+                }
+            }
+
+            Connections {
+                target: root.backend
+                function onStartCompleted() {
+                    // The node re-enables private queries on every (re)start. If
+                    // the user turned them off, re-apply that choice once it's up.
+                    if (root.backend.mixRunning && !mixSwitch.privateQueriesEnabled)
+                        root.backend.togglePrivateQueries(false)
+                }
             }
 
             LogosStorageButton {

@@ -107,6 +107,7 @@ void StorageBackend::init(QString configJson) {
     }
 
     setStatus(Stopped);
+    setMixRunning(m_config.object().value("mix-enabled").toBool(false));
 
     if (m_eventsSubscribed) {
         debug("new config is: " + configJson);
@@ -281,6 +282,28 @@ void StorageBackend::start() {
     qDebug() << "StorageBackend: start method called";
 
     migrateUserConfigFile();
+
+    // Migration: Mix must run with a dht-mix-proxy and relay pool. Fill in the
+    // bundled presets only when missing, so user-set values are preserved.
+    QJsonObject cfg = QJsonDocument::fromJson(getUserConfig().toUtf8()).object();
+    bool changed = false;
+    if (!cfg.value("mix-enabled").toBool(false)) {
+        cfg["mix-enabled"] = true;
+        changed = true;
+    }
+    if (cfg.value("dht-mix-proxy").toArray().isEmpty()) {
+        cfg["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
+        changed = true;
+    }
+    if (cfg.value("mix-pool-json").toString().isEmpty()) {
+        cfg["mix-pool-json"] = QString::fromUtf8(
+            QJsonDocument::fromJson(MIX_POOL_JSON.toUtf8()).toJson(QJsonDocument::Compact));
+        changed = true;
+    }
+
+    if (changed) {
+        saveUserConfig(QString::fromUtf8(QJsonDocument(cfg).toJson(QJsonDocument::Indented)));
+    }
 
     QFile file(USER_CONFIG_PATH);
 
@@ -485,10 +508,12 @@ void StorageBackend::logVersion() {
         return;
     }
 
-    // Module version is hardcoded until the module exposes it through the API.
-    debug("Logos Storage Module=1.1.0");
+    debug("Logos Storage Module=" + m_logos->storage_module.moduleVersion());
     debug("Logos Storage Nim=" + result.getString().section('-', -1));
-    debug("Logos Storage UI=1.0.0");
+    debug("Logos Storage UI=" STORAGE_UI_VERSION);
+
+    QString network = m_config.object().value("network").toString();
+    debug("Network=" + (network.isEmpty() ? QStringLiteral("custom") : network));
 }
 
 void StorageBackend::restartOnboarding() {
@@ -660,6 +685,11 @@ QJsonDocument StorageBackend::defaultConfig() {
     obj["disc-port"] = DEFAULT_DISC_PORT;
     obj["nat"] = "none";
 
+    obj["mix-enabled"] = true;
+    obj["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
+    obj["mix-pool-json"] = QString::fromUtf8(
+        QJsonDocument::fromJson(MIX_POOL_JSON.toUtf8()).toJson(QJsonDocument::Compact));
+
     return QJsonDocument(obj);
 }
 
@@ -714,6 +744,17 @@ void StorageBackend::migrateUserConfigFile() {
 
     saveUserConfig(migrated);
     debug("Migrated user config to the network preset format.");
+}
+
+bool StorageBackend::togglePrivateQueries(bool enabled) {
+    qDebug() << "StorageBackend::togglePrivateQueries called with" << enabled;
+
+    LogosResult result = m_logos->storage_module.togglePrivateQueries(enabled);
+    if (!result.success) {
+        reportError("Failed to toggle private queries: " + result.getError());
+        return false;
+    }
+    return true;
 }
 
 void StorageBackend::enableUpnpConfig() {
