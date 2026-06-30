@@ -41799,15 +41799,16 @@
       "locked": {
         "lastModified": 1782786056,
         "narHash": "sha256-nr2oKwg7y+XqBzsg5SZ0pT4loxtcnU6hU90t1eHkmXY=",
-        "owner": "logos-co",
-        "repo": "logos-storage-module",
+        "ref": "refs/pull/64/head",
         "rev": "5f064ef3ec94eb4be39f87152166bf44186f47d2",
-        "type": "github"
+        "revCount": 250,
+        "type": "git",
+        "url": "https://github.com/logos-co/logos-storage-module"
       },
       "original": {
-        "owner": "logos-co",
-        "repo": "logos-storage-module",
-        "type": "github"
+        "ref": "refs/pull/64/head",
+        "type": "git",
+        "url": "https://github.com/logos-co/logos-storage-module"
       }
     }
   },
