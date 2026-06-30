@@ -14,7 +14,7 @@ Card {
     property var backend: MockBackend
     property bool nodeIsUp: false
     property bool blinkOn: false
-    readonly property int effectiveStatus: root.backend ? root.backend.status : StorageBackend.Destroyed
+    readonly property int effectiveStatus: root.backend ? root.backend.status : StorageBackend.Stopped
 
     property string downloadFolderPath: ""
 
@@ -144,8 +144,6 @@ Card {
                             return "Running"
                         case StorageBackend.Stopping:
                             return "Stopping…"
-                        case StorageBackend.Destroyed:
-                            return "Not initialised"
                         default:
                             return "Unknown"
                         }
@@ -165,7 +163,8 @@ Card {
                 variant: "secondary"
                 implicitHeight: 32
                 implicitWidth: 65
-                enabled: root.backend
+                enabled: root.backend && (root.effectiveStatus === StorageBackend.Running
+                                          || root.effectiveStatus === StorageBackend.Stopped)
                 onClicked: {
                     if (!root.backend)
                         return

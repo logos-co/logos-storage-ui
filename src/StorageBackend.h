@@ -8,7 +8,6 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
-#include <QTimer>
 
 static const int RET_OK = 0;
 static const int RET_PROGRESS = 3;
@@ -48,24 +47,10 @@ class StorageBackend : public StorageBackendSimpleSource {
     ~StorageBackend();
 
   public slots:
-    // Init the Storage Module using the config json
-    // passed in parameter.
-    // It subscribes to events:
-    // 1- storageStart
-    // 2- storageStop
-    // 3- storageUploadProgress
-    // 4- storageUploadDone
-    // 5- storageDownloadProgress
-    // 6- storageDownloadProgress
-    void init(QString configJson) override;
-
     // Start the node
     // If the user configuration has changed, it will
     // reloaded it.
     void start() override;
-
-    // Destroy the Storage Module
-    void destroy() override;
 
     // Emit stopCompleted() on completion of it the module is not started
     void stop() override;
@@ -114,6 +99,9 @@ class StorageBackend : public StorageBackendSimpleSource {
     // into the user config json.
     void saveUserConfig(QString configJson) override;
 
+    // Save a new config and restart the node if it is currently running.
+    void applyUserConfig(QString configJson) override;
+
     // Save the current config object
     // into the user config json.
     void saveCurrentConfig() override;
@@ -123,19 +111,6 @@ class StorageBackend : public StorageBackendSimpleSource {
 
     // Get the content of the user config file
     QString getUserConfig() override;
-
-    // Take a new config json and reload the Storage context
-    // if the configuration has changed.
-    //
-    // This method cannot be used if the Storage Module
-    // is running, starting or stopping.
-    //
-    // If the Storage Module was already created,
-    // it will be destroyed first.
-    //
-    // On success, the status will be set to Stopped.
-    //
-    void reloadIfChanged(QString configJson) override;
 
     // Enables the upnp in the config
     // and re-create a context with the new configuration
@@ -192,9 +167,15 @@ class StorageBackend : public StorageBackendSimpleSource {
     // Emit error(message)
     void reportError(const QString& message);
 
+    // Load a config JSON into the backend and subscribe to module events once.
+    void loadConfig(QString configJson);
+
     // Logos related variables
     LogosAPI* m_logosAPI;
     LogosModules* m_logos;
+
+    bool m_eventsSubscribed = false;
+    bool m_restartAfterStop = false;
 
     // Internal configuration object. It can be updated by
     // upnp or port forwarning methods.

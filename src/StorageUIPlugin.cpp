@@ -15,27 +15,18 @@ StorageUIPlugin::StorageUIPlugin(QObject* parent)
 
 StorageUIPlugin::~StorageUIPlugin()
 {
-    // Same branching as legacy destroyWidget (minus QQuickWidget):
-    // Destroyed → noop; not Running → destroy(); Running → queued stop,
-    // wait up to 2s for stopCompleted, then destroy().
     StorageBackend* backend = m_backend;
     if (!backend)
         return;
 
     const StorageStatus s = backend->status();
 
-    if (s == StorageBackendSimpleSource::Destroyed) {
-        qDebug() << "StorageUIPlugin: teardown skipped (backend destroyed)";
-        return;
-    }
-
     if (s != StorageBackendSimpleSource::Running) {
-        qDebug() << "StorageUIPlugin: backend not running, destroying context";
-        backend->destroy();
+        qDebug() << "StorageUIPlugin: backend not running, teardown skipped";
         return;
     }
 
-    qDebug() << "StorageUIPlugin: stopping backend before destroy";
+    qDebug() << "StorageUIPlugin: stopping backend during teardown";
 
     QEventLoop loop;
     QTimer timeout;
@@ -53,8 +44,6 @@ StorageUIPlugin::~StorageUIPlugin()
 
     timeout.start(2000);
     loop.exec();
-
-    backend->destroy();
 }
 
 void StorageUIPlugin::initLogos(LogosAPI* api)

@@ -119,7 +119,7 @@ Popup {
                 variant: "primary"
                 enabled: jsonEditor.isValid
                 onClicked: {
-                    root.backend.saveUserConfig(jsonEditor.text)
+                    root.backend.applyUserConfig(jsonEditor.text)
                     root.close()
                 }
             }

@@ -7,8 +7,7 @@ class StorageBackend
         Stopped = 0,
         Starting = 1,
         Running = 2,
-        Stopping = 3,
-        Destroyed = 4
+        Stopping = 3
     }
 
     PROP(QString debugLogs READONLY)
@@ -17,10 +16,8 @@ class StorageBackend
     PROP(QString defaultConfigJson READONLY)
 
     // Lifecycle
-    SLOT(void init(QString configJson))
     SLOT(void start())
     SLOT(void stop())
-    SLOT(void destroy())
 
     // Upload / Download
     SLOT(void uploadFile(QUrl url))
@@ -36,10 +33,10 @@ class StorageBackend
 
     // Config
     SLOT(void saveUserConfig(QString configJson))
+    SLOT(void applyUserConfig(QString configJson))
     SLOT(void saveCurrentConfig())
     SLOT(void loadUserConfig())
     SLOT(QString getUserConfig())
-    SLOT(void reloadIfChanged(QString configJson))
     SLOT(QString configJson())
 
     // Network / Onboarding
@@ -57,7 +54,6 @@ class StorageBackend
     SLOT(void logPeerId())
 
     // Lifecycle signals
-    SIGNAL(initCompleted(bool success, QString error))
     SIGNAL(startCompleted())
     SIGNAL(startFailed(QString error))
     SIGNAL(stopCompleted())

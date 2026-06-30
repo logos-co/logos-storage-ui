@@ -24818,17 +24818,17 @@
         "nixpkgs": "nixpkgs_594"
       },
       "locked": {
-        "lastModified": 1782330542,
-        "narHash": "sha256-Hs5mrUURGXz0YPQK4f6ZDORa7lj0PpjiI2RXDhoTMnQ=",
-        "ref": "refs/tags/v0.4.0-rc4",
-        "rev": "fe8a3e66258757aa1eedde2657de71793d0f4f38",
-        "revCount": 944,
+        "lastModified": 1782783609,
+        "narHash": "sha256-i+l0vcU30P4Y/70rEc4MI8OhgGeIq2kIHjXNACtoK9E=",
+        "ref": "refs/pull/1476/head",
+        "rev": "ebc0bed04a5e84ae7a87d8a6b8c31e6075740950",
+        "revCount": 955,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/logos-storage/logos-storage-nim"
       },
       "original": {
-        "ref": "refs/tags/v0.4.0-rc4",
+        "ref": "refs/pull/1476/head",
         "submodules": true,
         "type": "git",
         "url": "https://github.com/logos-storage/logos-storage-nim"
@@ -41797,17 +41797,18 @@
         "logos-storage": "logos-storage"
       },
       "locked": {
-        "lastModified": 1782741442,
-        "narHash": "sha256-Qi6f9VgBVsgClIum2e1L36CHh2Zzaf5nK0V1biWv0ZI=",
-        "owner": "logos-co",
-        "repo": "logos-storage-module",
-        "rev": "a6e7cdc7f6eb0f2508c1d89a3bcf4bf0c855609a",
-        "type": "github"
+        "lastModified": 1782816185,
+        "narHash": "sha256-YyEXxts2WzHheGfFpyUPedfeUUkfX3t9bZF3nkmtLbc=",
+        "ref": "refs/pull/64/head",
+        "rev": "f8856f97599196120038a10a2caa09bfe52c9313",
+        "revCount": 251,
+        "type": "git",
+        "url": "https://github.com/logos-co/logos-storage-module"
       },
       "original": {
-        "owner": "logos-co",
-        "repo": "logos-storage-module",
-        "type": "github"
+        "ref": "refs/pull/64/head",
+        "type": "git",
+        "url": "https://github.com/logos-co/logos-storage-module"
       }
     }
   },
