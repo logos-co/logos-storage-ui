@@ -33,7 +33,7 @@ Rectangle {
 
     function validate() {
         try {
-            const cfg = JSON.parse(jsonArea.text)
+            JSON.parse(jsonArea.text)
             isValid = true
         } catch (e) {
             isValid = false
