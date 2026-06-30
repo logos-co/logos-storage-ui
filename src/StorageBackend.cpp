@@ -99,6 +99,12 @@ void StorageBackend::init(QString configJson) {
     setStatus(Stopped);
     setMixRunning(m_config.object().value("mix-enabled").toBool(false));
 
+    if (m_eventsSubscribed) {
+        debug("new config is: " + configJson);
+        emit initCompleted(true, QString());
+        return;
+    }
+
     if (!m_logos->storage_module.on("storageStart", [this](const QVariantList& data) {
             QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
             bool success = payload["success"].toBool();
@@ -133,9 +139,19 @@ void StorageBackend::init(QString configJson) {
                 QString message = payload["message"].toString();
                 reportError("Failed to stop Storage module:" + message);
             } else {
-                setStatus(Stopped);
-
                 debug("Storage module stopped.");
+                QTimer::singleShot(0, this, [this]() {
+                    LogosResult destroyResult = m_logos->storage_module.destroy();
+                    if (!destroyResult.success) {
+                        reportError("Error when trying to destroy stopped context: ");
+                        setStatus(Stopped);
+                    } else {
+                        qDebug() << "StorageBackend: Storage module destroyed after stop.";
+                        setStatus(Destroyed);
+                    }
+                    emit stopCompleted();
+                });
+                return;
             }
 
             emit stopCompleted();
@@ -247,6 +263,7 @@ void StorageBackend::init(QString configJson) {
     }
 
     debug("new config is: " + configJson);
+    m_eventsSubscribed = true;
 
     emit initCompleted(true, QString());
 }
@@ -285,6 +302,16 @@ void StorageBackend::start() {
         reloadIfChanged(configJsonStr);
     } else {
         debug("Cannot open the user config file.", "warning");
+    }
+
+    if (status() == Destroyed) {
+        if (m_config.isNull()) {
+            debug("Failed to start node: m_config not set.");
+            emit startFailed("Failed to start node: configuration not set.");
+            return;
+        }
+
+        init(QString::fromUtf8(m_config.toJson(QJsonDocument::Compact)));
     }
 
     if (status() != Stopped) {
@@ -339,6 +366,11 @@ void StorageBackend::stop() {
 void StorageBackend::destroy() {
     qDebug() << "StorageBackend: destroy method called";
 
+    if (status() == Destroyed) {
+        qDebug() << "StorageBackend: Storage module context already destroyed.";
+        return;
+    }
+
     auto result = m_logos->storage_module.destroy();
 
     if (!result.success) {
@@ -346,6 +378,7 @@ void StorageBackend::destroy() {
         return;
     }
 
+    setStatus(Destroyed);
     qDebug() << "StorageBackend: Storage module destroyed.";
 }
 

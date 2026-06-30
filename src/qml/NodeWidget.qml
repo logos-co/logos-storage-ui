@@ -134,8 +134,25 @@ Card {
                              === StorageBackend.Running ? (root.blinkOn ? 1.0 : 0.15) : 1.0
                 }
 
-                ColumnLayout {
-                    spacing: 0
+                LogosText {
+                    text: {
+                        switch (root.effectiveStatus) {
+                        case StorageBackend.Stopped:
+                            return "Stopped"
+                        case StorageBackend.Starting:
+                            return "Starting…"
+                        case StorageBackend.Running:
+                            return "Running"
+                        case StorageBackend.Stopping:
+                            return "Stopping…"
+                        case StorageBackend.Destroyed:
+                            return "Stopped"
+                        default:
+                            return "Unknown"
+                        }
+                    }
+                    font.pixelSize: Theme.typography.primaryText
+                    color: Theme.palette.textSecondary
                     Layout.alignment: Qt.AlignVCenter
 
                     LogosText {
@@ -196,7 +213,8 @@ Card {
                 variant: "secondary"
                 implicitHeight: 32
                 implicitWidth: 65
-                enabled: root.backend
+                enabled: root.backend && (root.effectiveStatus === StorageBackend.Running
+                                          || root.effectiveStatus === StorageBackend.Destroyed)
                 onClicked: {
                     if (!root.backend)
                         return
