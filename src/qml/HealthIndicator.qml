@@ -7,7 +7,7 @@ QtObject {
     property var backend: MockBackend
     property bool nodeIsUp: false
     property bool blinkOn: true
-    readonly property int threeMinutes: 180000
+    readonly property int checkIntervalMs: 60000
 
     // 600 ms blink toggle
     property Timer blinkTimer: Timer {
@@ -17,9 +17,9 @@ QtObject {
         onTriggered: root.blinkOn = !root.blinkOn
     }
 
-    // Reachability check every 3 minutes while running
+    // Reachability check while running
     property Timer checkTimer: Timer {
-        interval: root.threeMinutes
+        interval: root.checkIntervalMs
         repeat: true
         running: root.backend !== null && root.backend.status === StorageBackend.Running
         triggeredOnStart: true
