@@ -24828,7 +24828,7 @@
         "url": "https://github.com/logos-storage/logos-storage-nim"
       },
       "original": {
-        "ref": "refs/tags/v0.4.0-rc4",
+        "ref": "refs/pull/1476/head",
         "submodules": true,
         "type": "git",
         "url": "https://github.com/logos-storage/logos-storage-nim"
@@ -41797,11 +41797,11 @@
         "logos-storage": "logos-storage"
       },
       "locked": {
-        "lastModified": 1782786056,
-        "narHash": "sha256-nr2oKwg7y+XqBzsg5SZ0pT4loxtcnU6hU90t1eHkmXY=",
+        "lastModified": 1782816185,
+        "narHash": "sha256-YyEXxts2WzHheGfFpyUPedfeUUkfX3t9bZF3nkmtLbc=",
         "ref": "refs/pull/64/head",
-        "rev": "5f064ef3ec94eb4be39f87152166bf44186f47d2",
-        "revCount": 250,
+        "rev": "f8856f97599196120038a10a2caa09bfe52c9313",
+        "revCount": 251,
         "type": "git",
         "url": "https://github.com/logos-co/logos-storage-module"
       },
