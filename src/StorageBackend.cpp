@@ -654,9 +654,6 @@ QJsonDocument StorageBackend::defaultConfig() {
 }
 
 bool StorageBackend::isLegacyBootstrap(const QJsonArray& bootstrap) {
-    if (bootstrap.size() != LEGACY_BOOTSTRAP_NODES.size()) {
-        return false;
-    }
     for (const QJsonValue& node : bootstrap) {
         if (!LEGACY_BOOTSTRAP_NODES.contains(node.toString())) {
             return false;
