@@ -765,6 +765,7 @@ void StorageBackend::checkNodeIsUp() {
 
     QVariantMap table = result.getValue<QVariantMap>("table");
     QVariantList nodes = table["nodes"].toList();
+    emit peersUpdated(nodes.size());
 
     debug(QString("Connected peers: %1").arg(nodes.size()));
 
