@@ -560,7 +560,11 @@ void StorageBackend::saveUserConfig(QString configJsonStr) {
         return;
     }
 
-    m_config = config;
+    if (m_eventsSubscribed) {
+        m_config = config;
+    } else {
+        loadConfig(configJsonStr);
+    }
 }
 
 void StorageBackend::applyUserConfig(QString configJsonStr) {
