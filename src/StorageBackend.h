@@ -196,6 +196,8 @@ class StorageBackend : public StorageBackendSimpleSource {
     LogosAPI* m_logosAPI;
     LogosModules* m_logos;
 
+    bool m_eventsSubscribed = false;
+
     // Internal configuration object. It can be updated by
     // upnp or port forwarning methods.
     QJsonDocument m_config;

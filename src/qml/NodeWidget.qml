@@ -145,7 +145,7 @@ Card {
                         case StorageBackend.Stopping:
                             return "Stopping…"
                         case StorageBackend.Destroyed:
-                            return "Not initialised"
+                            return "Stopped"
                         default:
                             return "Unknown"
                         }
@@ -165,7 +165,8 @@ Card {
                 variant: "secondary"
                 implicitHeight: 32
                 implicitWidth: 65
-                enabled: root.backend
+                enabled: root.backend && (root.effectiveStatus === StorageBackend.Running
+                                          || root.effectiveStatus === StorageBackend.Destroyed)
                 onClicked: {
                     if (!root.backend)
                         return
