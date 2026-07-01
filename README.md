@@ -91,7 +91,7 @@ Current specs:
 
 | Spec | What it checks |
 |------|----------------|
-| `storage-ui-migration.test.yaml` | A legacy `bootstrap-node` config is migrated to the `network` preset on startup. |
+| `storage-ui-migration.test.yaml` | A legacy `bootstrap-node` config has its bootstrap list stripped on startup. |
 
 ### Local preview
 
