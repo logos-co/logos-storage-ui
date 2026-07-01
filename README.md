@@ -76,6 +76,34 @@ The compiled artifacts can be found at `result/`
 
 If you are using Linux with SELinux enabled, you will not be able to install Nix without disabling it. A common workaround is to install Nix inside a Toolbox container. 
 
+## Doc-tests
+
+The `doctests/` directory holds executable tests written as
+[`logos-doctest`](https://github.com/logos-co/logos-doctest) specs
+(`*.test.yaml`). 
+
+Unlike the storage module's doc-tests, these are internal: their reports are
+not published anywhere. In CI each spec runs in its own job and uploads its HTML
+report as a build artifact, one job per report (see
+`.github/workflows/doctests.yml`).
+
+Current specs:
+
+| Spec | What it checks |
+|------|----------------|
+| `storage-ui-migration.test.yaml` | A legacy `bootstrap-node` config is migrated to the `network` preset on startup. |
+
+### Local preview
+
+Run a spec and produce a browsable HTML report with `docs/preview.sh`:
+
+```bash
+./docs/preview.sh --doctest-migration
+```
+
+Artefacts land in `doctests/preview-outputs/`, the report is
+`doctests/preview-outputs/report.html`.
+
 ## Guidance 
 
 You can access to the [Storage Module documentation](https://logos-co.github.io/logos-storage-module/latest) to get more context about the Storage Module and its configuration. 

@@ -1,0 +1,155 @@
+name: "Migrating a Legacy Storage UI Config to the Network Preset"
+output: storage-ui-migration.md
+release: ""
+
+intro: |
+  Previous versions of `logos-storage-ui` were using an explicit `bootstrap-node` list
+  which is now considered a legacy feature.
+
+  A `network` option was added to the config schema in newer versions of `logos-storage-ui`,
+  and loads a list of bootstrap nodes.
+
+  This test ensures that the migration logic correctly handles a legacy `bootstrap-node` config
+  and replaces it with the correct `network` preset.
+
+what_you_build: "Storage UI returning user install with a legacy `bootstrap-node` config, migrated to `network` preset on startup."
+
+what_you_learn:
+  - How the UI detects a legacy `bootstrap-node` config and migrates it to a `network` preset
+  - How to simulate a returning user (onboarding already completed) so the app loads the existing config instead of showing onboarding
+  - How to drive a headless Qt/QML app with logos-qt-mcp
+  - How to assert the on-disk config was migrated after the app ran
+
+prerequisites:
+  - |
+    **Nix** with flakes enabled. Install from [nixos.org](https://nixos.org/download.html), then enable flakes:
+
+    ```bash
+    mkdir -p ~/.config/nix
+    echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
+    ```
+
+    Verify: `nix flake --help >/dev/null 2>&1 && echo "Flakes enabled"`
+  - "**A Linux machine.** The app runs headless via `QT_QPA_PLATFORM=offscreen`, so no display is required. The legacy state is seeded through the Linux QSettings ini file (`~/.config/Logos/LogosStandalone.conf`)."
+  - "**`jq`** on your `PATH` — used to assert the migrated config. Verify: `jq --version`"
+
+sections:
+  - title: "Build the qt-mcp test driver"
+    step: true
+    text: |
+      [`logos-qt-mcp`](https://github.com/logos-co/logos-qt-mcp) is the harness the
+      doc-test uses to connect to the app's QML inspector and drive it. Build it
+      once and link it as `./result-mcp`.
+    steps:
+      - title: "Build logos-qt-mcp"
+        run: "nix build 'github:logos-co/logos-qt-mcp' -o result-mcp"
+        check_file: "result-mcp"
+
+  - title: "Setup a legacy config"
+    step: true
+    text: |
+      We simulate someone who onboarded on an old build:
+
+      1. Reset any existing state
+      2. Mark onboarding completed in settings
+      3. Write legacy bootstrap list configuration
+    steps:
+      - title: "Reset state and write the legacy config"
+        run: |
+          # Fresh data dir for this run.
+          rm -rf /tmp/storage-ui-migration-data
+          mkdir -p /tmp/storage-ui-migration-data
+
+          # Mark onboarding complete so the app loads the existing config
+          # (returning-user path) instead of showing the wizard.
+          mkdir -p "$HOME/.config/Logos"
+          cat > "$HOME/.config/Logos/LogosStandalone.conf" <<'EOF'
+          [Storage]
+          onboardingCompleted=true
+          EOF
+
+          # Write the legacy user config: no "network", legacy "bootstrap-node".
+          mkdir -p "$HOME/.logos_storage"
+          cat > "$HOME/.logos_storage/config.json" <<'EOF'
+          {
+            "data-dir": "/tmp/storage-ui-migration-data",
+            "log-level": "DEBUG",
+            "listen-port": 8500,
+            "disc-port": 8090,
+            "nat": "none",
+            "bootstrap-node": [
+              "spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE",
+              "spr:CiUIAhIhApIj9p6zJDRbw2NoCo-tj98Y760YbppRiEpGIE1yGaMzEgIDARpJCicAJQgCEiECkiP2nrMkNFvDY2gKj62P3xjvrRhumlGISkYgTXIZozMQvcz8wQYaCwoJBAWhF3WRAnVEGgsKCQQFoRd1kQJ1RCpGMEQCIFZB84O_nzPNuViqEGRL1vJTjHBJ-i5ZDgFL5XZxm4HAAiB8rbLHkUdFfWdiOmlencYVn0noSMRHzn4lJYoShuVzlw",
+              "spr:CiUIAhIhApqRgeWRPSXocTS9RFkQmwTZRG-Cdt7UR2N7POoz606ZEgIDARpJCicAJQgCEiECmpGB5ZE9JehxNL1EWRCbBNlEb4J23tRHY3s86jPrTpkQj8_8wQYaCwoJBAXfEfiRAnVOGgsKCQQF3xH4kQJ1TipGMEQCIGWJMsF57N1iIEQgTH7IrVOgEgv0J2P2v3jvQr5Cjy-RAiAy4aiZ8QtyDvCfl_K_w6SyZ9csFGkRNTpirq_M_QNgKw"
+            ]
+          }
+          EOF
+        check_file: "/tmp/storage-ui-migration-data"
+
+      - title: "Confirm the configuration is migrated in the config file"
+        run: |
+          test "$(jq 'has("network")' "$HOME/.logos_storage/config.json")" = "false"
+          test "$(jq 'has("bootstrap-node")' "$HOME/.logos_storage/config.json")" = "true"
+          echo "legacy config in place"
+
+  - title: "Launch the app and let it migrate"
+    step: true
+    text: |
+      Launch the standalone app with `nix run`. Because onboarding is already
+      marked complete, the app skips the wizard, loads the config, runs the
+      migration, and starts the node.
+    steps:
+      - title: "Launch and wait for Running"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 3600
+          launch_timeout: 900
+          tests:
+            - name: "Dashboard opens"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 60000
+              text: |
+                Because onboarding was already completed, the app displays the
+                dashboard directly.
+
+            - name: "Node reaches Running on the migrated config"
+              action: wait_for
+              texts: ["Running"]
+              timeout: 60000
+              screenshot: "storage-ui-migration-running.png"
+              text: |
+                The node starts on the migrated config and reaches Running. The red
+                indicator means the node is started but not reachable (`nat: none`),
+                which is expected for a headless test node.
+
+  - title: "Verify the config was migrated"
+    step: true
+    text: |
+      The app rewrote `~/.logos_storage/config.json` in place. We assert the
+      legacy `bootstrap-node` is gone and the `network` preset took its place.
+
+      The Mix configuration is also filled with default values when it is missing,
+      to make sure that the user has ready to use Mix setup.
+    steps:
+      - title: "The network preset replaced the bootstrap list"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+          echo "migrated config:"
+          jq . "$cfg"
+
+          test "$(jq -r '.network' "$cfg")" = "logos.dev"
+          test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
+
+          echo "migration OK: bootstrap-node -> network: logos.dev"
+
+      - title: "The Mix configuration is present"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+
+          test "$(jq '."mix-enabled"' "$cfg")" = "true"
+          test "$(jq '."dht-mix-proxy" | length > 0' "$cfg")" = "true"
+          test "$(jq '."mix-pool-json" | length > 0' "$cfg")" = "true"
+
+          echo "Mix config OK: mix-enabled, dht-mix-proxy, mix-pool-json"
