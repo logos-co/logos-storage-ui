@@ -678,8 +678,6 @@ QJsonDocument StorageBackend::defaultConfig() {
     QJsonDocument doc = QJsonDocument();
     QJsonObject obj = doc.object();
 
-    obj["network"] = DEFAULT_NETWORK_PRESET;
-
     obj["data-dir"] = DEFAULT_DATA_DIR;
     obj["listen-port"] = DEFAULT_LISTEN_PORT;
     obj["disc-port"] = DEFAULT_DISC_PORT;
@@ -724,7 +722,6 @@ QString StorageBackend::migrateConfig(QString configJsonStr) {
 
     // Default (or empty) bootstrap list: drop it so the network preset applies.
     obj.remove("bootstrap-node");
-    obj["network"] = DEFAULT_NETWORK_PRESET;
 
     return QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented));
 }

@@ -23,10 +23,6 @@ static const int DEFAULT_LISTEN_PORT = 8500;
 static const int DEFAULT_DISC_PORT = 9090;
 static const int DEFAULT_CHUNK_SIZE = 1024 * 64;
 
-// Default network preset of the storage module. The preset bundles its own
-// bootstrap nodes, so a config carrying "network" needs no "bootstrap-node".
-static const QString DEFAULT_NETWORK_PRESET = "logos.dev";
-
 // SPRs used as dht-mix-proxy destinations when Mix is enabled. Temporary
 // single proxy until the network ships a preset of proxy nodes.
 static const QStringList DHT_MIX_PROXY = {
