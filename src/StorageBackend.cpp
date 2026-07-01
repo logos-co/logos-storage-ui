@@ -681,7 +681,7 @@ QJsonDocument StorageBackend::defaultConfig() {
     obj["data-dir"] = DEFAULT_DATA_DIR;
     obj["listen-port"] = DEFAULT_LISTEN_PORT;
     obj["disc-port"] = DEFAULT_DISC_PORT;
-    obj["nat"] = "none";
+    obj["nat"] = "any";
 
     obj["mix-enabled"] = true;
     obj["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
