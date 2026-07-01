@@ -154,28 +154,6 @@ Card {
                     font.pixelSize: Theme.typography.primaryText
                     color: Theme.palette.textSecondary
                     Layout.alignment: Qt.AlignVCenter
-
-                    LogosText {
-                        text: {
-                            switch (root.effectiveStatus) {
-                            case StorageBackend.Stopped:
-                                return "Stopped"
-                            case StorageBackend.Starting:
-                                return "Starting…"
-                            case StorageBackend.Running:
-                                return "Running"
-                            case StorageBackend.Stopping:
-                                return "Stopping…"
-                            case StorageBackend.Destroyed:
-                                return "Not initialised"
-                            default:
-                                return "Unknown"
-                            }
-                        }
-                        font.pixelSize: Theme.typography.primaryText
-                        color: Theme.palette.textSecondary
-                    }
-
                 }
             }
 
