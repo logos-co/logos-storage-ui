@@ -7,3 +7,6 @@ app/build
 CMakeLists.txt.user
 generated_code
 .cache
+
+# Local doctest preview output (see docs/preview.sh)
+doctests/preview-outputs/

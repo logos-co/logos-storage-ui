@@ -1,0 +1,89 @@
+name: storage-ui Doc-Tests
+
+# Runs the executable storage-ui doc-tests end-to-end via the shared doctest
+# (github:logos-co/logos-doctest).
+#
+# These doc-tests are INTERNAL: unlike logos-storage-module, the reports are NOT
+# published to GitHub Pages and no PR comment is posted.
+# Download the artifact from the run's summary page to open the report.
+#
+# Specs:
+#   storage-ui-migration.test.yaml: Verify the legacy `bootstrap-node` config is migrated to `network` on startup.
+
+on:
+  pull_request:
+    branches: [master, main]
+  push:
+    branches: [master, main]
+
+concurrency:
+  group: doctests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  doctest:
+    name: "doc-test: ${{ matrix.spec }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        spec:
+          - storage-ui-migration
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: logos-co
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+
+      - name: Resolve commit under test
+        id: commit
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ] && \
+             [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then
+            echo "sha=" >> "$GITHUB_OUTPUT"
+            echo "Fork PR detected — doc-test will run against latest master."
+          else
+            echo "sha=${{ github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run doc-test
+        run: |
+          # --continue-on-fail so the run walks every step and the report is
+          # complete. The job still fails (non-zero exit) if any step failed.
+          nix run github:logos-co/logos-doctest -- run \
+            doctests/${{ matrix.spec }}.test.yaml \
+            --verbose \
+            --continue-on-fail \
+            --release-for logos-storage-ui=${{ steps.commit.outputs.sha }} \
+            --report "${{ runner.temp }}/${{ matrix.spec }}.report.html"
+
+      - name: Stage report for upload
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p report-out
+          # Name it index.html so the artifact renders directly when opened.
+          if [ -f "${{ runner.temp }}/${{ matrix.spec }}.report.html" ]; then
+            cp "${{ runner.temp }}/${{ matrix.spec }}.report.html" report-out/index.html
+          else
+            echo "<h1>No report produced</h1>" > report-out/index.html
+          fi
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctest-report-${{ matrix.spec }}
+          path: report-out/index.html
+          if-no-files-found: warn
