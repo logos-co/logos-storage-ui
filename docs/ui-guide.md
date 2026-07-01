@@ -17,7 +17,7 @@ them in your router. In case you cannot forward UDP/8090, see Case 3.
 
 **Case 3.** You need to manually configure the network settings or would like to modify other node configuration options.
 
-In this case, you should use the `Advanced` setup option. This will display a prepopulated configuration JSON which you can then manually edit to suit your needs. See the module's [API reference](https://logos-co.github.io/logos-storage-module/api_reference.html) for a list of configuration options.
+In this case, you should use the `Advanced` setup option. This will display a prepopulated configuration JSON which you can then manually edit to suit your needs. See the module's [API reference](https://logos-co.github.io/logos-storage-module/latest/api_reference.html) for a list of configuration options.
 
 After selecting the appropriate option and clicking `Continue`, the connectivity checker will kick in. If the node is reachable, you should
 see a message saying "your node is up and reachable". If the node is not reachable, you will need to [troubleshoot](#troubleshooting) your connection.
