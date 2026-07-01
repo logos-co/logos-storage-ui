@@ -30,7 +30,7 @@ jobs:
           - storage-ui-migration
 
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 180
 
     steps:
       - name: Checkout

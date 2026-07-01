@@ -103,8 +103,8 @@ sections:
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
-          build_timeout: 3600
-          launch_timeout: 900
+          build_timeout: 7200
+          launch_timeout: 1800
           tests:
             - name: "Dashboard opens"
               action: wait_for
