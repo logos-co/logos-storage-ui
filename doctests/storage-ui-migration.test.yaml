@@ -120,9 +120,7 @@ sections:
               timeout: 60000
               screenshot: "storage-ui-migration-running.png"
               text: |
-                The node starts on the migrated config and reaches Running. The red
-                indicator means the node is started but not reachable (`nat: none`),
-                which is expected for a headless test node.
+                The node starts on the migrated config and reaches Running.
 
   - title: "Verify the config was migrated"
     step: true
