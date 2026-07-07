@@ -726,12 +726,8 @@ QString StorageBackend::migrateConfig(QString configJsonStr) {
     switch (version) {
     case 0:
         obj = migrateV0toV1(obj);
-        [[fallthrough]];
     case 1:
         obj = migrateV1toV2(obj);
-        [[fallthrough]];
-    default:
-        break;
     }
 
     obj["config-version"] = CURRENT_CONFIG_VERSION;
