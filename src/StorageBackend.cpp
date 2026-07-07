@@ -95,7 +95,10 @@ void StorageBackend::init(QString configJson) {
         return;
     }
 
-    bool result = m_logos->storage_module.init(configJson);
+    QJsonObject moduleConfig = m_config.object();
+    moduleConfig.remove("config-version");
+    bool result = m_logos->storage_module.init(
+        QString::fromUtf8(QJsonDocument(moduleConfig).toJson(QJsonDocument::Compact)));
 
     qDebug() << "StorageBackend::initStorage: init";
 
@@ -282,28 +285,6 @@ void StorageBackend::start() {
     qDebug() << "StorageBackend: start method called";
 
     migrateUserConfigFile();
-
-    // Migration: Mix must run with a dht-mix-proxy and relay pool. Fill in the
-    // bundled presets only when missing, so user-set values are preserved.
-    QJsonObject cfg = QJsonDocument::fromJson(getUserConfig().toUtf8()).object();
-    bool changed = false;
-    if (!cfg.value("mix-enabled").toBool(false)) {
-        cfg["mix-enabled"] = true;
-        changed = true;
-    }
-    if (cfg.value("dht-mix-proxy").toArray().isEmpty()) {
-        cfg["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
-        changed = true;
-    }
-    if (cfg.value("mix-pool-json").toString().isEmpty()) {
-        cfg["mix-pool-json"] = QString::fromUtf8(
-            QJsonDocument::fromJson(MIX_POOL_JSON.toUtf8()).toJson(QJsonDocument::Compact));
-        changed = true;
-    }
-
-    if (changed) {
-        saveUserConfig(QString::fromUtf8(QJsonDocument(cfg).toJson(QJsonDocument::Indented)));
-    }
 
     QFile file(USER_CONFIG_PATH);
 
@@ -678,7 +659,10 @@ QJsonDocument StorageBackend::defaultConfig() {
     QJsonDocument doc = QJsonDocument();
     QJsonObject obj = doc.object();
 
+    obj["config-version"] = CURRENT_CONFIG_VERSION;
     obj["data-dir"] = DEFAULT_DATA_DIR;
+
+    // Define defaults here to make it visible on the UI
     obj["listen-port"] = DEFAULT_LISTEN_PORT;
     obj["disc-port"] = DEFAULT_DISC_PORT;
 
@@ -699,6 +683,33 @@ bool StorageBackend::isLegacyBootstrap(const QJsonArray& bootstrap) {
     return true;
 }
 
+QJsonObject StorageBackend::migrateV0toV1(QJsonObject obj) {
+    // A custom bootstrap list means the user joined their own network: keep it,
+    // it intentionally overrides the preset.
+    QJsonArray bootstrap = obj.value("bootstrap-node").toArray();
+    if (!bootstrap.isEmpty() && !isLegacyBootstrap(bootstrap)) {
+        return obj;
+    }
+
+    // Remove legacy bootstrap nodes
+    obj.remove("bootstrap-node");
+    return obj;
+}
+
+QJsonObject StorageBackend::migrateV1toV2(QJsonObject obj) {
+    if (!obj.value("mix-enabled").toBool(false)) {
+        obj["mix-enabled"] = true;
+    }
+    if (obj.value("dht-mix-proxy").toArray().isEmpty()) {
+        obj["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
+    }
+    if (obj.value("mix-pool-json").toString().isEmpty()) {
+        obj["mix-pool-json"] = QString::fromUtf8(
+            QJsonDocument::fromJson(MIX_POOL_JSON.toUtf8()).toJson(QJsonDocument::Compact));
+    }
+    return obj;
+}
+
 QString StorageBackend::migrateConfig(QString configJsonStr) {
     QJsonDocument doc = QJsonDocument::fromJson(configJsonStr.toUtf8());
     if (!doc.isObject()) {
@@ -706,22 +717,24 @@ QString StorageBackend::migrateConfig(QString configJsonStr) {
     }
 
     QJsonObject obj = doc.object();
+    int version = obj.value("config-version").toInt(0);
 
-    // Already on the new format: the "network" preset field is present.
-    if (obj.contains("network")) {
+    if (version >= CURRENT_CONFIG_VERSION) {
         return configJsonStr;
     }
 
-    // A custom bootstrap list means the user joined their own network: keep it,
-    // it intentionally overrides the preset.
-    QJsonArray bootstrap = obj.value("bootstrap-node").toArray();
-    if (!bootstrap.isEmpty() && !isLegacyBootstrap(bootstrap)) {
-        return configJsonStr;
+    switch (version) {
+    case 0:
+        obj = migrateV0toV1(obj);
+        [[fallthrough]];
+    case 1:
+        obj = migrateV1toV2(obj);
+        [[fallthrough]];
+    default:
+        break;
     }
 
-    // Default (or empty) bootstrap list: drop it so the network preset applies.
-    obj.remove("bootstrap-node");
-
+    obj["config-version"] = CURRENT_CONFIG_VERSION;
     return QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented));
 }
 
@@ -739,7 +752,8 @@ void StorageBackend::migrateUserConfigFile() {
     }
 
     saveUserConfig(migrated);
-    debug("Migrated user config to the network preset format.");
+    debug("Migrated user config to config version "
+          + QString::number(CURRENT_CONFIG_VERSION) + ".");
 }
 
 bool StorageBackend::togglePrivateQueries(bool enabled) {

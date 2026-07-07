@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QFile>
 #include <QJsonArray>
+#include <QJsonObject>
 #include <QObject>
 #include <QString>
 #include <QStringList>
@@ -22,6 +23,10 @@ static const QString USER_CONFIG_PATH = APP_HOME + "/config.json";
 static const int DEFAULT_LISTEN_PORT = 8500;
 static const int DEFAULT_DISC_PORT = 9090;
 static const int DEFAULT_CHUNK_SIZE = 1024 * 64;
+
+// Config schema version
+// Increment it and add migrateVXtoVY methods when the config schema changes.
+static const int CURRENT_CONFIG_VERSION = 2;
 
 // SPRs used as dht-mix-proxy destinations when Mix is enabled. Temporary
 // single proxy until the network ships a preset of proxy nodes.
@@ -225,13 +230,21 @@ class StorageBackend : public StorageBackendSimpleSource {
     // Provide a default config for onboarding
     static QJsonDocument defaultConfig();
 
-    // Rewrite the persisted config.json in place if it still uses the legacy
-    // "bootstrap-node" default instead of the "network" preset.
+    // Run the persisted config.json through migrateConfig() and rewrite it in
+    // place when a migration bumped it to a newer schema version.
     void migrateUserConfigFile();
 
-    // Pure transform: return configJson migrated to the network preset format,
-    // or unchanged if already migrated or carrying a custom bootstrap list.
+    // Pure transform: run configJson through every migration step from its
+    // "config-version" up to CURRENT_CONFIG_VERSION, then stamp the new version.
+    // Returns the input unchanged when it is already up to date.
     QString migrateConfig(QString configJson);
+
+    // Individual migration steps. Each one is frozen history: it only knows how
+    // to move a config from one version to the next and must keep working
+    // forever, so it hard-codes the values of its era rather than reading
+    // defaultConfig() (which keeps evolving).
+    static QJsonObject migrateV0toV1(QJsonObject obj);
+    static QJsonObject migrateV1toV2(QJsonObject obj);
 
     // True when the array matches the bootstrap list the UI used to ship,
     // i.e. the user never set their own bootstrap nodes.

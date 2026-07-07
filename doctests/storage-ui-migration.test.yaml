@@ -1,25 +1,29 @@
-name: "Migrating a Legacy Storage UI Config: Removing Legacy Bootstrap Nodes"
+name: "Migrating a Legacy Storage UI Config: Config Versioning and Forward Migration"
 output: storage-ui-migration.md
 release: ""
 
 intro: |
   Previous versions of `logos-storage-ui` wrote an explicit `bootstrap-node` list
-  into the user config, which is now considered a legacy feature.
+  into the user config and had no notion of a config schema version.
 
-  The storage module now drives the network selection itself, so the UI no longer
-  writes a `network` preset. On startup the UI simply strips the legacy
-  `bootstrap-node` list from the config and lets the module pick the network.
+  The UI now versions the user config with a `config-version` field and migrates
+  it on startup. This `config-version` is removed before passing the config object
+  to the module.
+  A config with no `config-version` is treated as version 0.
+  A config already at the current version is left byte-for-byte untouched.
 
-  This test ensures the migration removes a legacy `bootstrap-node` list without
-  adding a `network` field, and that the node still reaches Running.
+  This test ensures a legacy config is migrated correctly:
+    1. the legacy `bootstrap-node` list is removed without adding a `network` field
+    2. the Mix configuration is filled
+    3. a version is added to the config
 
-what_you_build: "Storage UI returning-user install with a legacy `bootstrap-node` config; on startup the legacy bootstrap list is stripped and the module drives the network."
+what_you_build: "Storage UI returning-user install with a legacy, unversioned config; on startup it is migrated forward — legacy bootstrap stripped, Mix defaults filled, and the config stamped with the current `config-version`."
 
 what_you_learn:
-  - How the UI detects and strips a legacy `bootstrap-node` config so the module drives the network
+  - How the UI versions the user config and migrates it forward from `config-version` 0 to the current version on startup
   - How to simulate a returning user (onboarding already completed) so the app loads the existing config instead of showing onboarding
   - How to drive a headless Qt/QML app with logos-qt-mcp
-  - How to assert the on-disk config was migrated after the app ran
+  - How to assert the on-disk config was migrated and stamped after the app ran
 
 prerequisites:
   - |
@@ -132,8 +136,11 @@ sections:
 
       The Mix configuration is also filled with default values when it is missing,
       to make sure that the user has a ready to use Mix setup.
+
+      Finally the config is stamped with the current `config-version`, so a later
+      startup recognises it as up to date and skips the migration.
     steps:
-      - title: "The legacy bootstrap nodes were removed"
+      - title: "The legacy bootstrap nodes were removed and the config is versioned"
         run: |
           cfg="$HOME/.logos_storage/config.json"
           echo "migrated config:"
@@ -141,8 +148,9 @@ sections:
 
           test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
           test "$(jq 'has("network")' "$cfg")" = "false"
+          test "$(jq '."config-version"' "$cfg")" = "2"
 
-          echo "migration OK: legacy bootstrap-node removed, no network preset added"
+          echo "migration OK: legacy bootstrap-node removed, no network preset added, config-version stamped"
 
       - title: "The Mix configuration is present"
         run: |
@@ -205,16 +213,19 @@ sections:
           test "$after" = "$before"
           test "$(jq 'has("network")' "$cfg")" = "false"
           test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
+          test "$(jq '."config-version"' "$cfg")" = "2"
 
           echo "idempotent OK: config unchanged on restart"
 
-  - title: "A config that already has a network is left untouched"
+  - title: "A config with custom user data is preserved and versioned"
     step: true
     text: |
-      Restart does not affect the network configuration if it was already
-      present.
+      Migration must not clobber a user who set their own network and bootstrap
+      list. A non-legacy `bootstrap-node` is an intentional override, so it is
+      kept as-is along with the `network` field; the config is only stamped with
+      the current `config-version`.
     steps:
-      - title: "Seed a config that already has a network"
+      - title: "Seed a config with a custom network and bootstrap"
         run: |
           cat > "$HOME/.logos_storage/config.json" <<'EOF'
           {
@@ -247,12 +258,12 @@ sections:
               texts: ["Manage node", "Total space available"]
               timeout: 60000
 
-      - title: "The config with a network is unchanged"
+      - title: "The custom network and bootstrap are kept, the config is versioned"
         run: |
           cfg="$HOME/.logos_storage/config.json"
 
-          test "$after" = "$before"
           test "$(jq -r '.network' "$cfg")" = "logos.dev"
-          test "$(jq 'has("bootstrap-node")' "$cfg")" = "true"
+          test "$(jq -r '."bootstrap-node"[0]' "$cfg")" = "spr:custom-user-bootstrap"
+          test "$(jq '."config-version"' "$cfg")" = "2"
 
-          echo "no-op OK: config with a network left untouched"
+          echo "preserved OK: custom network + bootstrap kept, config-version stamped"
