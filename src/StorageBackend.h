@@ -230,19 +230,13 @@ class StorageBackend : public StorageBackendSimpleSource {
     // Provide a default config for onboarding
     static QJsonDocument defaultConfig();
 
-    // Run the persisted config.json through migrateConfig() and rewrite it in
-    // place when a migration bumped it to a newer schema version.
+    // Run the persisted config.json through migrateConfig() and rewrite.
     void migrateUserConfigFile();
 
-    // Pure transform: run configJson through every migration step from its
-    // "config-version" up to CURRENT_CONFIG_VERSION, then stamp the new version.
-    // Returns the input unchanged when it is already up to date.
+    // Transform the config json from an old version to the current version.
     QString migrateConfig(QString configJson);
 
-    // Individual migration steps. Each one is frozen history: it only knows how
-    // to move a config from one version to the next and must keep working
-    // forever, so it hard-codes the values of its era rather than reading
-    // defaultConfig() (which keeps evolving).
+    // Individual migration steps.
     static QJsonObject migrateV0toV1(QJsonObject obj);
     static QJsonObject migrateV1toV2(QJsonObject obj);
 
