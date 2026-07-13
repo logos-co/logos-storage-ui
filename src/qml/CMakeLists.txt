@@ -110,6 +110,7 @@ qt_add_qml_module(appqml
         ../StorageBackend.h
     QML_FILES
         StorageView.qml
+        Sidebar.qml
         OnBoarding.qml
         Main.qml
         StartNode.qml
@@ -179,6 +180,15 @@ qt_add_qml_module(appqml
         assets/success.png
         assets/download.png
         assets/delete.png
+        assets/sidebar-dashboard.svg
+        assets/sidebar-nodes.svg
+        assets/sidebar-files.svg
+        assets/sidebar-device.svg
+        assets/sidebar-peers.svg
+        assets/sidebar-logs.svg
+        assets/sidebar-settings.svg
+        assets/sidebar-help.svg
+        assets/sidebar-disclaimer.svg
         BottomTitle.qml
         DownloadFolder.qml
 )

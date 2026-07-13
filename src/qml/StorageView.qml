@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtCore
 import Logos.Theme
+import Logos.Controls
 import Logos.StorageBackend 1.0
 
 // qmllint disable unqualified
@@ -11,6 +12,8 @@ LogosStorageLayout {
     id: root
 
     property var backend: MockBackend
+
+    property string currentPage: "dashboard"
 
     readonly property bool running: backend && backend.status === StorageBackend.Running
 
@@ -49,9 +52,23 @@ LogosStorageLayout {
         backend: root.backend
     }
 
+    Sidebar {
+        id: sidebar
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: implicitWidth
+        currentPage: root.currentPage
+        onPageSelected: function (page) {
+            root.currentPage = page
+        }
+    }
+
     ColumnLayout {
+        visible: root.currentPage === "dashboard"
         anchors.fill: parent
         anchors.margins: Theme.spacing.medium
+        anchors.leftMargin: sidebar.width + Theme.spacing.medium
         spacing: Theme.spacing.medium
 
         // Partie haute — hauteur strictement fixe (min = max = preferred)
@@ -137,6 +154,20 @@ LogosStorageLayout {
             running: root.running
             downloadFolderPath: settings.downloadFolderPath
             onDownloadRequested: downloadWidget.startLooking()
+        }
+    }
+
+    // Pages other than the dashboard are not built yet
+    Item {
+        visible: root.currentPage !== "dashboard"
+        anchors.fill: parent
+        anchors.leftMargin: sidebar.width
+
+        LogosText {
+            anchors.centerIn: parent
+            text: root.currentPage.charAt(0).toUpperCase() + root.currentPage.slice(1)
+            font.pixelSize: Theme.typography.titleText
+            color: Theme.palette.textMuted
         }
     }
 }
