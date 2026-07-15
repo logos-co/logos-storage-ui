@@ -117,7 +117,6 @@ qt_add_qml_module(appqml
         LogosStorageTextField.qml
         LogosStorageButton.qml
         LogosStorageLayout.qml
-        LogosStorageSwitch.qml
         PortForwarding.qml
         ErrorToast.qml
         HealthIndicator.qml
@@ -138,7 +137,6 @@ qt_add_qml_module(appqml
         icons/DeleteIcon.qml
         ArcGauge.qml
         ArcWidget.qml
-        Card.qml
         DiskWidget.qml
         UploadWidget.qml
         PeersWidget.qml

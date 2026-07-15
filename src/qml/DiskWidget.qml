@@ -4,8 +4,12 @@ import Logos.Theme
 import Logos.Controls
 import "Utils.js" as Utils
 
-Card {
+LogosFrame {
     id: root
+
+    backgroundColor: Theme.palette.backgroundSecondary
+    borderColor: "transparent"
+    radius: Theme.spacing.radiusLarge
 
     implicitWidth: 500
     implicitHeight: 500
@@ -124,8 +128,7 @@ Card {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 height: 40
-                // TODO: Logos Design Systen
-                color: "#313131"
+                color: Theme.palette.borderSubtle
 
                 Rectangle {
                     width: parent.width * root.fraction + 10

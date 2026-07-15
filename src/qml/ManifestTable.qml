@@ -7,8 +7,12 @@ import Logos.Controls
 import "Utils.js" as Utils
 
 // qmllint disable unqualified
-Card {
+LogosFrame {
     id: root
+
+    backgroundColor: Theme.palette.backgroundSecondary
+    borderColor: "transparent"
+    radius: Theme.spacing.radiusLarge
 
     property var backend: MockBackend
     property bool running: false
@@ -598,7 +602,7 @@ Card {
                         LogosText {
                             text: "No manifests yet"
                             color: Theme.palette.textMuted
-                            font.pixelSize: 12
+                            font.pixelSize: Theme.typography.secondaryText
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }

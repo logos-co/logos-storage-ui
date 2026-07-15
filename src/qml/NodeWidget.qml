@@ -5,8 +5,12 @@ import Logos.Controls
 import Logos.StorageBackend 1.0
 
 // qmllint disable unqualified
-Card {
+LogosFrame {
     id: root
+
+    backgroundColor: Theme.palette.backgroundSecondary
+    borderColor: "transparent"
+    radius: Theme.spacing.radiusLarge
 
     implicitWidth: 320
     implicitHeight: 150
@@ -161,7 +165,7 @@ Card {
                 Layout.fillWidth: true
             }
 
-            LogosStorageSwitch {
+            LogosSwitch {
                 id: mixSwitch
                 text: "Mix"
                 // Mix is always configured; private queries default on when the

@@ -79,6 +79,7 @@ LogosStorageLayout {
             Layout.maximumHeight: 465
 
             RowLayout {
+                id: topRow
                 anchors.fill: parent
                 spacing: Theme.spacing.medium
 
@@ -87,6 +88,8 @@ LogosStorageLayout {
                     Layout.fillHeight: true
                     Layout.preferredWidth: 0
                     backend: root.backend
+                    // Hidden on narrow layouts; the other columns take its space.
+                    visible: topRow.width > 900
                 }
 
                 ColumnLayout {

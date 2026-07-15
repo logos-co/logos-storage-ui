@@ -12,6 +12,7 @@ Item {
     property int columns: 5
     property int dotSize: 8
     property int dotSpacing: 4
+    property int dotRadius: 2
 
     // Appearance
     property color dotColor: Theme.palette.primary
@@ -48,7 +49,7 @@ Item {
             Rectangle {
                 width: root.dotSize
                 height: root.dotSize
-                radius: 2
+                radius: root.dotRadius
                 color: {
                     if (!root.animated) {
                         return (index < root.pattern.length
