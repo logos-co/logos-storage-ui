@@ -39,7 +39,7 @@ OnBoardingLayout {
 
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.topMargin: 10
+            Layout.topMargin: Theme.spacing.small
 
             RowLayout {
                 Layout.fillWidth: true

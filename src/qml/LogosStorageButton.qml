@@ -34,7 +34,7 @@ Button {
         Text {
             text: control.text
             font.pixelSize: Theme.typography.primaryText
-            font.bold: true
+            font.weight: Theme.typography.weightBold
             color: {
                 if (!control.enabled) {
                     return Theme.palette.textMuted

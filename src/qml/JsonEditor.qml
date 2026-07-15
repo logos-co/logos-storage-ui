@@ -42,7 +42,7 @@ Rectangle {
 
     ScrollView {
         anchors.fill: parent
-        anchors.margins: 2
+        anchors.margins: Theme.spacing.tiny
 
         TextArea {
             id: jsonArea

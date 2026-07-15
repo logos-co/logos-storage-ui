@@ -589,7 +589,7 @@ LogosFrame {
 
                     ColumnLayout {
                         anchors.centerIn: parent
-                        spacing: 10
+                        spacing: Theme.spacing.small
                         visible: manifestList.count === 0
 
                         DotIcon {

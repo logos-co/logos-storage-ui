@@ -295,7 +295,7 @@ LogosFrame {
             LogosText {
                 text: root.uploadProgress + "%"
                 font.pixelSize: Theme.typography.subtitleText
-                font.bold: true
+                font.weight: Theme.typography.weightBold
                 color: Theme.palette.text
                 visible: root.isUploading || root.isDone
             }
