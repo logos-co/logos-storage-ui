@@ -15,7 +15,7 @@ Rectangle {
     height: 230
     radius: Theme.spacing.radiusLarge
     color: selected ? Theme.palette.backgroundSecondary : Theme.palette.background
-    border.color: selected ? Theme.palette.primary : Theme.palette.textMuted
+    border.color: selected ? Theme.palette.primary : Theme.palette.borderInteractive
     border.width: 1
 
     ColumnLayout {
@@ -35,7 +35,7 @@ Rectangle {
             Text {
                 text: root.title
                 color: Theme.palette.text
-                font.pixelSize: Theme.typography.titleText * 0.8
+                font.pixelSize: Theme.typography.panelTitleText
                 Layout.leftMargin: Theme.spacing.medium
             }
 

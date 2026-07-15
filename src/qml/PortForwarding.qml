@@ -58,7 +58,7 @@ OnBoardingLayout {
 
             LogosText {
                 text: "The TCP port must be open to connect with remote peers."
-                font.pixelSize: Theme.typography.primaryText * 1.8
+                font.pixelSize: Theme.typography.panelTitleText
             }
         }
 
@@ -70,7 +70,7 @@ OnBoardingLayout {
             Layout.preferredHeight: 230
             radius: Theme.spacing.radiusLarge
             color: Theme.palette.backgroundSecondary
-            border.color: selected ? Theme.palette.primary : Theme.palette.textMuted
+            border.color: selected ? Theme.palette.primary : Theme.palette.borderInteractive
             border.width: 1
 
             ColumnLayout {
@@ -87,7 +87,7 @@ OnBoardingLayout {
 
                 LogosText {
                     text: "Port"
-                    font.pixelSize: Theme.typography.primaryText * 1.2
+                    font.pixelSize: Theme.typography.subtitleText
                     Layout.leftMargin: Theme.spacing.medium
                     Layout.bottomMargin: Theme.spacing.tiny
                 }

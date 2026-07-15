@@ -14,7 +14,7 @@ Item {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         text: root.title
-        font.pixelSize: Theme.typography.titleText * 0.8
+        font.pixelSize: Theme.typography.panelTitleText
         color: Theme.palette.text
     }
 

@@ -48,7 +48,7 @@ OnBoardingLayout {
 
             LogosText {
                 text: "How would you like to set up your node?"
-                font.pixelSize: Theme.typography.primaryText * 1.8
+                font.pixelSize: Theme.typography.panelTitleText
             }
         }
 

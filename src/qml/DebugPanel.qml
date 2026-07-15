@@ -76,7 +76,7 @@ ColumnLayout {
             text: root.backend ? root.backend.debugLogs : ""
             color: Theme.palette.textSecondary
             font.family: "monospace"
-            font.pixelSize: 11
+            font.pixelSize: Theme.typography.secondaryText
             wrapMode: Text.WrapAnywhere
             readOnly: true
             padding: Theme.spacing.small

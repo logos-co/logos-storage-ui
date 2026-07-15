@@ -283,7 +283,7 @@ LogosFrame {
         RowLayout {
             LogosText {
                 text: root.isUploading ? "Uploading..." : "Complete"
-                font.pixelSize: Theme.typography.titleText * 0.6
+                font.pixelSize: Theme.typography.subtitleText
                 color: Theme.palette.text
                 visible: root.isUploading || root.isDone
             }
@@ -294,7 +294,7 @@ LogosFrame {
 
             LogosText {
                 text: root.uploadProgress + "%"
-                font.pixelSize: Theme.typography.titleText * 0.6
+                font.pixelSize: Theme.typography.subtitleText
                 font.bold: true
                 color: Theme.palette.text
                 visible: root.isUploading || root.isDone

@@ -23,8 +23,8 @@ Rectangle {
     visible: false
     opacity: 0
     width: 500
-    radius: Theme.spacing.tiny
-    color: "#3D2020"
+    radius: Theme.spacing.radiusSmall
+    color: Qt.darker(Theme.palette.error, 3)
 
     implicitHeight: content.implicitHeight + Theme.spacing.medium * 2
 

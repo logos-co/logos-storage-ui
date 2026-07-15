@@ -47,7 +47,7 @@ LogosFrame {
                     LogosText {
                         Layout.alignment: Qt.AlignTop
                         text: "Node"
-                        font.pixelSize: Theme.typography.titleText * 0.7
+                        font.pixelSize: Theme.typography.panelTitleText
                         color: Theme.palette.text
                     }
                 }

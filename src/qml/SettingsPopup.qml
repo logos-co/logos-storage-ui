@@ -52,7 +52,7 @@ Popup {
         color: Theme.palette.backgroundSecondary
         border.color: Theme.palette.borderSecondary
         border.width: 1
-        radius: 14
+        radius: Theme.spacing.radiusXlarge
     }
     ColumnLayout {
         anchors.fill: parent
