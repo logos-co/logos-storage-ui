@@ -111,7 +111,7 @@ Rectangle {
             Layout.fillWidth: true
             color: Theme.palette.error
             font.pixelSize: Theme.typography.primaryText
-            font.bold: true
+            font.weight: Theme.typography.weightBold
         }
 
         LogosText {
