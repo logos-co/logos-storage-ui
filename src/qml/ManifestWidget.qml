@@ -3,8 +3,12 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-Card {
+LogosFrame {
     id: root
+
+    backgroundColor: Theme.palette.backgroundSecondary
+    borderColor: "transparent"
+    radius: Theme.spacing.radiusLarge
 
     implicitWidth: 300
     implicitHeight: 120

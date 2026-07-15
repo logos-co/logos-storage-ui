@@ -23,7 +23,7 @@ Rectangle {
     Component.onCompleted: root.validate()
 
     color: Theme.palette.backgroundElevated
-    radius: 8
+    radius: Theme.spacing.radiusLarge
     border.color: root.isValid ? Theme.palette.borderSecondary : Theme.palette.error
     border.width: 1
 
@@ -47,7 +47,7 @@ Rectangle {
         TextArea {
             id: jsonArea
             font.family: "monospace"
-            font.pixelSize: 12
+            font.pixelSize: Theme.typography.secondaryText
             color: Theme.palette.text
             wrapMode: Text.WrapAnywhere
             background: Item {}

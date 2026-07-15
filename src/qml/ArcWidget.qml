@@ -56,13 +56,13 @@ Rectangle {
             var cy = height / 2 + root.arcOffsetY
             var totalDeg = 180
             var startDeg = 270 - totalDeg / 2   // centered around the top (270°)
-            var numSeg = 4
+            var numSeg = 5
             var gapDeg = 4
             var segDeg = (totalDeg - gapDeg * (numSeg - 1)) / numSeg
 
             // Stroke widths: biggest at the base (index 0), smallest at tip — scale with arcWidth
             var s = root.arcWidth / 8
-            var widths = [22 * s, 13 * s, 8 * s, 4 * s]
+            var widths = [22 * s, 15 * s, 10 * s, 6 * s, 3 * s]
 
             var f = Math.min(Math.max(root.fraction, 0.0), 1.0)
             var litCount = Math.min(Math.round(f * numSeg), numSeg)
