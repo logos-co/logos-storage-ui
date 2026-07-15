@@ -190,7 +190,7 @@ LogosFrame {
 
             LogosText {
                 text: root.isDone ? "Complete" : "Downloading..."
-                font.pixelSize: Theme.typography.titleText * 0.8
+                font.pixelSize: Theme.typography.panelTitleText
                 color: Theme.palette.text
             }
             Item {

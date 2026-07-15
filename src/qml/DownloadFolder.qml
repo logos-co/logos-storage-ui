@@ -64,7 +64,7 @@ OnBoardingLayout {
 
             LogosText {
                 text: "Decide which drive you wish to use alongside your storage node."
-                font.pixelSize: Theme.typography.primaryText * 1.8
+                font.pixelSize: Theme.typography.panelTitleText
             }
         }
 
@@ -76,7 +76,7 @@ OnBoardingLayout {
             Layout.preferredHeight: 230
             radius: Theme.spacing.radiusLarge
             color: Theme.palette.backgroundSecondary
-            border.color: selected ? Theme.palette.primary : Theme.palette.textMuted
+            border.color: selected ? Theme.palette.primary : Theme.palette.borderInteractive
             border.width: 1
 
             ColumnLayout {
@@ -93,7 +93,7 @@ OnBoardingLayout {
 
                 LogosText {
                     text: "Downloads folder"
-                    font.pixelSize: Theme.typography.primaryText * 1.2
+                    font.pixelSize: Theme.typography.subtitleText
                     Layout.leftMargin: Theme.spacing.medium
                     Layout.bottomMargin: Theme.spacing.tiny
                 }

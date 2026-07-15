@@ -68,7 +68,7 @@ LogosFrame {
 
                 LogosText {
                     text: "Logos Storage"
-                    font.pixelSize: Theme.typography.titleText * 0.8
+                    font.pixelSize: Theme.typography.panelTitleText
                     color: Theme.palette.textMuted
                 }
 
@@ -88,13 +88,13 @@ LogosFrame {
 
                     LogosText {
                         text: Utils.formatBytes(root.used)
-                        font.pixelSize: Theme.typography.titleText * 0.8
+                        font.pixelSize: Theme.typography.panelTitleText
                         color: Theme.palette.text
                     }
 
                     LogosText {
                         text: " / " + Utils.formatBytes(root.total)
-                        font.pixelSize: Theme.typography.titleText * 0.8
+                        font.pixelSize: Theme.typography.panelTitleText
                         color: Theme.palette.textMuted
                     }
 

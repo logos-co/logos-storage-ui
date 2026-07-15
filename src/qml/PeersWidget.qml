@@ -46,7 +46,7 @@ LogosFrame {
 
                 LogosText {
                     text: root.peers
-                    font.pixelSize: Theme.typography.primaryText * 1.5
+                    font.pixelSize: Theme.typography.panelTitleText
                     font.bold: true
                     Layout.alignment: Qt.AlignHCenter
                 }

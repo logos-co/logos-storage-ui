@@ -22,7 +22,7 @@ ColumnLayout {
 
             LogosText {
                 text: "Logos Storage"
-                font.pixelSize: Theme.typography.primaryText * 1.2
+                font.pixelSize: Theme.typography.subtitleText
                 Layout.alignment: Qt.AlignTop
             }
 
