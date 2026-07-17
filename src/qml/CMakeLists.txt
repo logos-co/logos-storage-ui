@@ -164,8 +164,8 @@ qt_add_qml_module(appqml
         assets/other.png
         assets/badge-alpha.png
         assets/alpha.png
-        assets/arrow-right.png
-        assets/arrow-left.png
+        assets/arrow-right-line.svg
+        assets/arrow-left-line.svg
         assets/hard-drive.png
         assets/folder-upload.png
         assets/close-circle.png

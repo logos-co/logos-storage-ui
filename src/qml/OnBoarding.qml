@@ -91,7 +91,7 @@ OnBoardingLayout {
             LogosButton {
                 radius: Theme.spacing.radiusLarge
                 text: "Back"
-                icon.source: "assets/arrow-left.png"
+                icon.source: Qt.resolvedUrl("assets/arrow-left-line.svg")
                 icon.position: LogosButton.IconPosition.Left
                 onClicked: root.back()
             }
@@ -104,7 +104,7 @@ OnBoardingLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Continue"
                 variant: LogosButton.Variant.Primary
-                icon.source: "assets/arrow-right.png"
+                icon.source: Qt.resolvedUrl("assets/arrow-right-line.svg")
                 icon.position: LogosButton.IconPosition.Right
                 enabled: root.selectedMode !== -1
                 onClicked: {
