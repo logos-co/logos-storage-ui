@@ -125,7 +125,7 @@ OnBoardingLayout {
                 text: "Back"
                 enabled: !root.loading
                 onClicked: root.back()
-                icon.source: "assets/arrow-left.png"
+                icon.source: Qt.resolvedUrl("assets/arrow-left-line.svg")
                 icon.position: LogosButton.IconPosition.Left
             }
 
@@ -137,7 +137,7 @@ OnBoardingLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Continue"
                 enabled: !root.loading && tcpPortTextField.textInput.acceptableInput
-                icon.source: "assets/arrow-right.png"
+                icon.source: Qt.resolvedUrl("assets/arrow-right-line.svg")
                 icon.position: LogosButton.IconPosition.Right
                 variant: LogosButton.Variant.Primary
                 onClicked: {

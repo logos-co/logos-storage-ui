@@ -6,7 +6,7 @@ import QtCore
 import Logos.Theme
 import Logos.Controls
 
-Popup {
+LogosDialog {
     id: root
 
     property var backend: MockBackend
@@ -17,6 +17,13 @@ Popup {
     readonly property string displayFolderPath: downloadFolderPath.replace(
                                                     /^file:\/{2,2}/, "")
 
+    title: "Configuration"
+    modal: true
+    width: 520
+    height: 480
+    anchors.centerIn: Overlay.overlay
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
     FolderDialog {
         id: folderDialog
         currentFolder: root.downloadFolderPath
@@ -25,13 +32,6 @@ Popup {
             root.folderPathChanged(root.downloadFolderPath)
         }
     }
-
-    modal: true
-    width: 520
-    height: 480
-    anchors.centerIn: Overlay.overlay
-    padding: 24
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     // Reload the live config every time the popup opens
     onOpened: {
@@ -48,28 +48,13 @@ Popup {
         }
     }
 
-    background: Rectangle {
-        color: Theme.palette.backgroundSecondary
-        border.color: Theme.palette.borderSecondary
-        border.width: 1
-        radius: Theme.spacing.radiusXlarge
-    }
-    ColumnLayout {
-        anchors.fill: parent
+    contentItem: ColumnLayout {
         spacing: Theme.spacing.small
-
-        LogosText {
-            text: "Configuration"
-            font.pixelSize: Theme.typography.titleText
-            Layout.alignment: Qt.AlignHCenter
-        }
 
         LogosText {
             text: "Edit the JSON configuration below, then click Save."
             font.pixelSize: Theme.typography.primaryText
             color: Theme.palette.textSecondary
-            Layout.alignment: Qt.AlignHCenter
-            horizontalAlignment: Text.AlignHCenter
             wrapMode: Text.WordWrap
             Layout.fillWidth: true
         }
@@ -92,10 +77,10 @@ Popup {
 
             LogosTextField {
                 Layout.fillWidth: true
-                Layout.bottomMargin: Theme.spacing.large
                 readOnly: true
                 text: root.displayFolderPath
                 rightPadding: Theme.spacing.large + 20
+                background: CardFieldBackground {}
 
                 MouseArea {
                     anchors.fill: parent
@@ -104,27 +89,23 @@ Popup {
                 }
             }
         }
+    }
 
-        RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: Theme.spacing.medium
-
-            LogosButton {
-                radius: Theme.spacing.radiusLarge
-                text: "Cancel"
-                onClicked: root.close()
-            }
-
-            LogosButton {
-                radius: Theme.spacing.radiusLarge
-                text: "Save"
-                variant: LogosButton.Variant.Primary
-                enabled: jsonEditor.isValid
-                onClicked: {
-                    root.backend.saveUserConfig(jsonEditor.text)
-                    root.close()
-                }
+    rightActions: [
+        LogosButton {
+            radius: Theme.spacing.radiusLarge
+            text: "Cancel"
+            onClicked: root.close()
+        },
+        LogosButton {
+            radius: Theme.spacing.radiusLarge
+            text: "Save"
+            variant: LogosButton.Variant.Primary
+            enabled: jsonEditor.isValid
+            onClicked: {
+                root.backend.saveUserConfig(jsonEditor.text)
+                root.close()
             }
         }
-    }
+    ]
 }

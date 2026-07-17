@@ -209,27 +209,17 @@ LogosFrame {
             title: root.downloadInProgress ? "Looking for peers..." : "No download in progress"
             visible: !root.isDownloading && !root.isDone
         }
+    }
 
-        // ── Progress bar — flush with card edges ──────────────────────────────
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.leftMargin: -Theme.spacing.medium
-            Layout.rightMargin: -Theme.spacing.medium
-            Layout.bottomMargin: -Theme.spacing.medium - 4
-            Layout.preferredHeight: 6
-            color: Theme.palette.backgroundSecondary
-
-            Rectangle {
-                width: parent.width * root.progress
-                height: parent.height
-                color: Theme.palette.primary
-                Behavior on width {
-                    NumberAnimation {
-                        duration: 300
-                        easing.type: Easing.OutCubic
-                    }
-                }
-            }
-        }
+    // ── Progress bar — thin, flush with the card's bottom edge ───────────────
+    LogosProgressBar {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: -Theme.spacing.medium
+        anchors.rightMargin: -Theme.spacing.medium
+        anchors.bottomMargin: -Theme.spacing.medium
+        height: 2
+        value: root.progress
     }
 }

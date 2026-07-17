@@ -111,6 +111,7 @@ OnBoardingLayout {
                     Layout.bottomMargin: Theme.spacing.large
                     readOnly: true
                     text: root.downloadFolderPath
+                    background: CardFieldBackground {}
 
                     MouseArea {
                         anchors.fill: parent
@@ -129,7 +130,7 @@ OnBoardingLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Back"
                 onClicked: root.back()
-                icon.source: "assets/arrow-left.png"
+                icon.source: Qt.resolvedUrl("assets/arrow-left-line.svg")
                 icon.position: LogosButton.IconPosition.Left
             }
 
@@ -141,7 +142,7 @@ OnBoardingLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Continue"
                 objectName: "downloadFolderContinue"
-                icon.source: "assets/arrow-right.png"
+                icon.source: Qt.resolvedUrl("assets/arrow-right-line.svg")
                 icon.position: LogosButton.IconPosition.Right
                 variant: LogosButton.Variant.Primary
                 onClicked: {
