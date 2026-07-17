@@ -24,28 +24,23 @@ LogosFrame {
         anchors.bottom: bottomTitle.top
         anchors.bottomMargin: Theme.spacing.small
         spacing: Theme.spacing.medium
-        opacity: root.running ? 1.0 : 0.4
 
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 200
-            }
-        }
-
-        LogosStorageTextField {
+        LogosTextField {
             id: cidInput
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignTop
             placeholderText: "CID"
-            isValid: true
             enabled: root.running
+            background: CardFieldBackground {}
         }
 
-        LogosStorageButton {
+        LogosButton {
+            radius: Theme.spacing.radiusLarge
             text: "Fetch"
             implicitWidth: 100
             implicitHeight: 42
-            variant: "secondary"
+            variant: LogosButton.Variant.Secondary
+            background: CardButtonBackground {}
             Layout.alignment: Qt.AlignTop
             enabled: cidInput.text.length > 0 && root.running && root.enabled
             onClicked: {

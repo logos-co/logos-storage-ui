@@ -113,8 +113,6 @@ qt_add_qml_module(appqml
         OnBoarding.qml
         Main.qml
         StartNode.qml
-        LogosStorageTextField.qml
-        LogosStorageButton.qml
         LogosStorageLayout.qml
         PortForwarding.qml
         ErrorToast.qml
@@ -136,6 +134,9 @@ qt_add_qml_module(appqml
         icons/DeleteIcon.qml
         ArcGauge.qml
         ArcWidget.qml
+        CardButtonBackground.qml
+        CardFieldBackground.qml
+        IconButtonBackground.qml
         DiskWidget.qml
         UploadWidget.qml
         PeersWidget.qml
@@ -177,6 +178,9 @@ qt_add_qml_module(appqml
         assets/success.png
         assets/download.png
         assets/delete.png
+        assets/file-copy-line.svg
+        assets/download-2-fill.svg
+        assets/delete-bin-2-line.svg
         BottomTitle.qml
         DownloadFolder.qml
 )

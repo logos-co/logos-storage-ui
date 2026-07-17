@@ -90,7 +90,7 @@ Popup {
                 color: Theme.palette.textSecondary
             }
 
-            LogosStorageTextField {
+            LogosTextField {
                 Layout.fillWidth: true
                 Layout.bottomMargin: Theme.spacing.large
                 readOnly: true
@@ -109,14 +109,16 @@ Popup {
             Layout.alignment: Qt.AlignHCenter
             spacing: Theme.spacing.medium
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Cancel"
                 onClicked: root.close()
             }
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Save"
-                variant: "primary"
+                variant: LogosButton.Variant.Primary
                 enabled: jsonEditor.isValid
                 onClicked: {
                     root.backend.saveUserConfig(jsonEditor.text)

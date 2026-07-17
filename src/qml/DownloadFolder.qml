@@ -104,7 +104,7 @@ OnBoardingLayout {
                     currentFolder: root.downloadFolder
                 }
 
-                LogosStorageTextField {
+                LogosTextField {
                     Layout.fillWidth: true
                     Layout.leftMargin: Theme.spacing.medium
                     Layout.rightMargin: Theme.spacing.medium
@@ -125,23 +125,25 @@ OnBoardingLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: Theme.spacing.small
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Back"
                 onClicked: root.back()
-                iconSource: "assets/arrow-left.png"
-                iconPosition: "left"
+                icon.source: "assets/arrow-left.png"
+                icon.position: LogosButton.IconPosition.Left
             }
 
             Item {
                 Layout.fillWidth: true
             }
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Continue"
                 objectName: "downloadFolderContinue"
-                iconSource: "assets/arrow-right.png"
-                iconPosition: "right"
-                variant: "primary"
+                icon.source: "assets/arrow-right.png"
+                icon.position: LogosButton.IconPosition.Right
+                variant: LogosButton.Variant.Primary
                 onClicked: {
                     settings.downloadFolderPath = root.downloadFolder.toString()
                     root.next()
