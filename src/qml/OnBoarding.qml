@@ -88,10 +88,11 @@ OnBoardingLayout {
         RowLayout {
             spacing: Theme.spacing.medium
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Back"
-                iconSource: "assets/arrow-left.png"
-                iconPosition: "left"
+                icon.source: "assets/arrow-left.png"
+                icon.position: LogosButton.IconPosition.Left
                 onClicked: root.back()
             }
 
@@ -99,11 +100,12 @@ OnBoardingLayout {
                 Layout.fillWidth: true
             }
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Continue"
-                variant: "primary"
-                iconSource: "assets/arrow-right.png"
-                iconPosition: "right"
+                variant: LogosButton.Variant.Primary
+                icon.source: "assets/arrow-right.png"
+                icon.position: LogosButton.IconPosition.Right
                 enabled: root.selectedMode !== -1
                 onClicked: {
                     if (root.selectedMode === 0) {

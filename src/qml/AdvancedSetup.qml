@@ -43,23 +43,25 @@ OnBoardingLayout {
             Layout.fillWidth: true
             spacing: Theme.spacing.medium
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Back"
                 onClicked: root.back()
-                iconSource: "assets/arrow-left.png"
-                iconPosition: "left"
+                icon.source: "assets/arrow-left.png"
+                icon.position: LogosButton.IconPosition.Left
             }
 
             Item {
                 Layout.fillWidth: true
             }
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Validate"
-                variant: "primary"
+                variant: LogosButton.Variant.Primary
                 enabled: jsonEditor.isValid
-                iconSource: "assets/arrow-right.png"
-                iconPosition: "right"
+                icon.source: "assets/arrow-right.png"
+                icon.position: LogosButton.IconPosition.Right
                 onClicked: {
                     root.backend.saveUserConfig(jsonEditor.text)
                     root.completed()

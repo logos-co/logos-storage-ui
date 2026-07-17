@@ -27,28 +27,32 @@ ColumnLayout {
             anchors.rightMargin: Theme.spacing.medium
             spacing: Theme.spacing.small
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Debug"
                 implicitHeight: 32
                 implicitWidth: 70
                 enabled: root.running
                 onClicked: root.backend.logDebugInfo()
             }
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Data dir"
                 implicitHeight: 32
                 implicitWidth: 80
                 enabled: root.running
                 onClicked: root.backend.logDataDir()
             }
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Version"
                 implicitHeight: 32
                 implicitWidth: 80
                 enabled: root.running
                 onClicked: root.backend.logVersion()
             }
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Restart onboarding"
                 implicitHeight: 32
                 implicitWidth: 150

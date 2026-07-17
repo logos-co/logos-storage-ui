@@ -81,11 +81,12 @@ OnBoardingLayout {
                 }
             }
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Continue"
-                variant: "primary"
-                iconSource: "assets/arrow-right.png"
-                iconPosition: "right"
+                variant: LogosButton.Variant.Primary
+                icon.source: "assets/arrow-right.png"
+                icon.position: LogosButton.IconPosition.Right
                 onClicked: root.completed(root.selectedMode === 0)
             }
         }

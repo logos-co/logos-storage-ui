@@ -135,9 +135,10 @@ OnBoardingLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: Theme.spacing.small
 
-            LogosStorageButton {
-                iconSource: "assets/arrow-left.png"
-                iconPosition: "left"
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
+                icon.source: "assets/arrow-left.png"
+                icon.position: LogosButton.IconPosition.Left
                 text: "Back"
                 enabled: !root.starting
                 onClicked: {
@@ -150,9 +151,10 @@ OnBoardingLayout {
                 Layout.fillWidth: true
             }
 
-            LogosStorageButton {
-                iconSource: "assets/arrow-right.png"
-                iconPosition: "right"
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
+                icon.source: "assets/arrow-right.png"
+                icon.position: LogosButton.IconPosition.Right
                 text: "Continue"
                 enabled: root.success
                 onClicked: {

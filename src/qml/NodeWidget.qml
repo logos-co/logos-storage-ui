@@ -190,11 +190,12 @@ LogosFrame {
                 }
             }
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: root.effectiveStatus === StorageBackend.Running ? "Stop" : "Start"
-                variant: "secondary"
                 implicitHeight: 32
                 implicitWidth: 65
+                background: CardButtonBackground {}
                 enabled: root.backend && (root.effectiveStatus === StorageBackend.Running
                                           || root.effectiveStatus === StorageBackend.Destroyed)
                 onClicked: {

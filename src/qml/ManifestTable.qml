@@ -328,21 +328,23 @@ LogosFrame {
                                     }
                                 }
 
-                                Rectangle {
+                                LogosIconButton {
                                     id: copyBtn
                                     anchors.right: parent.right
                                     anchors.verticalCenter: parent.verticalCenter
                                     anchors.rightMargin: Theme.spacing.medium
-                                    width: 40
-                                    height: 40
-                                    radius: Theme.spacing.radiusXlarge * 2
-                                    border.color: copyHover.hovered
-                                                  && root.running ? Theme.palette.primary : Theme.palette.borderSubtle
-                                    border.width: 1
 
                                     property bool copied: false
 
-                                    color: Theme.palette.backgroundInset
+                                    iconSource: copied ? Qt.resolvedUrl("assets/success.png") : Qt.resolvedUrl("assets/file-copy-line.svg")
+                                    iconColor: copied ? Theme.palette.success : Theme.palette.textTertiary
+
+                                    background: Rectangle {
+                                        color: Theme.palette.backgroundInset
+                                        radius: Theme.spacing.radiusPill
+                                        border.width: 1
+                                        border.color: copyBtn.isActive ? Theme.palette.overlayOrange : Theme.palette.borderSubtle
+                                    }
 
                                     Timer {
                                         id: resetCopyTimer
@@ -350,26 +352,12 @@ LogosFrame {
                                         onTriggered: copyBtn.copied = false
                                     }
 
-                                    Image {
-                                        anchors.centerIn: parent
-                                        source: copyBtn.copied ? "assets/success.png" : "assets/file-copy-line.png"
-                                        width: 20
-                                        height: 20
-                                        fillMode: Image.PreserveAspectFit
-                                    }
-                                    HoverHandler {
-                                        id: copyHover
-                                    }
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            clipboardHelper.text = modelData.cid
-                                            clipboardHelper.selectAll()
-                                            clipboardHelper.copy()
-                                            copyBtn.copied = true
-                                            resetCopyTimer.restart()
-                                        }
+                                    onClicked: {
+                                        clipboardHelper.text = modelData.cid
+                                        clipboardHelper.selectAll()
+                                        clipboardHelper.copy()
+                                        copyBtn.copied = true
+                                        resetCopyTimer.restart()
                                     }
                                 }
 
@@ -432,90 +420,32 @@ LogosFrame {
                                         anchors.centerIn: parent
                                         spacing: Theme.spacing.medium
 
-                                        Rectangle {
-                                            width: 40
-                                            height: 40
-                                            radius: Theme.spacing.radiusXlarge * 2
-                                            color: Theme.palette.backgroundButton
-                                            border.color: dlHover.hovered
-                                                          && root.running && !root.isDownloading && !rowDeleting ? Theme.palette.primary : Theme.palette.borderInteractive
-                                            border.width: 1
-                                            opacity: root.running && !root.isDownloading && !rowDeleting ? 1.0 : 0.35
-
-                                            Behavior on opacity {
-                                                NumberAnimation {
-                                                    duration: 200
-                                                }
-                                            }
-
-                                            Image {
-                                                anchors.centerIn: parent
-                                                source: "assets/download.png"
-                                                width: 24
-                                                height: 24
-                                                fillMode: Image.PreserveAspectFit
-                                            }
-
-                                            HoverHandler {
-                                                id: dlHover
-                                            }
-
-                                            MouseArea {
-                                                objectName: "downloadButton"
-                                                anchors.fill: parent
-                                                enabled: root.running && !root.isDownloading && !rowDeleting
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: {
-                                                    const dest = root.downloadFolderPath.replace(/\/$/, "") + "/" + (modelData.filename || modelData.cid || "download")
-                                                    root.downloadRequested()
-                                                    root.backend.downloadFile(
-                                                                modelData.cid,
-                                                                dest,
-                                                                parseInt(
-                                                                    modelData.datasetSize)
-                                                                || 0)
-                                                }
+                                        LogosIconButton {
+                                            objectName: "downloadButton"
+                                            iconSource: Qt.resolvedUrl("assets/download-2-fill.svg")
+                                            background: IconButtonBackground {}
+                                            enabled: root.running && !root.isDownloading && !rowDeleting
+                                            onClicked: {
+                                                const dest = root.downloadFolderPath.replace(/\/$/, "") + "/" + (modelData.filename || modelData.cid || "download")
+                                                root.downloadRequested()
+                                                root.backend.downloadFile(
+                                                            modelData.cid,
+                                                            dest,
+                                                            parseInt(
+                                                                modelData.datasetSize)
+                                                            || 0)
                                             }
                                         }
 
-                                        Rectangle {
-                                            width: 40
-                                            height: 40
-                                            radius: Theme.spacing.radiusXlarge * 2
-                                            color: Theme.palette.backgroundButton
-                                            border.color: rmHover.hovered
-                                                          && root.running && !rowDeleting && !rowDownloading ? Theme.palette.primary : Theme.palette.borderInteractive
-                                            border.width: 1
-                                            opacity: root.running && !rowDeleting && !rowDownloading ? 1.0 : 0.35
-
-                                            Behavior on opacity {
-                                                NumberAnimation {
-                                                    duration: 200
-                                                }
-                                            }
-
-                                            Image {
-                                                anchors.centerIn: parent
-                                                source: "assets/delete.png"
-                                                width: 20
-                                                height: 20
-                                                fillMode: Image.PreserveAspectFit
-                                            }
-
-                                            HoverHandler {
-                                                id: rmHover
-                                            }
-
-                                            MouseArea {
-                                                objectName: "deleteButton"
-                                                anchors.fill: parent
-                                                enabled: root.running && !rowDeleting && !rowDownloading
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: {
-                                                    if (modelData.cid.length > 0) {
-                                                        root.backend.remove(
-                                                                    modelData.cid)
-                                                    }
+                                        LogosIconButton {
+                                            objectName: "deleteButton"
+                                            iconSource: Qt.resolvedUrl("assets/delete-bin-2-line.svg")
+                                            enabled: root.running && !rowDeleting && !rowDownloading
+                                            background: IconButtonBackground {}
+                                            onClicked: {
+                                                if (modelData.cid.length > 0) {
+                                                    root.backend.remove(
+                                                                modelData.cid)
                                                 }
                                             }
                                         }
@@ -544,33 +474,11 @@ LogosFrame {
                                         anchors.centerIn: parent
                                         spacing: Theme.spacing.medium
 
-                                        Rectangle {
-                                            width: 40
-                                            height: 40
-                                            radius: Theme.spacing.radiusXlarge * 2
-                                            color: Theme.palette.backgroundButton
-                                            border.color: dismissHover.hovered ? Theme.palette.primary : Theme.palette.borderInteractive
-                                            border.width: 1
-
-                                            Image {
-                                                anchors.centerIn: parent
-                                                source: "assets/close-circle.png"
-                                                width: 20
-                                                height: 20
-                                                opacity: 0.6
-                                                fillMode: Image.PreserveAspectFit
-                                            }
-
-                                            HoverHandler {
-                                                id: dismissHover
-                                            }
-
-                                            MouseArea {
-                                                objectName: "dismissButton"
-                                                anchors.fill: parent
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: root.dismissPending(modelData.cid)
-                                            }
+                                        LogosIconButton {
+                                            objectName: "dismissButton"
+                                            iconSource: Qt.resolvedUrl("assets/close-circle.png")
+                                            background: IconButtonBackground {}
+                                            onClicked: root.dismissPending(modelData.cid)
                                         }
                                     }
                                 }
