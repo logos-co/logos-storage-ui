@@ -6,6 +6,8 @@ Item {
     id: root
 
     property string title: ""
+    property string color: Theme.palette.text
+    property string helpText: ""
 
     implicitHeight: footerLabel.implicitHeight + Theme.spacing.medium * 2
 
@@ -15,7 +17,29 @@ Item {
         anchors.left: parent.left
         text: root.title
         font.pixelSize: Theme.typography.panelTitleText
-        color: Theme.palette.text
+        color: root.color
+    }
+
+    LogosIcon {
+        id: helpButton
+        visible: root.helpText.length > 0
+        source: Qt.resolvedUrl("assets/question-line.svg")
+        color: helpHover.hovered ? Theme.palette.text : Theme.palette.textTertiary
+        width: Theme.spacing.large
+        height: Theme.spacing.large
+        anchors.right: parent.right
+        anchors.verticalCenter: footerLabel.verticalCenter
+
+        HoverHandler {
+            id: helpHover
+            cursorShape: Qt.PointingHandCursor
+        }
+
+        LogosToolTip {
+            text: root.helpText
+            placement: LogosToolTip.Top
+            visible: helpHover.hovered
+        }
     }
 
     Rectangle {

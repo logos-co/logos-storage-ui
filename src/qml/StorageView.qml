@@ -17,6 +17,9 @@ LogosStorageLayout {
 
     readonly property bool running: backend && backend.status === StorageBackend.Running
 
+    // Fixed height of a top dashboard block, in every column count.
+    readonly property int topBlockHeight: 465
+
     Settings {
         id: settings
         category: "Storage"
@@ -64,38 +67,39 @@ LogosStorageLayout {
         }
     }
 
-    ColumnLayout {
+    ScrollView {
+        id: dashboardScroll
         visible: root.currentPage === "dashboard"
         anchors.fill: parent
         anchors.margins: Theme.spacing.medium
         anchors.leftMargin: sidebar.width + Theme.spacing.medium
-        spacing: Theme.spacing.medium
+        clip: true
+        contentWidth: availableWidth
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
-        // Partie haute — hauteur strictement fixe (min = max = preferred)
-        Item {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 465
-            Layout.minimumHeight: 465
-            Layout.maximumHeight: 465
+        ColumnLayout {
+            width: dashboardScroll.availableWidth
+            spacing: Theme.spacing.medium
 
-            RowLayout {
-                id: topRow
-                anchors.fill: parent
-                spacing: Theme.spacing.medium
+            // Top blocks — 3 columns when wide, stacked into 1 when narrow.
+            GridLayout {
+                id: topGrid
+                Layout.fillWidth: true
+                columnSpacing: Theme.spacing.medium
+                rowSpacing: Theme.spacing.medium
+                columns: dashboardScroll.availableWidth > 950 ? 3 : 1
 
                 DiskWidget {
                     Layout.fillWidth: true
-                    Layout.fillHeight: true
                     Layout.preferredWidth: 0
+                    Layout.preferredHeight: root.topBlockHeight
                     backend: root.backend
-                    // Hidden on narrow layouts; the other columns take its space.
-                    visible: topRow.width > 900
                 }
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    Layout.fillHeight: true
                     Layout.preferredWidth: 0
+                    Layout.preferredHeight: root.topBlockHeight
                     spacing: Theme.spacing.medium
 
                     DownloadWidget {
@@ -124,8 +128,8 @@ LogosStorageLayout {
                 ColumnLayout {
                     id: thirdCol
                     Layout.fillWidth: true
-                    Layout.fillHeight: true
                     Layout.preferredWidth: 0
+                    Layout.preferredHeight: root.topBlockHeight
                     spacing: Theme.spacing.medium
 
                     NodeWidget {
@@ -146,17 +150,18 @@ LogosStorageLayout {
                     }
                 }
             }
-        }
 
-        ManifestTable {
-            id: manifestTable
-            Layout.fillWidth: true
-            Layout.fillHeight: true
-            Layout.minimumHeight: 0
-            backend: root.backend
-            running: root.running
-            downloadFolderPath: settings.downloadFolderPath
-            onDownloadRequested: downloadWidget.startLooking()
+            ManifestTable {
+                id: manifestTable
+                Layout.fillWidth: true
+                // Fill the remaining viewport when there's room, scroll otherwise.
+                Layout.preferredHeight: Math.max(
+                    400, dashboardScroll.availableHeight - topGrid.height - Theme.spacing.medium)
+                backend: root.backend
+                running: root.running
+                downloadFolderPath: settings.downloadFolderPath
+                onDownloadRequested: downloadWidget.startLooking()
+            }
         }
     }
 
