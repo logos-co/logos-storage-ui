@@ -18,7 +18,7 @@ LogosStorageLayout {
     readonly property bool running: backend && backend.status === StorageBackend.Running
 
     // Fixed height of a top dashboard block, in every column count.
-    readonly property int topBlockHeight: 465
+    readonly property int topBlockHeight: 425
 
     Settings {
         id: settings
@@ -102,13 +102,6 @@ LogosStorageLayout {
                     Layout.preferredHeight: root.topBlockHeight
                     spacing: Theme.spacing.medium
 
-                    DownloadWidget {
-                        id: downloadWidget
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        backend: root.backend
-                    }
-
                     UploadWidget {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
@@ -117,9 +110,16 @@ LogosStorageLayout {
                         onUploadRequested: uploadDialog.open()
                     }
 
+                    DownloadWidget {
+                        id: downloadWidget
+                        Layout.fillWidth: true
+                        backend: root.backend
+                        running: root.running
+                        downloadFolderPath: settings.downloadFolderPath
+                    }
+
                     ManifestWidget {
                         Layout.fillWidth: true
-                        Layout.fillHeight: true
                         backend: root.backend
                         running: root.running
                     }

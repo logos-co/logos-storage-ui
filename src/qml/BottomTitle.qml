@@ -8,6 +8,7 @@ Item {
     property string title: ""
     property string color: Theme.palette.text
     property string helpText: ""
+    property bool hasSeparator: true
 
     implicitHeight: footerLabel.implicitHeight + Theme.spacing.medium * 2
 
@@ -50,5 +51,6 @@ Item {
         anchors.bottomMargin: Theme.spacing.medium + 2
         height: 1
         color: Theme.palette.borderSecondary
+        visible: root.hasSeparator
     }
 }

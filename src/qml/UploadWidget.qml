@@ -82,31 +82,30 @@ LogosFrame {
             border.width: 1
 
             RowLayout {
-                anchors.fill: parent
+                id: dropRow
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.leftMargin: Theme.spacing.medium
+                anchors.rightMargin: Theme.spacing.medium
 
                 ColumnLayout {
-                    Layout.alignment: Qt.AlignTop
-                    Layout.fillHeight: false
+                    Layout.alignment: Qt.AlignVCenter
                     spacing: Theme.spacing.tiny
 
                     RowLayout {
-                        Layout.topMargin: Theme.spacing.small
-                        Layout.leftMargin: Theme.spacing.small
-                        Layout.fillHeight: false
-
                         LogosText {
                             text: "Click to"
                             color: Theme.palette.text
                         }
 
                         LogosText {
-                            text: "browse"
+                            text: "browse."
                             color: Theme.palette.primary
                         }
                     }
 
                     LogosText {
-                        Layout.leftMargin: Theme.spacing.small
                         text: "Up to 1 file"
                         color: Theme.palette.textMuted
                     }
@@ -117,9 +116,7 @@ LogosFrame {
                 }
 
                 Image {
-                    Layout.alignment: Qt.AlignTop
-                    Layout.topMargin: Theme.spacing.tiny
-                    Layout.rightMargin: Theme.spacing.tiny
+                    Layout.alignment: Qt.AlignVCenter
                     source: "assets/folder-upload.png"
                 }
             }
@@ -133,6 +130,7 @@ LogosFrame {
         anchors.bottom: parent.bottom
         title: "Upload"
         visible: !root.isUploading && !root.isDone
+        hasSeparator: false
     }
 
     Rectangle {

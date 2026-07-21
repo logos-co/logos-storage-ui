@@ -169,6 +169,8 @@ qt_add_qml_module(appqml
         assets/arrow-left-line.svg
         assets/refresh-line.svg
         assets/question-line.svg
+        assets/file-download-line.svg
+        assets/close-circle-line.svg
         assets/info-custom-fill.svg
         assets/hard-drive.png
         assets/folder-upload.png

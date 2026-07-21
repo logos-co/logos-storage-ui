@@ -36,7 +36,6 @@ LogosFrame {
                 leftPadding: Theme.spacing.medium * 2 + Theme.spacing.xlarge
                 rightPadding: Theme.spacing.medium * 2 + Theme.spacing.xlarge
                 placeholderText: "CID"
-                enabled: root.running
                 background: CardFieldBackground { radius: Theme.spacing.radiusLarge }
             }
 
@@ -85,7 +84,7 @@ LogosFrame {
             enabled: cidInput.text.length > 0 && root.running && root.enabled
             onClicked: {
                 root.backend.downloadManifest(cidInput.text)
-                cidInput.clear()
+                cidInput.text = ""
             }
         }
     }
@@ -98,5 +97,6 @@ LogosFrame {
         title: "Fetch Manifest"
         color: Theme.palette.textSecondary
         helpText: "Fetch a shared file's metadata by its CID."
+        hasSeparator: false
     }
 }
