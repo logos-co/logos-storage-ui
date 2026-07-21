@@ -118,32 +118,9 @@ LogosFrame {
             color: Theme.palette.borderSecondary
         }
 
-        Rectangle {
+        StorageUsageByType {
             Layout.fillWidth: true
-            Layout.preferredHeight: 120
-            color: Theme.palette.backgroundBlack
-
-            Rectangle {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                height: 40
-                color: Theme.palette.borderSubtle
-
-                Rectangle {
-                    width: parent.width * root.fraction + 10
-                    height: parent.height
-                    radius: parent.radius
-                    color: Theme.palette.accentOrange
-
-                    Behavior on width {
-                        NumberAnimation {
-                            duration: 300
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-                }
-            }
+            Layout.preferredHeight: implicitHeight
         }
 
         // Legend
@@ -156,6 +133,8 @@ LogosFrame {
             // Utilized
             RowLayout {
                 spacing: Theme.spacing.tiny
+                visible: false
+
                 Rectangle {
                     Layout.preferredWidth: 8
                     Layout.preferredHeight: 8
@@ -174,6 +153,7 @@ LogosFrame {
             // Free
             RowLayout {
                 spacing: Theme.spacing.tiny
+                visible: false
                 Rectangle {
                     Layout.preferredWidth: 8
                     Layout.preferredHeight: 8
