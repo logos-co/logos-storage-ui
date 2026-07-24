@@ -23,6 +23,31 @@ LogosFrame {
                                                           root.used / root.total,
                                                           1.0) : 0
 
+    // Bytes per category [Documents, Images, Videos, Archives], from manifests
+    property var typeBytes: [0, 0, 0, 0]
+    property int manifestCount: 0
+
+    // Map a mimetype to a category index matching StorageUsageByType.types.
+    // Images and videos are explicit; recognised document types are Documents;
+    // everything else falls into Archives.
+    function categoryIndex(mimetype) {
+        if (!mimetype)
+            return 3 // Archives (unknown)
+        var m = mimetype.toLowerCase()
+        if (m.indexOf("image/") === 0)
+            return 1
+        if (m.indexOf("video/") === 0)
+            return 2
+        if (m.indexOf("text/") === 0 || m === "application/pdf"
+                || m.indexOf("word") >= 0 || m.indexOf("document") >= 0
+                || m.indexOf("spreadsheet") >= 0 || m.indexOf("excel") >= 0
+                || m.indexOf("presentation") >= 0 || m.indexOf("powerpoint") >= 0
+                || m.indexOf("rtf") >= 0 || m.indexOf("csv") >= 0
+                || m.indexOf("json") >= 0 || m.indexOf("xml") >= 0)
+            return 0 // Documents
+        return 3 // Archives
+    }
+
     function refreshSpace() {
         let space = root.backend.space()
         root.total = space.total
@@ -42,6 +67,16 @@ LogosFrame {
             root.prevUsed = used
             root.total = total
             root.used = used
+        }
+
+        function onManifestsUpdated(manifests) {
+            var b = [0, 0, 0, 0]
+            for (var i = 0; i < manifests.length; i++) {
+                var idx = root.categoryIndex(manifests[i].mimetype)
+                b[idx] += parseInt(manifests[i].datasetSize) || 0
+            }
+            root.typeBytes = b
+            root.manifestCount = manifests.length
         }
 
         function onDownloadChunk(len) {
@@ -121,6 +156,10 @@ LogosFrame {
         StorageUsageByType {
             Layout.fillWidth: true
             Layout.preferredHeight: implicitHeight
+            capacity: root.total
+            used: root.used
+            bytes: root.typeBytes
+            placeholder: root.manifestCount === 0
         }
 
         // Legend

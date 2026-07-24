@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Effects
 import Logos.Theme
 import Logos.Controls
+import "Utils.js" as Utils
 
 // Storage usage broken down by data type.
 //
@@ -14,49 +15,73 @@ import Logos.Controls
 Rectangle {
     id: root
 
-    // Placeholder data — swap for live values once wired
-    readonly property int capacityGb: 250
-    readonly property int usedGb: 192
-    // Colors and textures taken from the Figma layers (not theme tokens yet)
+    // Fixed category metadata. Colors and textures taken from the Figma
+    // layers (not theme tokens yet). Live byte figures come from `bytes`.
     readonly property var types: [
         {
             "name": "Documents",
-            "gb": 98,
             "color": "#FE4D15",
             "dotColor": "#FE4D15",
             "texture": "vertical"
         },
         {
             "name": "Images",
-            "gb": 34,
             "color": "#F04734",
             "dotColor": "#D86153",
             "texture": "hdash"
         },
         {
             "name": "Videos",
-            "gb": 18,
             "color": "#F04734",
             "dotColor": "#F04734",
             "texture": "circles"
         },
         {
             "name": "Archives",
-            "gb": 42,
             "color": "#F66E5F",
             "dotColor": "#ED7B58",
             "texture": "hdot"
         }
     ]
-    property bool placeholder: false
 
-    readonly property real usedFraction: usedGb / capacityGb
+    // Live data, set from the backend (index-aligned with `types`)
+    property var bytes: [0, 0, 0, 0]
+    property double capacity: 0
+    property double used: 0
+    property bool placeholder: true
+
+    // Example figures shown grayed-out while there is nothing on disk
+    readonly property var placeholderBytes: [98e9, 34e9, 18e9, 42e9]
+    readonly property double placeholderCapacity: 250e9
+    readonly property double placeholderUsed: 192e9
+
+    readonly property var effBytes: placeholder ? placeholderBytes : bytes
+    readonly property double effCapacity: placeholder ? placeholderCapacity : capacity
+    readonly property double effUsed: placeholder ? placeholderUsed : used
+
+    readonly property double effTotalBytes: {
+        var s = 0
+        for (var k = 0; k < effBytes.length; k++)
+            s += effBytes[k]
+        return s
+    }
+
+    // Top band: how full the disk is overall
+    readonly property real usedFraction: effCapacity > 0 ? Math.min(effUsed / effCapacity, 1.0) : 0
+
+    // Bottom band: composition of used space, filling the full width so small
+    // amounts stay visible (a single type shows as 100%)
+    function segFraction(i) {
+        return effTotalBytes > 0 ? effBytes[i] / effTotalBytes : 0
+    }
 
     function startFraction(i) {
+        if (effTotalBytes <= 0)
+            return 0
         var acc = 0
         for (var k = 0; k < i; k++)
-            acc += types[k].gb
-        return acc / capacityGb
+            acc += effBytes[k]
+        return acc / effTotalBytes
     }
 
     implicitHeight: 138
@@ -143,13 +168,13 @@ Rectangle {
                         spacing: 0
 
                         LogosText {
-                            text: modelData.gb + "GB"
+                            text: Utils.formatBytes(root.effBytes[index])
                             font.pixelSize: 9
                             font.family: "monospace"
                             color: Qt.rgba(1, 1, 1, 0.94)
                         }
                         LogosText {
-                            text: " / " + root.usedGb + "GB"
+                            text: " / " + Utils.formatBytes(root.effUsed)
                             font.pixelSize: 9
                             font.family: "monospace"
                             color: Qt.rgba(1, 1, 1, 0.58)
@@ -189,29 +214,6 @@ Rectangle {
                 height: parent.height
                 color: Theme.palette.accentOrange
             }
-
-            // Percent markers at each type boundary
-            Repeater {
-                model: root.types
-
-                Rectangle {
-                    x: topBand.width * root.startFraction(index)
-                    anchors.bottom: parent.bottom
-                    width: pct.implicitWidth + 8
-                    height: pct.implicitHeight + 2
-                    color: Qt.rgba(0, 0, 0, 0.13)
-
-                    LogosText {
-                        id: pct
-                        anchors.centerIn: parent
-                        text: Math.round(modelData.gb / root.usedGb * 100) + "%"
-                        font.pixelSize: 8
-                        font.weight: Theme.typography.weightBold
-                        font.family: "monospace"
-                        color: Theme.palette.backgroundBlack
-                    }
-                }
-            }
         }
 
         // Bottom band: one textured segment per data type
@@ -227,7 +229,7 @@ Rectangle {
 
                 Rectangle {
                     x: bottomBand.width * root.startFraction(index)
-                    width: bottomBand.width * (modelData.gb / root.capacityGb)
+                    width: bottomBand.width * root.segFraction(index)
                     height: bottomBand.height
                     color: modelData.color
                     clip: true
@@ -299,12 +301,28 @@ Rectangle {
                 }
             }
 
-            // Unused remainder
-            Rectangle {
-                x: bottomBand.width * root.usedFraction
-                width: bottomBand.width * (1 - root.usedFraction)
-                height: bottomBand.height
-                color: Theme.palette.backgroundTertiary
+            // Percent markers at the start of each segment (share of used)
+            Repeater {
+                model: root.types
+
+                Rectangle {
+                    visible: Math.round(root.segFraction(index) * 100) > 0
+                    x: bottomBand.width * root.startFraction(index)
+                    anchors.bottom: parent.bottom
+                    width: pct.implicitWidth + 8
+                    height: pct.implicitHeight + 2
+                    color: Qt.rgba(0, 0, 0, 0.13)
+
+                    LogosText {
+                        id: pct
+                        anchors.centerIn: parent
+                        text: Math.round(root.segFraction(index) * 100) + "%"
+                        font.pixelSize: 8
+                        font.weight: Theme.typography.weightBold
+                        font.family: "monospace"
+                        color: Theme.palette.backgroundBlack
+                    }
+                }
             }
         }
     }
