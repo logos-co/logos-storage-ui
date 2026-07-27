@@ -16,7 +16,7 @@ LogosFrame {
 
     // Full config as last loaded/saved, kept so unknown keys survive a save.
     property var loaded: ({})
-    property string baseline: ""
+    property string configBaseline: ""
     property bool loadedOnce: false
     property bool savedNote: false
 
@@ -47,7 +47,7 @@ LogosFrame {
     readonly property var natModes: ["auto", "extip"]
 
     readonly property bool dirty: root.loadedOnce
-                                  && JSON.stringify(root.buildConfig()) !== root.baseline
+                                  && JSON.stringify(root.buildConfig()) !== root.configBaseline
 
     onVisibleChanged: if (visible) root.load()
     Component.onCompleted: if (visible) root.load()
@@ -107,7 +107,7 @@ LogosFrame {
         root.vNatRecheck = cfg["nat-port-mapping-recheck-period"] !== undefined
                 ? String(cfg["nat-port-mapping-recheck-period"]) : ""
 
-        root.baseline = JSON.stringify(root.buildConfig())
+        root.configBaseline = JSON.stringify(root.buildConfig())
         root.savedNote = false
         root.loadedOnce = true
     }
@@ -147,7 +147,7 @@ LogosFrame {
         var cfg = root.buildConfig()
         root.backend.saveUserConfig(JSON.stringify(cfg, null, 2))
         root.loaded = cfg
-        root.baseline = JSON.stringify(cfg)
+        root.configBaseline = JSON.stringify(cfg)
         root.savedNote = true
     }
 
@@ -453,6 +453,19 @@ LogosFrame {
                             font.pixelSize: Theme.typography.secondaryText
                             onTextChanged: root.vMixPoolJson = text
                         }
+                    }
+                }
+
+                // ---------- Advanced ----------
+                Section { text: "Advanced" }
+
+                SettingRow {
+                    title: "Restart onboarding"
+                    description: "Return to the initial setup flow. The node keeps running and your data is untouched."
+                    LogosButton {
+                        text: "Restart onboarding"
+                        radius: Theme.spacing.radiusLarge
+                        onClicked: root.backend.restartOnboarding()
                     }
                 }
             }

@@ -51,9 +51,10 @@ Rectangle {
     property bool placeholder: true
 
     // Example figures shown grayed-out while there is nothing on disk
-    readonly property var placeholderBytes: [98e9, 34e9, 18e9, 42e9]
-    readonly property double placeholderCapacity: 250e9
-    readonly property double placeholderUsed: 192e9
+    readonly property double gib: 1024 * 1024 * 1024
+    readonly property var placeholderBytes: [98 * gib, 34 * gib, 18 * gib, 42 * gib]
+    readonly property double placeholderCapacity: 250 * gib
+    readonly property double placeholderUsed: 192 * gib
 
     readonly property var effBytes: placeholder ? placeholderBytes : bytes
     readonly property double effCapacity: placeholder ? placeholderCapacity : capacity
@@ -129,6 +130,13 @@ Rectangle {
         anchors.rightMargin: 8
         y: 10
         spacing: 8
+        opacity: root.placeholder ? 0.36 : 1.0
+
+        // Same gray-out as the bar while showing placeholder data
+        layer.enabled: root.placeholder
+        layer.effect: MultiEffect {
+            saturation: -1.0
+        }
 
         Repeater {
             model: root.types
@@ -172,12 +180,6 @@ Rectangle {
                             font.pixelSize: 9
                             font.family: "monospace"
                             color: Qt.rgba(1, 1, 1, 0.94)
-                        }
-                        LogosText {
-                            text: " / " + Utils.formatBytes(root.effUsed)
-                            font.pixelSize: 9
-                            font.family: "monospace"
-                            color: Qt.rgba(1, 1, 1, 0.58)
                         }
                     }
                 }

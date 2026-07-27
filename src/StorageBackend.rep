@@ -11,10 +11,10 @@ class StorageBackend
         Destroyed = 4
     }
 
-    PROP(QString debugLogs READONLY)
     PROP(StorageStatus status READONLY)
     PROP(int defaultListenPort READONLY)
     PROP(QString defaultConfigJson READONLY)
+    PROP(QString uiVersion READONLY)
 
     // True when the running node was initialised with mix-enabled. Reflects the
     // config the node currently runs with, not the persisted one.
@@ -72,8 +72,9 @@ class StorageBackend
     SIGNAL(startFailed(QString error))
     SIGNAL(stopCompleted())
 
-    // Space
-    SIGNAL(spaceUpdated(qint64 total, qint64 used))
+    // Space. usage is the per-mimetype local breakdown:
+    // [{mimetype, bytesLocal, count}]
+    SIGNAL(spaceUpdated(qint64 total, qint64 used, QVariantList usage))
 
     // Upload
     SIGNAL(uploadStarted(qint64 totalBytes))
@@ -100,6 +101,14 @@ class StorageBackend
     SIGNAL(nodeIsUp())
     SIGNAL(nodeIsntUp(QString reason))
     SIGNAL(peersUpdated(int count))
+
+    // Routing-table entries from the node debug info. Each entry:
+    // {peerId, address, seen}
+    SIGNAL(peersTableUpdated(QVariantList peers))
+
+    // New complete lines tailed from the node log file, streamed as they
+    // are appended.
+    SIGNAL(logLines(QStringList lines))
 
     // Errors
     SIGNAL(error(QString message))

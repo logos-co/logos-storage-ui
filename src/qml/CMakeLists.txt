@@ -146,7 +146,13 @@ qt_add_qml_module(appqml
         ManifestTable.qml
         NodeWidget.qml
         Widgets.qml
-        DebugPanel.qml
+        LogsPage.qml
+        SettingsPage.qml
+        SettingRow.qml
+        PeersPage.qml
+        PeerConstellation.qml
+        HelpPage.qml
+        DisclaimerPage.qml
         Utils.js
         MockBackend.qml
         OnBoardingLayout.qml
@@ -196,6 +202,13 @@ qt_add_qml_module(appqml
         assets/sidebar-settings.svg
         assets/sidebar-help.svg
         assets/sidebar-disclaimer.svg
+        assets/images.svg
+        assets/videos.svg
+        assets/documents.svg
+        assets/expand-up-down-fill.svg
+        assets/file-copy-2-fill.svg
+        assets/file-copy-2-fill-white.svg
+        assets/external-link-line.svg
         BottomTitle.qml
         DownloadFolder.qml
 )

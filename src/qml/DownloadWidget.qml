@@ -292,7 +292,7 @@ LogosFrame {
         BottomTitle {
             Layout.fillWidth: true
             title: root.downloadInProgress ? "Looking for peers..." : "Download"
-            helpText: root.idle ? "Paste a CID to fetch its manifest and download the file." : ""
+            helpText: root.idle ? "Fetch its manifest and download the file." : ""
             visible: !root.isDownloading && !root.isDone
             color: Theme.palette.textSecondary
             hasSeparator: false

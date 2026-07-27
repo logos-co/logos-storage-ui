@@ -18,6 +18,8 @@ LogosFrame {
     property int peers: 0
     property int maxPeers: 20
 
+    signal detailsRequested()
+
     onRunningChanged: {
         if (!running) root.peers = 0
     }
@@ -40,6 +42,7 @@ LogosFrame {
             fraction: root.maxPeers > 0 ? Math.min(root.peers / root.maxPeers,
                                                    1.0) : 0
             fillColor: Theme.palette.primary
+            trackColor: Theme.palette.border
 
             ColumnLayout {
                 anchors.centerIn: parent
@@ -78,8 +81,8 @@ LogosFrame {
             }
 
             LogosText {
-                text: root.peers > 0 ? "Peer connections are in good standing."
-                                     : "No active peer connections."
+                text: root.peers > 0 ? "Verified peers in the routing table."
+                                     : "No verified peers yet."
                 font.pixelSize: Theme.typography.secondaryText
                 color: Theme.palette.textMuted
                 font.family: "monospace"
@@ -94,5 +97,7 @@ LogosFrame {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         title: "Peers"
+        actionText: "Details"
+        onActionClicked: root.detailsRequested()
     }
 }

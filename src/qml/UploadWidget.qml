@@ -131,6 +131,7 @@ LogosFrame {
         title: "Upload"
         visible: !root.isUploading && !root.isDone
         hasSeparator: false
+        color: Theme.palette.textSecondary
     }
 
     Rectangle {

@@ -17,8 +17,31 @@ LogosStorageLayout {
 
     readonly property bool running: backend && backend.status === StorageBackend.Running
 
+    // Below this width the sidebar collapses into a thin rail with a hamburger
+    // that opens the full navigation in an overlay drawer.
+    readonly property bool compact: width < 820
+    readonly property int railWidth: 56
+    readonly property int sidebarWidth: 196
+    readonly property real navWidth: compact ? railWidth : sidebarWidth
+
     // Fixed height of a top dashboard block, in every column count.
     readonly property int topBlockHeight: 425
+
+    // Responsive breakpoints for the top blocks:
+    // - wide:   Disk 40% | Upload/Download group 30% | Node/Peers group 30%
+    // - medium: Disk full width on top, the two groups 50/50 below it
+    // - narrow: every block stacked in a single column
+    readonly property real topContentWidth: dashboardScroll.availableWidth
+    readonly property string topMode: topContentWidth > 1250 ? "wide"
+                                      : topContentWidth > 600 ? "medium" : "narrow"
+
+    readonly property real diskBlockWidth:
+        topMode === "wide" ? 0.4 * (topContentWidth - 2 * Theme.spacing.medium)
+                           : topContentWidth
+    readonly property real sideBlockWidth:
+        topMode === "wide" ? 0.3 * (topContentWidth - 2 * Theme.spacing.medium)
+        : topMode === "medium" ? (topContentWidth - Theme.spacing.medium) / 2
+        : topContentWidth
 
     Settings {
         id: settings
@@ -41,6 +64,8 @@ LogosStorageLayout {
         }
     }
 
+    onCompactChanged: if (!root.compact) navDrawer.close()
+
     FileDialog {
         id: uploadDialog
         objectName: "uploadDialog"
@@ -55,15 +80,80 @@ LogosStorageLayout {
         backend: root.backend
     }
 
-    Sidebar {
-        id: sidebar
+    Loader {
+        id: sidebarLoader
+        active: !root.compact
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        width: implicitWidth
-        currentPage: root.currentPage
-        onPageSelected: function (page) {
-            root.currentPage = page
+        sourceComponent: Sidebar {
+            width: root.sidebarWidth
+            currentPage: root.currentPage
+            onPageSelected: function (page) {
+                root.currentPage = page
+            }
+        }
+    }
+
+    // Collapsed navigation rail: only a hamburger, opens navDrawer.
+    Rectangle {
+        id: rail
+        visible: root.compact
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: root.railWidth
+        color: Theme.palette.backgroundTertiary
+
+        Rectangle {
+            id: hamburger
+            width: 24
+            height: 18
+            color: "transparent"
+            anchors.top: parent.top
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.topMargin: Theme.spacing.large
+
+            Column {
+                anchors.fill: parent
+                spacing: 5
+                Repeater {
+                    model: 3
+                    Rectangle {
+                        width: hamburger.width
+                        height: 2
+                        radius: 1
+                        color: hamburgerMouse.containsMouse ? Theme.palette.primary
+                                                            : Theme.palette.textTertiary
+                    }
+                }
+            }
+
+            MouseArea {
+                id: hamburgerMouse
+                anchors.fill: parent
+                anchors.margins: -8
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onClicked: navDrawer.open()
+            }
+        }
+    }
+
+    LogosDrawer {
+        id: navDrawer
+        edge: Qt.LeftEdge
+        height: root.height
+        width: root.sidebarWidth
+        padding: 0
+
+        Sidebar {
+            anchors.fill: parent
+            currentPage: root.currentPage
+            onPageSelected: function (page) {
+                root.currentPage = page
+                navDrawer.close()
+            }
         }
     }
 
@@ -72,7 +162,7 @@ LogosStorageLayout {
         visible: root.currentPage === "dashboard"
         anchors.fill: parent
         anchors.margins: Theme.spacing.medium
-        anchors.leftMargin: sidebar.width + Theme.spacing.medium
+        anchors.leftMargin: root.navWidth + Theme.spacing.medium
         clip: true
         contentWidth: availableWidth
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
@@ -81,24 +171,26 @@ LogosStorageLayout {
             width: dashboardScroll.availableWidth
             spacing: Theme.spacing.medium
 
-            // Top blocks — 3 columns when wide, stacked into 1 when narrow.
+            // Top blocks — responsive: wide 3 columns (40/30/30), medium
+            // Disk full-width over two 50/50 groups, narrow single column.
             GridLayout {
                 id: topGrid
                 Layout.fillWidth: true
                 columnSpacing: Theme.spacing.medium
                 rowSpacing: Theme.spacing.medium
-                columns: dashboardScroll.availableWidth > 950 ? 3 : 1
+                columns: root.topMode === "wide" ? 3 : root.topMode === "medium" ? 2 : 1
 
                 DiskWidget {
                     Layout.fillWidth: true
-                    Layout.preferredWidth: 0
+                    Layout.preferredWidth: root.diskBlockWidth
+                    Layout.columnSpan: root.topMode === "medium" ? 2 : 1
                     Layout.preferredHeight: root.topBlockHeight
                     backend: root.backend
                 }
 
                 ColumnLayout {
                     Layout.fillWidth: true
-                    Layout.preferredWidth: 0
+                    Layout.preferredWidth: root.sideBlockWidth
                     Layout.preferredHeight: root.topBlockHeight
                     spacing: Theme.spacing.medium
 
@@ -128,7 +220,7 @@ LogosStorageLayout {
                 ColumnLayout {
                     id: thirdCol
                     Layout.fillWidth: true
-                    Layout.preferredWidth: 0
+                    Layout.preferredWidth: root.sideBlockWidth
                     Layout.preferredHeight: root.topBlockHeight
                     spacing: Theme.spacing.medium
 
@@ -147,6 +239,7 @@ LogosStorageLayout {
                         Layout.preferredHeight: (thirdCol.height - thirdCol.spacing) * 2 / 3
                         backend: root.backend
                         running: root.running
+                        onDetailsRequested: root.currentPage = "peers"
                     }
                 }
             }
@@ -165,11 +258,52 @@ LogosStorageLayout {
         }
     }
 
+    LogsPage {
+        visible: root.currentPage === "logs"
+        anchors.fill: parent
+        anchors.margins: Theme.spacing.medium
+        anchors.leftMargin: root.navWidth + Theme.spacing.medium
+        backend: root.backend
+    }
+
+    SettingsPage {
+        visible: root.currentPage === "settings"
+        anchors.fill: parent
+        anchors.margins: Theme.spacing.medium
+        anchors.leftMargin: root.navWidth + Theme.spacing.medium
+        backend: root.backend
+    }
+
+    PeersPage {
+        visible: root.currentPage === "peers"
+        anchors.fill: parent
+        anchors.margins: Theme.spacing.medium
+        anchors.leftMargin: root.navWidth + Theme.spacing.medium
+        backend: root.backend
+        running: root.running
+    }
+
+    HelpPage {
+        visible: root.currentPage === "help"
+        anchors.fill: parent
+        anchors.margins: Theme.spacing.medium
+        anchors.leftMargin: root.navWidth + Theme.spacing.medium
+    }
+
+    DisclaimerPage {
+        visible: root.currentPage === "disclaimer"
+        anchors.fill: parent
+        anchors.margins: Theme.spacing.medium
+        anchors.leftMargin: root.navWidth + Theme.spacing.medium
+    }
+
     // Pages other than the dashboard are not built yet
     Item {
-        visible: root.currentPage !== "dashboard"
+        id: placeholderPage
+        readonly property var builtPages: ["dashboard", "logs", "settings", "peers", "help", "disclaimer"]
+        visible: placeholderPage.builtPages.indexOf(root.currentPage) === -1
         anchors.fill: parent
-        anchors.leftMargin: sidebar.width
+        anchors.leftMargin: root.navWidth
 
         LogosText {
             anchors.centerIn: parent

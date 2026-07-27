@@ -23,9 +23,10 @@ LogosFrame {
                                                           root.used / root.total,
                                                           1.0) : 0
 
-    // Bytes per category [Documents, Images, Videos, Archives], from manifests
+    // Bytes per category [Documents, Images, Videos, Archives], from the
+    // node's per-mimetype usage breakdown
     property var typeBytes: [0, 0, 0, 0]
-    property int manifestCount: 0
+    property int usageCount: 0
 
     // Map a mimetype to a category index matching StorageUsageByType.types.
     // Images and videos are explicit; recognised document types are Documents;
@@ -57,26 +58,24 @@ LogosFrame {
     Connections {
         target: root.backend
 
-        function onSpaceUpdated(total, used) {
+        function onSpaceUpdated(total, used, usage) {
             // Detect upload activity from growing used-space
-            if (root._prevUsed >= 0) {
-                var delta = used - root._prevUsed
+            if (root.prevUsed >= 0) {
+                var delta = used - root.prevUsed
                 if (delta > 0)
                     activityGraph.addActivity(delta)
             }
             root.prevUsed = used
             root.total = total
             root.used = used
-        }
 
-        function onManifestsUpdated(manifests) {
             var b = [0, 0, 0, 0]
-            for (var i = 0; i < manifests.length; i++) {
-                var idx = root.categoryIndex(manifests[i].mimetype)
-                b[idx] += parseInt(manifests[i].datasetSize) || 0
+            for (var i = 0; i < usage.length; i++) {
+                var idx = root.categoryIndex(usage[i].mimetype)
+                b[idx] += Number(usage[i].bytesLocal) || 0
             }
             root.typeBytes = b
-            root.manifestCount = manifests.length
+            root.usageCount = usage.length
         }
 
         function onDownloadChunk(len) {
@@ -159,7 +158,7 @@ LogosFrame {
             capacity: root.total
             used: root.used
             bytes: root.typeBytes
-            placeholder: root.manifestCount === 0
+            placeholder: root.usageCount === 0
         }
 
         // Legend

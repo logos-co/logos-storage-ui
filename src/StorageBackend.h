@@ -18,6 +18,7 @@ static const QString PORT_CHECKER_PROVIDER = "https://portchecker.io/api/";
 static const QString APP_HOME = QDir::homePath() + "/.logos_storage";
 static const QString DEFAULT_DATA_DIR = APP_HOME + "/data";
 static const QString USER_CONFIG_PATH = APP_HOME + "/config.json";
+static const QString LOG_FILE_PATH = APP_HOME + "/storage.log";
 
 static const int DEFAULT_LISTEN_PORT = 8500;
 static const int DEFAULT_DISC_PORT = 9090;
@@ -237,16 +238,20 @@ class StorageBackend : public StorageBackendSimpleSource {
     // i.e. the user never set their own bootstrap nodes.
     static bool isLegacyBootstrap(const QJsonArray& bootstrap);
 
-    // Display debug (or message) in the terminal and
-    // add it to the debugLogs to make it accessible
-    // from the debug panel.
+    // Display debug (or message) in the terminal.
     // Default level is debug, can be "warning" to display warning
     // messages.
     void debug(const QString& log, const QString& level = "debug");
 
-    // Display log and add it to debugLogs
-    // Emit error(message)
+    // Log the message and emit error(message)
     void reportError(const QString& message);
+
+    // Poll the node log file for appended content and stream complete lines
+    // via logLines(). The file is truncated on each node start, which
+    // readLogTail() detects to reset its offset.
+    void startLogTail();
+    void stopLogTail();
+    void readLogTail();
 
     // Logos related variables
     LogosAPI* m_logosAPI;
@@ -257,4 +262,12 @@ class StorageBackend : public StorageBackendSimpleSource {
     // Internal configuration object. It can be updated by
     // upnp or port forwarning methods.
     QJsonDocument m_config;
+
+    // Log file tailing state. m_logPath is the effective log-file the node
+    // was configured with (the user's if set, otherwise the forced default).
+    QString m_logPath;
+    QFile m_logFile;
+    qint64 m_logOffset = 0;
+    QString m_logPartial;
+    QTimer* m_logPoll = nullptr;
 };

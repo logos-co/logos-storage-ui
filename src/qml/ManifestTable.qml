@@ -2,6 +2,8 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
 import QtQuick.Layouts
+import QtCore
+import Qt.labs.folderlistmodel
 import Logos.Theme
 import Logos.Controls
 import "Utils.js" as Utils
@@ -17,11 +19,96 @@ LogosFrame {
     property var backend: MockBackend
     property bool running: false
     property var manifests: []
-    property bool panelOpen: false
     property bool isDownloading: false
     property string downloadingCid: ""
     property string downloadFolderPath: ""
     property var deleting: ({})
+
+    // Active sort column: "manifest" | "size" | "date" | "" (none)
+    property string sortColumn: ""
+    property bool sortAscending: true
+
+    // Three-state cycle on click: disabled → desc → asc → disabled.
+    function toggleSort(col) {
+        if (root.sortColumn !== col) {
+            root.sortColumn = col
+            root.sortAscending = false // desc
+        } else if (!root.sortAscending) {
+            root.sortAscending = true // asc
+        } else {
+            root.sortColumn = "" // back to disabled
+        }
+    }
+
+    // Actions column width, shared by the header and rows so they stay aligned.
+    // Two 40px icon buttons + inner spacing + the pill's horizontal padding.
+    readonly property int actionsColumnWidth: 40 * 2 + Theme.spacing.medium * 3
+
+    // Fetch dates are not provided by the node API, so we stamp and persist
+    // them locally: cid -> ISO date string, recorded only when the user fetches
+    // a manifest. Anything already present (uploads, prior files) stays undated
+    // and shows "-".
+    property var fetchDates: ({})
+
+    Settings {
+        id: fetchDatesStore
+        category: "ManifestFetchDates"
+        // Renamed key: earlier builds stamped every manifest, so the old value
+        // is discarded and we start clean.
+        property string entries: "{}"
+    }
+
+    Component.onCompleted: {
+        try {
+            root.fetchDates = JSON.parse(fetchDatesStore.entries)
+        } catch (e) {
+            root.fetchDates = {}
+        }
+    }
+
+    function recordFetched(cid) {
+        if (!cid || root.fetchDates[cid])
+            return
+        var d = Object.assign({}, root.fetchDates)
+        d[cid] = new Date().toISOString()
+        root.fetchDates = d
+        fetchDatesStore.entries = JSON.stringify(d)
+    }
+
+    function formatFetched(cid) {
+        var iso = root.fetchDates[cid]
+        return iso ? Qt.formatDateTime(new Date(iso), "dd MMM yyyy") : "-"
+    }
+
+    // A manifest is "downloaded" when a file with its name sits in the download
+    // folder; otherwise it's only "fetched" (manifest present, no local file).
+    property var downloadedNames: ({})
+
+    FolderListModel {
+        id: downloadFolder
+        folder: root.downloadFolderPath
+        showDirs: false
+        showHidden: false
+        nameFilters: ["*"]
+        onCountChanged: root.rebuildDownloaded()
+        onFolderChanged: root.rebuildDownloaded()
+    }
+
+    function rebuildDownloaded() {
+        var names = {}
+        for (var i = 0; i < downloadFolder.count; i++)
+            names[downloadFolder.get(i, "fileName")] = true
+        root.downloadedNames = names
+    }
+
+    function isDownloaded(item) {
+        return !!(item && item.filename && root.downloadedNames[item.filename])
+    }
+
+    function openDownloaded(item) {
+        Qt.openUrlExternally(root.downloadFolderPath.replace(/\/$/, "")
+                             + "/" + encodeURIComponent(item.filename))
+    }
 
     function markDeleting(cid) {
         var d = Object.assign({}, root.deleting)
@@ -53,7 +140,34 @@ LogosFrame {
     // real manifests until the fetch resolves (success refreshes the list and
     // prunes the row; failure switches it to "error" until dismissed).
     property var pending: []
-    property var rows: root.pending.concat(root.manifests)
+    property var rows: {
+        // Tab filter: 0 All · 1 Downloaded (file on disk) · 2 Fetched (manifest only)
+        var tab = tabBar.currentIndex
+        var list = root.manifests
+        if (tab === 1)
+            list = root.manifests.filter(function (x) { return root.isDownloaded(x) })
+        else if (tab === 2)
+            list = root.manifests.filter(function (x) { return !root.isDownloaded(x) })
+
+        if (root.sortColumn) {
+            var col = root.sortColumn
+            var dates = root.fetchDates
+            var dir = root.sortAscending ? 1 : -1
+            list = list.slice().sort(function (a, b) {
+                var r
+                if (col === "size")
+                    r = (parseInt(a.datasetSize) || 0) - (parseInt(b.datasetSize) || 0)
+                else if (col === "date")
+                    r = (dates[a.cid] || "").localeCompare(dates[b.cid] || "")
+                else
+                    r = (a.filename || "").localeCompare(b.filename || "")
+                return r * dir
+            })
+        }
+
+        // In-progress fetches belong to All and Fetched, not Downloaded.
+        return (tab === 1 ? [] : root.pending).concat(list)
+    }
 
     function addPending(cid) {
         for (var i = 0; i < root.pending.length; i++)
@@ -106,24 +220,21 @@ LogosFrame {
     //     }]
     function mimetypeIcon(mimetype) {
         if (!mimetype)
-            return "assets/other.png"
+            return "assets/images.svg"
         var m = mimetype.toLowerCase()
-        if (m.indexOf("image/") === 0)
-            return "assets/image.png"
         if (m.indexOf("video/") === 0)
-            return "assets/video.png"
-        if (m === "application/pdf")
-            return "assets/pdf.png"
-        return "assets/other.png"
+            return "assets/videos.svg"
+        if (m.indexOf("image/") === 0)
+            return "assets/images.svg"
+        if (m === "application/pdf" || m.indexOf("text/") === 0
+                || m.indexOf("document") >= 0 || m.indexOf("word") >= 0
+                || m.indexOf("pdf") >= 0)
+            return "assets/documents.svg"
+        return "assets/images.svg"
     }
 
     implicitWidth: 1200
     implicitHeight: 400
-
-    Shortcut {
-        sequence: "Ctrl+D"
-        onActivated: root.panelOpen = !root.panelOpen
-    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -148,6 +259,7 @@ LogosFrame {
 
             function onManifestFetchStarted(cid) {
                 root.addPending(cid)
+                root.recordFetched(cid)
             }
 
             function onManifestFetchFailed(cid, error) {
@@ -162,6 +274,7 @@ LogosFrame {
             function onDownloadCompleted(cid) {
                 root.isDownloading = false
                 root.downloadingCid = ""
+                root.rebuildDownloaded()
             }
 
             function onError(message) {
@@ -173,27 +286,54 @@ LogosFrame {
         // ── Title row ─────────────────────────────────────────────────────────
         RowLayout {
             Layout.fillWidth: true
+            spacing: Theme.spacing.large
 
             LogosText {
-                text: root.panelOpen ? "Debug" : "Manifests"
-                font.pixelSize: Theme.typography.titleText
+                text: "Manifests"
+                font.pixelSize: Theme.typography.panelTitleText
                 color: Theme.palette.text
             }
 
+            // Tabs on the left, with a gray baseline running across the whole
+            // row; the tab bar's colored indicator sits on top of that line.
             Item {
                 Layout.fillWidth: true
-            }
+                Layout.preferredHeight: tabBar.implicitHeight
+                Layout.alignment: Qt.AlignVCenter
 
-            Image {
-                source: "assets/close-circle.png"
-                visible: root.panelOpen
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    height: 1
+                    color: Theme.palette.colors.getColor(Theme.palette.textTertiary, 0.2)
+                }
 
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.panelOpen = false
+                LogosTabBar {
+                    id: tabBar
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    spacing: Theme.spacing.medium
+
+                    LogosTabButton {
+                        text: "All"
+                        // White glyph so the DS tint yields full-strength orange, not a dimmed one
+                        iconSource: Qt.resolvedUrl("assets/file-copy-2-fill-white.svg")
+                        activeColor: Theme.palette.colors.orange400
+                        inactiveColor: Theme.palette.textSecondary
+                    }
+                    LogosTabButton {
+                        text: "Downloaded"
+                        inactiveColor: Theme.palette.textSecondary
+                    }
+                    LogosTabButton {
+                        text: "Fetched"
+                        inactiveColor: Theme.palette.textSecondary
+                    }
                 }
             }
+
         }
 
         Item {
@@ -204,13 +344,12 @@ LogosFrame {
             ColumnLayout {
                 anchors.fill: parent
                 spacing: Theme.spacing.small
-                visible: !root.panelOpen
 
                 Rectangle {
                     id: header
                     Layout.fillWidth: true
-                    Layout.preferredHeight: 30
-                    color: Theme.palette.backgroundInset
+                    Layout.preferredHeight: 36
+                    color: Theme.palette.colors.getColor(Theme.palette.backgroundInset, 0.6)
                     radius: Theme.spacing.radiusSmall
 
                     RowLayout {
@@ -218,39 +357,104 @@ LogosFrame {
                         anchors.leftMargin: Theme.spacing.medium
                         anchors.rightMargin: Theme.spacing.medium
 
-                        Text {
-                            text: "CID"
-                            color: Theme.palette.textMuted
-                            font.pixelSize: Theme.typography.secondaryText
+                        // Manifest — sortable (label + icon clickable)
+                        Item {
                             Layout.fillWidth: true
+                            Layout.fillHeight: true
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.toggleSort("manifest")
+                            }
+
+                            RowLayout {
+                                anchors.left: parent.left
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: Theme.spacing.tiny
+
+                                Text {
+                                    text: "Manifest"
+                                    color: Theme.palette.textSecondary
+                                    font.pixelSize: Theme.typography.secondaryText
+                                }
+                                LogosIcon {
+                                    source: Qt.resolvedUrl("assets/expand-up-down-fill.svg")
+                                    color: root.sortColumn === "manifest" ? Theme.palette.text : Theme.palette.textTertiary
+                                    width: 16
+                                    height: 16
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+                            }
                         }
 
-                        Text {
-                            text: "Filename"
-                            color: Theme.palette.textSecondary
-                            font.pixelSize: Theme.typography.secondaryText
-                            Layout.preferredWidth: 140
-                        }
-
-                        Text {
-                            text: "Mimetype"
-                            color: Theme.palette.textSecondary
-                            font.pixelSize: Theme.typography.secondaryText
+                        // Size — sortable
+                        Item {
                             Layout.preferredWidth: 100
+                            Layout.fillHeight: true
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.toggleSort("size")
+                            }
+
+                            RowLayout {
+                                anchors.left: parent.left
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: Theme.spacing.tiny
+
+                                Text {
+                                    text: "Size"
+                                    color: Theme.palette.textSecondary
+                                    font.pixelSize: Theme.typography.secondaryText
+                                }
+                                LogosIcon {
+                                    source: Qt.resolvedUrl("assets/expand-up-down-fill.svg")
+                                    color: root.sortColumn === "size" ? Theme.palette.text : Theme.palette.textTertiary
+                                    width: 16
+                                    height: 16
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+                            }
                         }
 
-                        Text {
-                            text: "Size"
-                            color: Theme.palette.textSecondary
-                            font.pixelSize: Theme.typography.secondaryText
-                            Layout.preferredWidth: 80
+                        // Date fetched — sortable
+                        Item {
+                            Layout.preferredWidth: 160
+                            Layout.fillHeight: true
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.toggleSort("date")
+                            }
+
+                            RowLayout {
+                                anchors.left: parent.left
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: Theme.spacing.tiny
+
+                                Text {
+                                    text: "Date fetched"
+                                    color: Theme.palette.textSecondary
+                                    font.pixelSize: Theme.typography.secondaryText
+                                }
+                                LogosIcon {
+                                    source: Qt.resolvedUrl("assets/expand-up-down-fill.svg")
+                                    color: root.sortColumn === "date" ? Theme.palette.text : Theme.palette.textTertiary
+                                    width: 16
+                                    height: 16
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+                            }
                         }
 
                         Text {
                             text: "Actions"
                             color: Theme.palette.textSecondary
                             font.pixelSize: Theme.typography.secondaryText
-                            Layout.preferredWidth: 92
+                            Layout.preferredWidth: root.actionsColumnWidth
                         }
                     }
                 }
@@ -310,21 +514,39 @@ LogosFrame {
                                     fillMode: Image.PreserveAspectFit
                                 }
 
-                                Text {
+                                Column {
                                     anchors.left: typeIcon.right
                                     anchors.leftMargin: Theme.spacing.medium
                                     anchors.right: copyBtn.left
                                     anchors.rightMargin: Theme.spacing.medium
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: modelData.cid
-                                    color: Theme.palette.text
-                                    font.pixelSize: Theme.typography.secondaryText
-                                    elide: Text.ElideRight
-                                    ToolTip.visible: cidHover.hovered
-                                    ToolTip.text: modelData.cid
+                                    spacing: 2
 
-                                    HoverHandler {
-                                        id: cidHover
+                                    Text {
+                                        width: parent.width
+                                        text: modelData.status === "fetching" ? "Fetching..."
+                                              : modelData.status === "error" ? (modelData.error || "Failed")
+                                              : (rowDeleting ? "Deleting..." : (modelData.filename || "Untitled"))
+                                        color: modelData.status === "error" ? Theme.palette.error : Theme.palette.text
+                                        font.pixelSize: Theme.typography.primaryText
+                                        font.weight: Theme.typography.weightBold
+                                        elide: Text.ElideRight
+                                        ToolTip.visible: modelData.status === "error" && statusHover.hovered
+                                        ToolTip.text: modelData.error || ""
+
+                                        HoverHandler { id: statusHover }
+                                    }
+
+                                    Text {
+                                        width: parent.width
+                                        text: modelData.cid
+                                        color: Theme.palette.colors.getColor(Theme.palette.text, 0.8)
+                                        font.pixelSize: Theme.typography.secondaryText
+                                        elide: Text.ElideMiddle
+                                        ToolTip.visible: cidHover.hovered
+                                        ToolTip.text: modelData.cid
+
+                                        HoverHandler { id: cidHover }
                                     }
                                 }
 
@@ -333,6 +555,7 @@ LogosFrame {
                                     anchors.right: parent.right
                                     anchors.verticalCenter: parent.verticalCenter
                                     anchors.rightMargin: Theme.spacing.medium
+                                    visible: !modelData.status
 
                                     property bool copied: false
 
@@ -368,33 +591,18 @@ LogosFrame {
                             }
 
                             Text {
-                                text: modelData.status === "fetching" ? "Fetching..." : (modelData.status === "error" ? (modelData.error || "Failed") : (rowDeleting ? "Deleting..." : (modelData.filename || "")))
-                                color: modelData.status === "error" ? Theme.palette.error : Theme.palette.text
-                                font.pixelSize: Theme.typography.secondaryText
-                                elide: Text.ElideRight
-                                ToolTip.visible: modelData.status === "error" && statusHover.hovered
-                                ToolTip.text: modelData.error || ""
-                                Layout.preferredWidth: 140
-
-                                HoverHandler {
-                                    id: statusHover
-                                }
-                            }
-
-                            Text {
-                                text: modelData.status ? "-" : (modelData.mimetype || "")
-                                color: Theme.palette.text
-                                font.pixelSize: Theme.typography.secondaryText
-                                elide: Text.ElideRight
-                                Layout.preferredWidth: 100
-                            }
-
-                            Text {
                                 text: modelData.status ? "-" : Utils.formatBytes(
                                           parseInt(modelData.datasetSize))
                                 color: Theme.palette.text
                                 font.pixelSize: Theme.typography.secondaryText
-                                Layout.preferredWidth: 80
+                                Layout.preferredWidth: 100
+                            }
+
+                            Text {
+                                text: modelData.status ? "-" : root.formatFetched(modelData.cid)
+                                color: Theme.palette.textSecondary
+                                font.pixelSize: Theme.typography.secondaryText
+                                Layout.preferredWidth: 160
                             }
 
                             Item {
@@ -402,7 +610,7 @@ LogosFrame {
                                 // delete pill) so fetching / error rows keep the
                                 // same column alignment as normal rows.
                                 Layout.alignment: Qt.AlignVCenter
-                                Layout.preferredWidth: actionsPill.implicitWidth
+                                Layout.preferredWidth: root.actionsColumnWidth
                                 implicitHeight: actionsPill.implicitHeight
 
                                 Rectangle {
@@ -420,8 +628,19 @@ LogosFrame {
                                         anchors.centerIn: parent
                                         spacing: Theme.spacing.medium
 
+                                        readonly property bool rowDownloaded: root.isDownloaded(modelData)
+
+                                        LogosIconButton {
+                                            objectName: "openButton"
+                                            visible: actionsRow.rowDownloaded
+                                            iconSource: Qt.resolvedUrl("assets/external-link-line.svg")
+                                            background: IconButtonBackground {}
+                                            onClicked: root.openDownloaded(modelData)
+                                        }
+
                                         LogosIconButton {
                                             objectName: "downloadButton"
+                                            visible: !actionsRow.rowDownloaded
                                             iconSource: Qt.resolvedUrl("assets/download-2-fill.svg")
                                             background: IconButtonBackground {}
                                             enabled: root.running && !root.isDownloading && !rowDeleting
@@ -515,12 +734,6 @@ LogosFrame {
                         }
                     }
                 }
-            }
-
-            DebugPanel {
-                backend: root.backend
-                running: root.running
-                isOpen: panelOpen
             }
         }
     }

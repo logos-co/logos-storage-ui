@@ -33,6 +33,7 @@ StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
     setStatus(Destroyed);
     setDefaultListenPort(DEFAULT_LISTEN_PORT);
     setDefaultConfigJson(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
+    setUiVersion(STORAGE_UI_VERSION);
 
     // Disable system proxy detection — it crashes in Nix/some Linux environments
     QNetworkProxyFactory::setUseSystemConfiguration(false);
@@ -68,20 +69,62 @@ static int seenPeerCount(const QVariantList& nodes) {
 }
 
 void StorageBackend::debug(const QString& log, const QString& level) {
-    QString current = debugLogs();
-    if (!current.isEmpty()) {
-        current += "\n";
-    }
-
-    QString timestamp = QDateTime::currentDateTime().toString(Qt::ISODate);
-    current += timestamp + ": " + log;
-
-    setDebugLogs(current);
-
     if (level == "warning") {
         qWarning() << "StorageBackend: " << log;
     } else {
         qDebug() << "StorageBackend: " << log;
+    }
+}
+
+void StorageBackend::startLogTail() {
+    m_logFile.close();
+    m_logFile.setFileName(m_logPath);
+    m_logOffset = 0;
+    m_logPartial.clear();
+
+    if (!m_logPoll) {
+        m_logPoll = new QTimer(this);
+        m_logPoll->setInterval(500);
+        connect(m_logPoll, &QTimer::timeout, this, &StorageBackend::readLogTail);
+    }
+    m_logPoll->start();
+}
+
+void StorageBackend::stopLogTail() {
+    if (m_logPoll) {
+        m_logPoll->stop();
+    }
+    readLogTail();
+    m_logFile.close();
+}
+
+void StorageBackend::readLogTail() {
+    if (!m_logFile.isOpen() && !m_logFile.open(QIODevice::ReadOnly)) {
+        return;
+    }
+
+    qint64 size = m_logFile.size();
+    if (size < m_logOffset) {  // the node truncated the file on restart
+        m_logOffset = 0;
+        m_logPartial.clear();
+    }
+    if (size == m_logOffset) {
+        return;
+    }
+
+    m_logFile.seek(m_logOffset);
+    m_logPartial += QString::fromUtf8(m_logFile.readAll());
+    m_logOffset = m_logFile.pos();
+
+    QStringList lines;
+    int nl;
+    while ((nl = m_logPartial.indexOf('\n')) >= 0) {
+        lines.append(m_logPartial.left(nl));
+        m_logPartial.remove(0, nl + 1);
+    }
+
+    if (!lines.isEmpty()) {
+        emit logLines(lines);
     }
 }
 
@@ -93,6 +136,17 @@ void StorageBackend::init(QString configJson) {
         reportError("Failed to create the storage: invalid JSON config:" + configJson);
         emit initCompleted(false, "Failed to create the storage, invalid json config");
         return;
+    }
+
+    // Tail the log file the node writes to. Keep the user's log-file if they
+    // set one, otherwise force a known default so we know where to read.
+    QJsonObject cfgObj = m_config.object();
+    m_logPath = cfgObj.value("log-file").toString();
+    if (m_logPath.isEmpty()) {
+        m_logPath = LOG_FILE_PATH;
+        cfgObj["log-file"] = m_logPath;
+        m_config = QJsonDocument(cfgObj);
+        configJson = QString::fromUtf8(m_config.toJson(QJsonDocument::Indented));
     }
 
     bool result = m_logos->storage_module.init(configJson);
@@ -131,6 +185,7 @@ void StorageBackend::init(QString configJson) {
 
                 debug("Storage module started.");
 
+                startLogTail();
                 StorageBackend::fetchWidgetsData();
 
                 emit startCompleted();
@@ -150,6 +205,7 @@ void StorageBackend::init(QString configJson) {
                 reportError("Failed to stop Storage module:" + message);
             } else {
                 debug("Storage module stopped.");
+                stopLogTail();
                 QTimer::singleShot(0, this, [this]() {
                     LogosResult destroyResult = m_logos->storage_module.destroy();
                     if (!destroyResult.success) {
@@ -405,6 +461,25 @@ void StorageBackend::logDebugInfo() {
 
     QVariantList nodes = map.value("table").toMap().value("nodes").toList();
     emit peersUpdated(seenPeerCount(nodes));
+
+    QVariantList peerRows;
+    for (const QVariant& n : nodes) {
+        QVariantMap node = n.toMap();
+        QVariant addr = node.value("address");
+        QString addrStr;
+        if (addr.typeId() == QMetaType::QString) {
+            addrStr = addr.toString();
+        } else if (addr.isValid() && !addr.isNull()) {
+            addrStr = QString::fromUtf8(QJsonDocument::fromVariant(addr).toJson(QJsonDocument::Compact));
+        }
+
+        QVariantMap row;
+        row["peerId"] = node.value("peerId").toString();
+        row["address"] = addrStr;
+        row["seen"] = node.value("seen").toBool();
+        peerRows.append(row);
+    }
+    emit peersTableUpdated(peerRows);
 }
 
 void StorageBackend::uploadFile(QUrl url) {
@@ -603,11 +678,14 @@ void StorageBackend::refreshSpace() {
         return;
     }
 
+    debug("space: " + QString::fromUtf8(
+        QJsonDocument::fromVariant(result.getMap()).toJson(QJsonDocument::Indented)));
+
     const qlonglong total = result.getValue<qlonglong>("quotaMaxBytes");
     const qlonglong used =
         result.getValue<qlonglong>("quotaUsedBytes") + result.getValue<qlonglong>("quotaReservedBytes");
 
-    emit spaceUpdated(total, used);
+    emit spaceUpdated(total, used, result.getValue<QVariantList>("usage"));
 }
 
 void StorageBackend::reloadIfChanged(QString configJsonStr) {

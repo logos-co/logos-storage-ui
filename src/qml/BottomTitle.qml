@@ -8,7 +8,10 @@ Item {
     property string title: ""
     property string color: Theme.palette.text
     property string helpText: ""
+    property string actionText: ""
     property bool hasSeparator: true
+
+    signal actionClicked()
 
     implicitHeight: footerLabel.implicitHeight + Theme.spacing.medium * 2
 
@@ -43,6 +46,22 @@ Item {
         }
     }
 
+    LogosButton {
+        id: actionButton
+        visible: root.actionText.length > 0
+        text: root.actionText
+        variant: LogosButton.Variant.Secondary
+        radius: Theme.spacing.radiusLarge
+        background: CardButtonBackground {}
+        leftPadding: Theme.spacing.medium
+        rightPadding: Theme.spacing.medium
+        implicitHeight: 32
+        implicitWidth: implicitContentWidth + leftPadding + rightPadding
+        anchors.right: parent.right
+        anchors.verticalCenter: footerLabel.verticalCenter
+        onClicked: root.actionClicked()
+    }
+
     Rectangle {
         id: footerSeparator
         anchors.bottom: footerLabel.top
@@ -50,7 +69,8 @@ Item {
         anchors.right: parent.right
         anchors.bottomMargin: Theme.spacing.medium + 2
         height: 1
-        color: Theme.palette.borderSecondary
+        color: Theme.palette.textTertiary
+        opacity: 0.2
         visible: root.hasSeparator
     }
 }
