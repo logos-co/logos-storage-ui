@@ -145,6 +145,7 @@ qt_add_qml_module(appqml
         SettingsPopup.qml
         ManifestTable.qml
         NodeWidget.qml
+        NodeActivityIcon.qml
         Widgets.qml
         LogsPage.qml
         SettingsPage.qml

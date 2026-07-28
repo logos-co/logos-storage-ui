@@ -89,10 +89,12 @@ LogosFrame {
                 }
             }
 
-            StorageIcon {
-                animated: root.effectiveStatus === StorageBackend.Starting
-                          || root.effectiveStatus === StorageBackend.Stopping
-                dotColor: {
+            NodeActivityIcon {
+                backend: root.backend
+                running: root.effectiveStatus === StorageBackend.Running
+                lifecycleBusy: root.effectiveStatus === StorageBackend.Starting
+                               || root.effectiveStatus === StorageBackend.Stopping
+                idleColor: {
                     if (root.effectiveStatus === StorageBackend.Starting) {
                         return Theme.palette.warning
                     }
