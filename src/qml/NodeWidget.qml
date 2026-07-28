@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Effects
 import Logos.Theme
 import Logos.Controls
 import Logos.StorageBackend 1.0
@@ -20,76 +21,37 @@ LogosFrame {
     property bool blinkOn: false
     readonly property int effectiveStatus: root.backend ? root.backend.status : StorageBackend.Destroyed
 
-    property string downloadFolderPath: ""
-
-    signal folderPathChanged(string path)
+    signal infoRequested()
 
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacing.medium
 
         RowLayout {
-            Layout.alignment: Qt.AlignTop
+            Layout.fillWidth: true
+            Layout.fillHeight: true
 
-            ColumnLayout {
-                Layout.fillWidth: true
+            RowLayout {
+                Layout.alignment: Qt.AlignTop
                 spacing: Theme.spacing.medium
 
-                RowLayout {
+                Image {
                     Layout.alignment: Qt.AlignTop
-                    spacing: Theme.spacing.medium
-
-                    Image {
-                        Layout.alignment: Qt.AlignTop
-                        source: "assets/node-tree.png"
-                    }
-
-                    LogosText {
-                        Layout.alignment: Qt.AlignTop
-                        text: "Node"
-                        font.pixelSize: Theme.typography.panelTitleText
-                        color: Theme.palette.text
-                    }
+                    source: "assets/node-tree.png"
                 }
 
-                Rectangle {
-                    color: Theme.palette.backgroundBlack
-                    Layout.preferredHeight: 32
-                    Layout.fillWidth: true
+                LogosText {
                     Layout.alignment: Qt.AlignTop
-                    Layout.rightMargin: Theme.spacing.small
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: Theme.spacing.small
-
-                        LogosText {
-                            Layout.alignment: Qt.AlignVCenter
-                            text: "Manage node"
-                            font.pixelSize: Theme.typography.primaryText
-                            color: Theme.palette.textMuted
-                        }
-
-                        Item {
-                            Layout.fillWidth: true
-                        }
-
-                        Image {
-                            Layout.alignment: Qt.AlignVCenter
-                            Layout.rightMargin: Theme.spacing.small
-                            source: "assets/settings.png"
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: settingsPopup.open()
-                            }
-                        }
-                    }
+                    text: "Node"
+                    font.pixelSize: Theme.typography.panelTitleText
+                    color: Theme.palette.text
                 }
             }
 
+            Item { Layout.fillWidth: true }
+
             NodeActivityIcon {
+                Layout.alignment: Qt.AlignTop
                 backend: root.backend
                 running: root.effectiveStatus === StorageBackend.Running
                 lifecycleBusy: root.effectiveStatus === StorageBackend.Starting
@@ -116,6 +78,7 @@ LogosFrame {
 
         RowLayout {
             id: actionRow
+            Layout.fillWidth: true
 
             RowLayout {
                 spacing: Theme.spacing.medium
@@ -160,6 +123,38 @@ LogosFrame {
                     font.pixelSize: Theme.typography.primaryText
                     color: Theme.palette.textSecondary
                     Layout.alignment: Qt.AlignVCenter
+                }
+
+                Item {
+                    implicitWidth: 16
+                    implicitHeight: 16
+                    Layout.alignment: Qt.AlignVCenter
+
+                    Image {
+                        id: infoIcon
+                        anchors.fill: parent
+                        source: "assets/question-line.svg"
+                        sourceSize: Qt.size(width * 2, height * 2)
+                        fillMode: Image.PreserveAspectFit
+                        visible: false
+                    }
+
+                    MultiEffect {
+                        anchors.fill: infoIcon
+                        source: infoIcon
+                        colorization: 1.0
+                        colorizationColor: infoMouse.containsMouse ? Theme.palette.primary
+                                                                   : Theme.palette.textTertiary
+                    }
+
+                    MouseArea {
+                        id: infoMouse
+                        anchors.fill: parent
+                        anchors.margins: -4
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.infoRequested()
+                    }
                 }
             }
 
@@ -207,13 +202,6 @@ LogosFrame {
                                                                        ) : root.backend.start()
                 }
             }
-        }
-
-        SettingsPopup {
-            id: settingsPopup
-            backend: root.backend
-            downloadFolderPath: root.downloadFolderPath
-            onFolderPathChanged: function(path) { root.folderPathChanged(path) }
         }
 
         // Rectangle {

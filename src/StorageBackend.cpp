@@ -343,8 +343,9 @@ void StorageBackend::start() {
     // bundled presets only when missing, so user-set values are preserved.
     QJsonObject cfg = QJsonDocument::fromJson(getUserConfig().toUtf8()).object();
     bool changed = false;
-    if (!cfg.value("mix-enabled").toBool(false)) {
-        cfg["mix-enabled"] = true;
+    // TEMP FIX: Mix is broken with the latest storage-nim, force it off.
+    if (cfg.value("mix-enabled").toBool(false)) {
+        cfg["mix-enabled"] = false;
         changed = true;
     }
     if (cfg.value("dht-mix-proxy").toArray().isEmpty()) {
@@ -760,7 +761,7 @@ QJsonDocument StorageBackend::defaultConfig() {
     obj["listen-port"] = DEFAULT_LISTEN_PORT;
     obj["disc-port"] = DEFAULT_DISC_PORT;
 
-    obj["mix-enabled"] = true;
+    obj["mix-enabled"] = false; // TEMP FIX: broken with the latest storage-nim
     obj["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
     obj["mix-pool-json"] = QString::fromUtf8(
         QJsonDocument::fromJson(MIX_POOL_JSON.toUtf8()).toJson(QJsonDocument::Compact));

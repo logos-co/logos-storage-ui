@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Dialogs
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
@@ -9,10 +10,24 @@ LogosFrame {
     id: root
 
     property var backend: MockBackend
+    property string downloadFolderPath: ""
+
+    signal folderPathChanged(string path)
+
+    readonly property string displayFolderPath: downloadFolderPath.replace(/^file:\/{2,2}/, "")
 
     backgroundColor: Theme.palette.backgroundSecondary
     borderColor: "transparent"
     radius: Theme.spacing.radiusLarge
+
+    FolderDialog {
+        id: folderDialog
+        currentFolder: root.downloadFolderPath
+        onAccepted: {
+            root.downloadFolderPath = selectedFolder.toString()
+            root.folderPathChanged(root.downloadFolderPath)
+        }
+    }
 
     // Full config as last loaded/saved, kept so unknown keys survive a save.
     property var loaded: ({})
@@ -154,13 +169,11 @@ LogosFrame {
     // Styled single-line field sitting on the card background.
     component SField: LogosTextField {
         Layout.fillWidth: true
-        Layout.maximumWidth: 460
         background: CardFieldBackground {}
     }
 
     component SSelect: LogosComboBox {
         Layout.fillWidth: true
-        Layout.maximumWidth: 460
     }
 
     component Section: LogosText {
@@ -215,6 +228,23 @@ LogosFrame {
                         readOnly: true
                         text: root.vDataDir
                         placeholderText: "Default data directory"
+                    }
+                }
+
+                SettingRow {
+                    title: "Download folder"
+                    description: "Where downloaded files are saved."
+                    SField {
+                        readOnly: true
+                        text: root.displayFolderPath
+                        placeholderText: "Choose a folder"
+                        rightPadding: Theme.spacing.large + 20
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: folderDialog.open()
+                        }
                     }
                 }
 

@@ -47,8 +47,7 @@ OnBoardingLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Back"
                 onClicked: root.back()
-                icon.source: Qt.resolvedUrl("assets/arrow-left-line.svg")
-                icon.position: LogosButton.IconPosition.Left
+                leadingIcon.source: Qt.resolvedUrl("assets/arrow-left-line.svg")
             }
 
             Item {
@@ -60,8 +59,7 @@ OnBoardingLayout {
                 text: "Validate"
                 variant: LogosButton.Variant.Primary
                 enabled: jsonEditor.isValid
-                icon.source: Qt.resolvedUrl("assets/arrow-right-line.svg")
-                icon.position: LogosButton.IconPosition.Right
+                trailingIcon.source: Qt.resolvedUrl("assets/arrow-right-line.svg")
                 onClicked: {
                     root.backend.saveUserConfig(jsonEditor.text)
                     root.completed()

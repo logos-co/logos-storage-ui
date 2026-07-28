@@ -17,6 +17,34 @@ LogosStorageLayout {
 
     readonly property bool running: backend && backend.status === StorageBackend.Running
 
+    readonly property int nodeStatus: backend ? backend.status : StorageBackend.Destroyed
+
+    // Status explainer shown in the info panel. Mirrors the icon colour logic
+    // in NodeWidget / NodeActivityIcon so the panel and the glyph agree.
+    readonly property color nodeAccent: {
+        if (nodeStatus === StorageBackend.Starting)
+            return Theme.palette.warning
+        if (nodeStatus !== StorageBackend.Running)
+            return Theme.palette.textMuted
+        return health.nodeIsUp ? Theme.palette.success : Theme.palette.error
+    }
+    readonly property string nodeInfoTitle: {
+        if (nodeStatus === StorageBackend.Starting)
+            return "Node is starting"
+        if (nodeStatus !== StorageBackend.Running)
+            return "Node is stopped"
+        return health.nodeIsUp ? "Node is healthy" : "Node not reachable"
+    }
+    readonly property string nodeInfoMessage: {
+        if (nodeStatus === StorageBackend.Starting)
+            return "The node is booting up and connecting to the network. The status icon stays amber until it is ready."
+        if (nodeStatus !== StorageBackend.Running)
+            return "The node is not running. Start it to join the network and share files."
+        return health.nodeIsUp
+            ? "The node is running and reachable by other peers. The status icon is green."
+            : "The node is running but no peer can reach it yet. That is why the status icon is red: it is waiting for inbound connections. If it stays red, check your port forwarding or UPnP settings."
+    }
+
     // Below this width the sidebar collapses into a thin rail with a hamburger
     // that opens the full navigation in an overlay drawer.
     readonly property bool compact: width < 820
@@ -50,6 +78,9 @@ LogosStorageLayout {
             const p = StandardPaths.standardLocations(StandardPaths.HomeLocation)[0].toString()
             return p.startsWith("file://") ? p : "file://" + p
         }
+
+        // Auto-explain the node status the first time the dashboard is opened.
+        property bool nodeInfoSeen: false
     }
 
     function isRunning() {
@@ -61,6 +92,10 @@ LogosStorageLayout {
             root.backend.fetchWidgetsData()
         } else {
             root.backend.start()
+        }
+        if (!settings.nodeInfoSeen) {
+            settings.nodeInfoSeen = true
+            infoPanel.open()
         }
     }
 
@@ -157,6 +192,13 @@ LogosStorageLayout {
         }
     }
 
+    InfoPanel {
+        id: infoPanel
+        accent: root.nodeAccent
+        title: root.nodeInfoTitle
+        message: root.nodeInfoMessage
+    }
+
     ScrollView {
         id: dashboardScroll
         visible: root.currentPage === "dashboard"
@@ -186,6 +228,7 @@ LogosStorageLayout {
                     Layout.columnSpan: root.topMode === "medium" ? 2 : 1
                     Layout.preferredHeight: root.topBlockHeight
                     backend: root.backend
+                    downloadFolderPath: settings.downloadFolderPath
                 }
 
                 ColumnLayout {
@@ -230,8 +273,7 @@ LogosStorageLayout {
                         backend: root.backend
                         nodeIsUp: health.nodeIsUp
                         blinkOn: health.blinkOn
-                        downloadFolderPath: settings.downloadFolderPath
-                        onFolderPathChanged: function(path) { settings.downloadFolderPath = path }
+                        onInfoRequested: infoPanel.open()
                     }
 
                     PeersWidget {
@@ -272,6 +314,8 @@ LogosStorageLayout {
         anchors.margins: Theme.spacing.medium
         anchors.leftMargin: root.navWidth + Theme.spacing.medium
         backend: root.backend
+        downloadFolderPath: settings.downloadFolderPath
+        onFolderPathChanged: function(path) { settings.downloadFolderPath = path }
     }
 
     PeersPage {
@@ -297,10 +341,40 @@ LogosStorageLayout {
         anchors.leftMargin: root.navWidth + Theme.spacing.medium
     }
 
-    // Pages other than the dashboard are not built yet
+    PlaceholderPage {
+        visible: root.currentPage === "nodes"
+        anchors.fill: parent
+        anchors.margins: Theme.spacing.medium
+        anchors.leftMargin: root.navWidth + Theme.spacing.medium
+        title: "Nodes"
+        description: "Run and monitor several storage nodes from one place: add nodes, inspect their status and control them individually."
+        icon: "assets/sidebar-nodes.svg"
+    }
+
+    PlaceholderPage {
+        visible: root.currentPage === "files"
+        anchors.fill: parent
+        anchors.margins: Theme.spacing.medium
+        anchors.leftMargin: root.navWidth + Theme.spacing.medium
+        title: "Files"
+        description: "Browse the files you have uploaded and downloaded. Search, preview and manage your shared content in one place."
+        icon: "assets/sidebar-files.svg"
+    }
+
+    PlaceholderPage {
+        visible: root.currentPage === "device"
+        anchors.fill: parent
+        anchors.margins: Theme.spacing.medium
+        anchors.leftMargin: root.navWidth + Theme.spacing.medium
+        title: "Device"
+        description: "See this device's storage, network and resource usage, and tune how much it contributes to the network."
+        icon: "assets/sidebar-device.svg"
+    }
+
+    // Safety net for any page not wired above.
     Item {
         id: placeholderPage
-        readonly property var builtPages: ["dashboard", "logs", "settings", "peers", "help", "disclaimer"]
+        readonly property var builtPages: ["dashboard", "nodes", "files", "device", "logs", "settings", "peers", "help", "disclaimer"]
         visible: placeholderPage.builtPages.indexOf(root.currentPage) === -1
         anchors.fill: parent
         anchors.leftMargin: root.navWidth

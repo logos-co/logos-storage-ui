@@ -130,8 +130,7 @@ OnBoardingLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Back"
                 onClicked: root.back()
-                icon.source: Qt.resolvedUrl("assets/arrow-left-line.svg")
-                icon.position: LogosButton.IconPosition.Left
+                leadingIcon.source: Qt.resolvedUrl("assets/arrow-left-line.svg")
             }
 
             Item {
@@ -142,8 +141,7 @@ OnBoardingLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Continue"
                 objectName: "downloadFolderContinue"
-                icon.source: Qt.resolvedUrl("assets/arrow-right-line.svg")
-                icon.position: LogosButton.IconPosition.Right
+                trailingIcon.source: Qt.resolvedUrl("assets/arrow-right-line.svg")
                 variant: LogosButton.Variant.Primary
                 onClicked: {
                     settings.downloadFolderPath = root.downloadFolder.toString()

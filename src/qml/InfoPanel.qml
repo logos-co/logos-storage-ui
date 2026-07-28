@@ -5,7 +5,7 @@ import Logos.Controls
 
 // Non-blocking info drawer sliding in from the right. The caller owns the
 // content via title / message / accent. Opened programmatically, closed by the
-// user: no auto-dismiss.
+// user: no auto-dismiss. Sizes to its content instead of the full height.
 LogosDrawer {
     id: root
 
@@ -18,9 +18,14 @@ LogosDrawer {
     dragMargin: 0
     padding: 0
     width: 340
+    height: content.implicitHeight + Theme.spacing.large * 2
+    y: Theme.spacing.medium
 
     ColumnLayout {
-        anchors.fill: parent
+        id: content
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
         anchors.margins: Theme.spacing.large
         spacing: Theme.spacing.medium
 
@@ -70,7 +75,5 @@ LogosDrawer {
             font.pixelSize: Theme.typography.primaryText
             wrapMode: Text.WordWrap
         }
-
-        Item { Layout.fillHeight: true }
     }
 }

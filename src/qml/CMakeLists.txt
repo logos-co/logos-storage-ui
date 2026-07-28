@@ -142,10 +142,11 @@ qt_add_qml_module(appqml
         UploadWidget.qml
         PeersWidget.qml
         JsonEditor.qml
-        SettingsPopup.qml
         ManifestTable.qml
         NodeWidget.qml
         NodeActivityIcon.qml
+        InfoPanel.qml
+        PlaceholderPage.qml
         Widgets.qml
         LogsPage.qml
         SettingsPage.qml

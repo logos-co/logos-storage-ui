@@ -38,9 +38,9 @@ Item {
     }
 
     readonly property int columns: 5
-    readonly property int dotSize: 12
-    readonly property int dotSpacing: 4
-    readonly property int dotRadius: 4
+    readonly property int dotSize: 7
+    readonly property int dotSpacing: 3
+    readonly property int dotRadius: 3
 
     readonly property color activeColor: (root.uploading || root.downloading)
                                          ? Theme.palette.primary : root.idleColor

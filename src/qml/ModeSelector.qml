@@ -85,8 +85,7 @@ OnBoardingLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Continue"
                 variant: LogosButton.Variant.Primary
-                icon.source: Qt.resolvedUrl("assets/arrow-right-line.svg")
-                icon.position: LogosButton.IconPosition.Right
+                trailingIcon.source: Qt.resolvedUrl("assets/arrow-right-line.svg")
                 onClicked: root.completed(root.selectedMode === 0)
             }
         }

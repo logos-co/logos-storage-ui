@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Qt.labs.folderlistmodel
 import Logos.Theme
 import Logos.Controls
 import "Utils.js" as Utils
@@ -19,12 +20,19 @@ LogosFrame {
     property double used: 0
     property double prevUsed: -1 // tracks last known used to detect upload deltas
 
+    property string downloadFolderPath: ""
+
     readonly property real fraction: root.total > 0 ? Math.min(
                                                           root.used / root.total,
                                                           1.0) : 0
 
-    // Bytes per category [Documents, Images, Videos, Archives], from the
-    // node's per-mimetype usage breakdown
+    // Type breakdown is derived from downloaded files: manifests whose file is
+    // present in the download folder, bucketed by mimetype. The node's own
+    // per-mimetype usage API is not available yet.
+    property var manifests: []
+    property var downloadedNames: ({})
+
+    // Bytes per category [Documents, Images, Videos, Archives].
     property var typeBytes: [0, 0, 0, 0]
     property int usageCount: 0
 
@@ -49,6 +57,43 @@ LogosFrame {
         return 3 // Archives
     }
 
+    // Files sitting in the download folder, by name (mirrors ManifestTable).
+    FolderListModel {
+        id: downloadFolder
+        folder: root.downloadFolderPath
+        showDirs: false
+        showHidden: false
+        nameFilters: ["*"]
+        onCountChanged: root.rebuildDownloaded()
+        onFolderChanged: root.rebuildDownloaded()
+    }
+
+    function rebuildDownloaded() {
+        var names = {}
+        for (var i = 0; i < downloadFolder.count; i++)
+            names[downloadFolder.get(i, "fileName")] = true
+        root.downloadedNames = names
+    }
+
+    // Sum downloaded files by category. A manifest counts only when a file with
+    // its name exists in the download folder.
+    function recomputeUsage() {
+        var b = [0, 0, 0, 0]
+        var count = 0
+        for (var i = 0; i < root.manifests.length; i++) {
+            var m = root.manifests[i]
+            if (!m || !m.filename || !root.downloadedNames[m.filename])
+                continue
+            b[root.categoryIndex(m.mimetype)] += parseInt(m.datasetSize) || 0
+            count++
+        }
+        root.typeBytes = b
+        root.usageCount = count
+    }
+
+    onManifestsChanged: root.recomputeUsage()
+    onDownloadedNamesChanged: root.recomputeUsage()
+
     function refreshSpace() {
         let space = root.backend.space()
         root.total = space.total
@@ -58,7 +103,7 @@ LogosFrame {
     Connections {
         target: root.backend
 
-        function onSpaceUpdated(total, used, usage) {
+        function onSpaceUpdated(total, used) {
             // Detect upload activity from growing used-space
             if (root.prevUsed >= 0) {
                 var delta = used - root.prevUsed
@@ -68,14 +113,10 @@ LogosFrame {
             root.prevUsed = used
             root.total = total
             root.used = used
+        }
 
-            var b = [0, 0, 0, 0]
-            for (var i = 0; i < usage.length; i++) {
-                var idx = root.categoryIndex(usage[i].mimetype)
-                b[idx] += Number(usage[i].bytesLocal) || 0
-            }
-            root.typeBytes = b
-            root.usageCount = usage.length
+        function onManifestsUpdated(manifests) {
+            root.manifests = manifests
         }
 
         function onDownloadChunk(len) {
