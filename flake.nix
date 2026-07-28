@@ -3,10 +3,8 @@
 
   inputs = {
     logos-module-builder.url = "github:logos-co/logos-module-builder";
-    logos-module-builder.inputs.logos-standalone-app.inputs.logos-design-system.url =
-      "path:/home/arnaud/Work/logos/logos-design-system";
     nix-bundle-lgx.url = "github:logos-co/nix-bundle-lgx";
-    storage_module.url = "github:logos-co/logos-storage-module?ref=v2.0.1";
+    storage_module.url = "github:logos-co/logos-storage-module?ref=chore/update-logos-storage-nim-to-nat-traversal";
   };
 
   outputs = inputs@{ logos-module-builder, ... }:
