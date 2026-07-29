@@ -12,9 +12,6 @@
 
 static const int RET_OK = 0;
 static const int RET_PROGRESS = 3;
-// static const QString ECHO_PROVIDER = "https://echo.codex.storage/";
-static const QString ECHO_PROVIDER = "https://ipv4.icanhazip.com";
-static const QString PORT_CHECKER_PROVIDER = "https://portchecker.io/api/";
 static const QString APP_HOME = QDir::homePath() + "/.logos_storage";
 static const QString DEFAULT_DATA_DIR = APP_HOME + "/data";
 static const QString USER_CONFIG_PATH = APP_HOME + "/config.json";
@@ -122,16 +119,11 @@ class StorageBackend : public StorageBackendSimpleSource {
     // Emit stopCompleted() on completion of it the module is not started
     void stop() override;
 
-    // Log debug info
-    // Emit peersUpdated(int peers)
-    void logDebugInfo() override;
+    // Read the node debug info: NAT reachability and routing table.
+    // Emit peersUpdated(int peers) and peersTableUpdated(peers)
+    void refreshNodeStatus() override;
 
-    // Other log methods for debug
-    void logDataDir() override;
-    void logVersion() override;
     void restartOnboarding() override;
-    void logSpr() override;
-    void logPeerId() override;
 
     void exists(QString cid) override;
     void remove(QString cid) override;
@@ -166,10 +158,6 @@ class StorageBackend : public StorageBackendSimpleSource {
     // into the user config json.
     void saveUserConfig(QString configJson) override;
 
-    // Save the current config object
-    // into the user config json.
-    void saveCurrentConfig() override;
-
     // Load the user config saved previously
     void loadUserConfig() override;
 
@@ -189,33 +177,10 @@ class StorageBackend : public StorageBackendSimpleSource {
     //
     void reloadIfChanged(QString configJson) override;
 
-    // Enables the upnp in the config
-    // and re-create a context with the new configuration
-    void enableUpnpConfig() override;
-
-    // Enables the net external in the config
-    // and re-create a context with the new configuration
-    // Emit natExtConfigCompleted
-    void enableNatExtConfig(int tcpPort) override;
-
     // Toggle private DHT queries over Mix on the running node.
     // Requires the node to run with mix-enabled and a non-empty dht-mix-proxy.
     // Emit error(message) and return false on failure.
     bool togglePrivateQueries(bool enabled) override;
-
-    // This method will ensure that the node is ready to be used.
-    //
-    // 1- Make a call to debug function in the storage module and
-    // make sure that the node has peer. If not, the UI should suggest
-    // to modifiy the discovery port (8090) in the advance settings (to come).
-    //
-    // 2- Ensure that the tcp port is open to remote connection. If not,
-    // the UI should suggest to change go back and try another port and double
-    // check that the port forwarding is enabled on the router.
-    //
-    // Emit nodeIsUp() on success
-    // Emit nodeIsntUp(error) on failure
-    void checkNodeIsUp() override;
 
     // Fetch multiple data for the widgets: manifests, debug..
     void fetchWidgetsData() override;

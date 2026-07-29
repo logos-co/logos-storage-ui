@@ -19,30 +19,40 @@ LogosStorageLayout {
 
     readonly property int nodeStatus: backend ? backend.status : StorageBackend.Destroyed
 
-    // Status explainer shown in the info panel. Mirrors the icon colour logic
-    // in NodeWidget / NodeActivityIcon so the panel and the glyph agree.
+    // Status explainer shown in the info panel. Mirrors the dot colour logic
+    // in NodeWidget so the panel and the glyph agree.
     readonly property color nodeAccent: {
         if (nodeStatus === StorageBackend.Starting)
             return Theme.palette.warning
         if (nodeStatus !== StorageBackend.Running)
             return Theme.palette.textMuted
-        return health.nodeIsUp ? Theme.palette.success : Theme.palette.error
+        if (health.reachability === "Reachable")
+            return Theme.palette.success
+        if (health.reachability === "NotReachable")
+            return Theme.palette.warning
+        return Theme.palette.textMuted
     }
     readonly property string nodeInfoTitle: {
         if (nodeStatus === StorageBackend.Starting)
             return "Node is starting"
         if (nodeStatus !== StorageBackend.Running)
             return "Node is stopped"
-        return health.nodeIsUp ? "Node is healthy" : "Node not reachable"
+        if (health.reachability === "Reachable")
+            return "Node is reachable"
+        if (health.reachability === "NotReachable")
+            return "Node is not reachable"
+        return "Checking reachability"
     }
     readonly property string nodeInfoMessage: {
         if (nodeStatus === StorageBackend.Starting)
             return "The node is booting up and connecting to the network. The status icon stays amber until it is ready."
         if (nodeStatus !== StorageBackend.Running)
             return "The node is not running. Start it to join the network and share files."
-        return health.nodeIsUp
-            ? "The node is running and reachable by other peers. The status icon is green."
-            : "The node is running but no peer can reach it yet. That is why the status icon is red: it is waiting for inbound connections. If it stays red, check your port forwarding or UPnP settings."
+        if (health.reachability === "Reachable")
+            return "The node is running and other peers can reach it from the internet. The dot next to Running is green."
+        if (health.reachability === "NotReachable")
+            return "The node is running but no peer can open a connection to it, so it only downloads through peers it dialled itself. The dot next to Running is orange. Check the port forwarding or UPnP configuration of your router."
+        return "The node is running. AutoNAT has not decided yet whether other peers can reach it, so the dot next to Running stays muted."
     }
 
     // Below this width the sidebar collapses into a thin rail with a hamburger
@@ -271,7 +281,7 @@ LogosStorageLayout {
                         Layout.fillWidth: true
                         Layout.preferredHeight: (thirdCol.height - thirdCol.spacing) / 3
                         backend: root.backend
-                        nodeIsUp: health.nodeIsUp
+                        reachability: health.reachability
                         blinkOn: health.blinkOn
                         onInfoRequested: infoPanel.open()
                     }

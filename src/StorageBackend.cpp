@@ -8,9 +8,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QLocale>
-#include <QNetworkAccessManager>
 #include <QNetworkProxyFactory>
-#include <QNetworkReply>
 #include <QSslSocket>
 #include <QSettings>
 
@@ -31,7 +29,7 @@ StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
     qDebug() << "Initializing StorageBackend...";
 
     setStatus(Destroyed);
-    setDefaultListenPort(DEFAULT_LISTEN_PORT);
+    setNatReachability("Unknown");
     setDefaultConfigJson(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
     setUiVersion(STORAGE_UI_VERSION);
 
@@ -337,6 +335,9 @@ void StorageBackend::init(QString configJson) {
 void StorageBackend::start() {
     qDebug() << "StorageBackend: start method called";
 
+    // AutoNAT has no verdict until the node has run for a while.
+    setNatReachability("Unknown");
+
     migrateUserConfigFile();
 
     // Migration: Mix must run with a dht-mix-proxy and relay pool. Fill in the
@@ -449,7 +450,7 @@ void StorageBackend::destroy() {
     qDebug() << "StorageBackend: Storage module destroyed.";
 }
 
-void StorageBackend::logDebugInfo() {
+void StorageBackend::refreshNodeStatus() {
     auto result = m_logos->storage_module.debug();
 
     if (!result.success) {
@@ -457,11 +458,16 @@ void StorageBackend::logDebugInfo() {
         return;
     }
 
-    QVariantMap map = result.getMap();
-    debug(QString::fromUtf8(QJsonDocument::fromVariant(map).toJson(QJsonDocument::Indented)));
+    QVariantMap info = result.getMap();
 
-    QVariantList nodes = map.value("table").toMap().value("nodes").toList();
-    emit peersUpdated(seenPeerCount(nodes));
+    const QString reachability = info.value("nat").toMap().value("reachability").toString();
+    setNatReachability(reachability.isEmpty() ? QStringLiteral("Unknown") : reachability);
+
+    QVariantList nodes = info.value("table").toMap().value("nodes").toList();
+    const int peers = seenPeerCount(nodes);
+    emit peersUpdated(peers);
+
+    debug(QString("Peers: %1, NAT reachability: %2").arg(peers).arg(natReachability()));
 
     QVariantList peerRows;
     for (const QVariant& n : nodes) {
@@ -574,24 +580,6 @@ void StorageBackend::fetch(QString cid) {
     debug("Cid " + cid + " fetched.");
 }
 
-void StorageBackend::logVersion() {
-    qDebug() << "StorageBackend::version called";
-
-    LogosResult result = m_logos->storage_module.version();
-
-    if (!result.success) {
-        reportError("Failed to log version: " + result.getError());
-        return;
-    }
-
-    debug("Logos Storage Module=" + m_logos->storage_module.moduleVersion());
-    debug("Logos Storage Nim=" + result.getString().section('-', -1));
-    debug("Logos Storage UI=" STORAGE_UI_VERSION);
-
-    QString network = m_config.object().value("network").toString();
-    debug("Network=" + (network.isEmpty() ? QStringLiteral("custom") : network));
-}
-
 void StorageBackend::restartOnboarding() {
     qDebug() << "StorageBackend::restartOnboarding called";
 
@@ -599,45 +587,6 @@ void StorageBackend::restartOnboarding() {
     settings.setValue("Storage/onboardingCompleted", false);
     settings.sync();
     emit onboardingRestarted();
-}
-
-void StorageBackend::logPeerId() {
-    qDebug() << "StorageBackend::peerId called";
-
-    LogosResult result = m_logos->storage_module.peerId();
-
-    if (!result.success) {
-        reportError("Failed to log peerId: " + result.getError());
-        return;
-    }
-
-    debug("Peer ID: " + result.getString());
-}
-
-void StorageBackend::logSpr() {
-    qDebug() << "StorageBackend::spr called";
-
-    LogosResult result = m_logos->storage_module.spr();
-
-    if (!result.success) {
-        reportError("Failed to log spr: " + result.getError());
-        return;
-    }
-
-    debug("SPR: " + result.getString());
-}
-
-void StorageBackend::logDataDir() {
-    qDebug() << "StorageBackend::dataDir called";
-
-    LogosResult result = m_logos->storage_module.dataDir();
-
-    if (!result.success) {
-        reportError("Failed to log dataDir: " + result.getError());
-        return;
-    }
-
-    debug("Data dir: " + result.getString());
 }
 
 void StorageBackend::downloadManifest(QString cid) {
@@ -725,11 +674,6 @@ void StorageBackend::reloadIfChanged(QString configJsonStr) {
     m_config = config;
     saveUserConfig(configJsonStr);
     setStatus(Stopped);
-}
-
-void StorageBackend::saveCurrentConfig() {
-    qDebug() << "StorageBackend::saveCurrentConfig";
-    saveUserConfig(configJson());
 }
 
 void StorageBackend::saveUserConfig(QString configJsonStr) {
@@ -832,151 +776,8 @@ bool StorageBackend::togglePrivateQueries(bool enabled) {
     return true;
 }
 
-void StorageBackend::enableUpnpConfig() {
-    debug("StorageBackend::enableUpnpConfig called");
-
-    QJsonDocument doc = defaultConfig();
-    QJsonObject obj = doc.object();
-
-    obj["nat"] = "upnp";
-
-    reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented)));
-}
-
-void StorageBackend::enableNatExtConfig(int tcpPort) {
-    qDebug() << "StorageBackend::enableNatExtConfig called with tcpPort" << tcpPort;
-
-    QJsonDocument doc = defaultConfig();
-    QJsonObject obj = doc.object();
-
-    obj["listen-ip"] = "0.0.0.0";
-    obj["listen-port"] = tcpPort;
-
-    qDebug() << "StorageBackend:: Retrieving public IP...";
-
-    QNetworkAccessManager* manager = new QNetworkAccessManager(this);
-    QNetworkRequest request(ECHO_PROVIDER);
-
-    request.setRawHeader("Accept", "text/plain");
-
-    QNetworkReply* reply = manager->get(request);
-
-    connect(reply, &QNetworkReply::finished, this, [this, reply, manager, obj]() mutable {
-        reply->deleteLater();
-        manager->deleteLater();
-
-        if (reply->error() != QNetworkReply::NoError) {
-            qWarning() << "Failed to retrieve public IP: " << reply->errorString() << ". Proceeding without extip NAT.";
-        } else {
-            QString ip = QString::fromUtf8(reply->readAll()).trimmed();
-            debug("Public IP: " + ip);
-            obj["nat"] = "extip:" + ip;
-        }
-
-        reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
-
-        emit natExtConfigCompleted();
-    });
-}
-
-void StorageBackend::checkNodeIsUp() {
-    qDebug() << "StorageBackend::checkNodeIsUp called.";
-
-    LogosResult result = m_logos->storage_module.debug();
-    if (!result.success) {
-        qWarning() << "StorageBackend::checkNodeIsUp Failed to get node debug info: " << result.getError();
-        emit nodeIsntUp("Failed to get node debug info: " + result.getError());
-        return;
-    }
-
-    QVariantMap table = result.getValue<QVariantMap>("table");
-    QVariantList nodes = table["nodes"].toList();
-    const int peers = seenPeerCount(nodes);
-    emit peersUpdated(peers);
-
-    debug(QString("Connected peers: %1").arg(peers));
-
-    if (peers == 0) {
-        qWarning() << "StorageBackend::checkNodeIsUp No peers connected";
-        emit nodeIsntUp("No peers connected. "
-                        "Try modifying the discovery port (default 8090) in the advanced settings.");
-        return;
-    }
-
-    qDebug() << "StorageBackend::checkNodeIsUp DHT seems okay, found peers";
-
-    QVariantList announceAddresses = result.getValue<QVariantList>("announceAddresses");
-    QList<QPair<QString, int>> endpoints;
-    for (const QVariant& addr : announceAddresses) {
-        const QStringList parts = addr.toString().split("/");
-        const int tcpIndex = parts.indexOf("tcp");
-        if (tcpIndex >= 1 && tcpIndex + 1 < parts.size()) {
-            const QString ip   = parts[tcpIndex - 1];
-            const int port = parts[tcpIndex + 1].toInt();
-            if (port > 0 && !ip.isEmpty())
-                endpoints.append({ ip, port });
-        }
-    }
-
-    QString nat = m_config.object()["nat"].toString();
-
-    if (endpoints.isEmpty()) {
-        qDebug() << "StorageBackend::checkNodeIsUp No TCP endpoints found in announce addresses";
-
-        if (nat == "upnp") {
-            emit nodeIsntUp("UPnP is configured but there is no announced addresses. "
-                            "Try going back and configure port forwarding manually on your router.");
-        } else {
-            emit nodeIsntUp("No announced addresses found. Your TCP port is probably incorrect. "
-                            "Try going back and check your port forwarding configuration.");
-        }
-        return;
-    }
-
-    qDebug() << "Checking reachability for " << endpoints.size() << "endpoint(s)...";
-
-    bool foundReachable = false;
-    for (const auto& [ip, port] : endpoints) {
-        QNetworkAccessManager manager;
-        const QUrl url(QString("%1/%2/%3").arg(PORT_CHECKER_PROVIDER).arg(ip).arg(port));
-        QNetworkReply* reply = manager.get(QNetworkRequest(url));
-
-        QEventLoop loop;
-        connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
-        loop.exec();
-
-        if (reply->error() == QNetworkReply::NoError) {
-            const bool reachable = reply->readAll() == "True";
-
-            QString statusStr = reachable ? "reachable" : "not reachable";
-            qDebug() << "StorageBackend::checkNodeIsUp " << ip << ":" << port << statusStr;
-
-            if (reachable) {
-                foundReachable = true;
-            }
-        } else {
-            qDebug() << "StorageBackend::checkNodeIsUp Port check failed for" << ip << ":" << port
-                     << reply->errorString();
-        }
-
-        reply->deleteLater();
-    }
-
-    if (foundReachable) {
-        emit nodeIsUp();
-    } else {
-        if (nat == "upnp") {
-            emit nodeIsntUp("UPnP is configured but the node is not reachable from the internet. "
-                            "Try going back and configure port forwarding manually on your router.");
-        } else {
-            emit nodeIsntUp("No ports are reachable from the internet. "
-                            "Try going back and check your port forwarding configuration.");
-        }
-    }
-}
-
 void StorageBackend::fetchWidgetsData() {
-    QMetaObject::invokeMethod(this, &StorageBackend::logDebugInfo, Qt::QueuedConnection);
+    QMetaObject::invokeMethod(this, &StorageBackend::refreshNodeStatus, Qt::QueuedConnection);
     QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace, Qt::QueuedConnection);
     QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
 }
@@ -1003,10 +804,12 @@ QString StorageBackend::getUserConfig() {
 
     if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         return QString::fromUtf8(file.readAll());
-    } else {
-        debug("Failed to read the user config file, use current config.");
-        return configJson();
     }
+
+    // No config file yet (first run): the current config, or the defaults if
+    // the module was never initialised.
+    debug("Failed to read the user config file, use current config.");
+    return m_config.isNull() ? defaultConfigJson() : configJson();
 }
 
 QString StorageBackend::configJson() { return QString::fromUtf8(m_config.toJson(QJsonDocument::Indented)); }

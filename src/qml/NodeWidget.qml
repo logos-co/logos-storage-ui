@@ -17,9 +17,20 @@ LogosFrame {
     implicitHeight: 150
 
     property var backend: MockBackend
-    property bool nodeIsUp: false
+    property string reachability: "Unknown"
     property bool blinkOn: false
     readonly property int effectiveStatus: root.backend ? root.backend.status : StorageBackend.Destroyed
+
+    // The dot next to "Running" reports how the node is seen from outside:
+    // green once AutoNAT confirms it is reachable, orange when it is not,
+    // muted while there is no verdict.
+    readonly property color reachabilityColor: {
+        if (root.reachability === "Reachable")
+            return Theme.palette.success
+        if (root.reachability === "NotReachable")
+            return Theme.palette.warning
+        return Theme.palette.textMuted
+    }
 
     signal infoRequested()
 
@@ -65,7 +76,7 @@ LogosFrame {
                         return Theme.palette.textMuted
                     }
 
-                    return root.nodeIsUp ? Theme.palette.success : Theme.palette.error
+                    return Theme.palette.success
                 }
             }
         }
@@ -97,7 +108,7 @@ LogosFrame {
                             return Theme.palette.textMuted
                         }
 
-                        return root.nodeIsUp ? Theme.palette.success : Theme.palette.error
+                        return root.reachabilityColor
                     }
                     opacity: root.effectiveStatus
                              === StorageBackend.Running ? (root.blinkOn ? 1.0 : 0.15) : 1.0

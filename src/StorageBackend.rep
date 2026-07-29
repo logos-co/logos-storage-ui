@@ -12,13 +12,16 @@ class StorageBackend
     }
 
     PROP(StorageStatus status READONLY)
-    PROP(int defaultListenPort READONLY)
     PROP(QString defaultConfigJson READONLY)
     PROP(QString uiVersion READONLY)
 
     // True when the running node was initialised with mix-enabled. Reflects the
     // config the node currently runs with, not the persisted one.
     PROP(bool mixRunning READONLY)
+
+    // AutoNAT reachability reported by the node: "Reachable", "NotReachable"
+    // or "Unknown" while AutoNAT has no verdict yet.
+    PROP(QString natReachability READONLY)
 
     // Lifecycle
     SLOT(void init(QString configJson))
@@ -40,16 +43,12 @@ class StorageBackend
 
     // Config
     SLOT(void saveUserConfig(QString configJson))
-    SLOT(void saveCurrentConfig())
     SLOT(void loadUserConfig())
     SLOT(QString getUserConfig())
     SLOT(void reloadIfChanged(QString configJson))
     SLOT(QString configJson())
 
-    // Network / Onboarding
-    SLOT(void enableUpnpConfig())
-    SLOT(void enableNatExtConfig(int tcpPort))
-    SLOT(void checkNodeIsUp())
+    // Onboarding
     SLOT(void restartOnboarding())
 
     // Mix
@@ -60,11 +59,9 @@ class StorageBackend
 
     // Widgets / Debug
     SLOT(void fetchWidgetsData())
-    SLOT(void logDebugInfo())
-    SLOT(void logDataDir())
-    SLOT(void logVersion())
-    SLOT(void logSpr())
-    SLOT(void logPeerId())
+
+    // Refresh peers and NAT reachability from the node debug info.
+    SLOT(void refreshNodeStatus())
 
     // Lifecycle signals
     SIGNAL(initCompleted(bool success, QString error))
@@ -97,9 +94,6 @@ class StorageBackend
 
     // Network / Onboarding
     SIGNAL(onboardingRestarted())
-    SIGNAL(natExtConfigCompleted())
-    SIGNAL(nodeIsUp())
-    SIGNAL(nodeIsntUp(QString reason))
     SIGNAL(peersUpdated(int count))
 
     // Routing-table entries from the node debug info. Each entry:

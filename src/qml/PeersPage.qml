@@ -34,7 +34,7 @@ LogosFrame {
 
     function refresh() {
         if (root.backend && (root.backend.isMock || root.running))
-            root.backend.logDebugInfo()
+            root.backend.refreshNodeStatus()
     }
 
     onVisibleChanged: if (visible) root.refresh()

@@ -111,21 +111,15 @@ qt_add_qml_module(appqml
     QML_FILES
         StorageView.qml
         Sidebar.qml
-        OnBoarding.qml
         Main.qml
-        StartNode.qml
         LogosStorageLayout.qml
-        PortForwarding.qml
         ErrorToast.qml
         HealthIndicator.qml
         ModeSelector.qml
         AdvancedSetup.qml
         icons/DotIcon.qml
-        icons/NodeStatusIcon.qml
         icons/GuideIcon.qml
         icons/AdvancedIcon.qml
-        icons/UpnpIcon.qml
-        icons/PortIcon.qml
         icons/StorageIcon.qml
         icons/PlayIcon.qml
         icons/StopIcon.qml
@@ -141,7 +135,6 @@ qt_add_qml_module(appqml
         DiskWidget.qml
         UploadWidget.qml
         PeersWidget.qml
-        JsonEditor.qml
         ManifestTable.qml
         NodeWidget.qml
         NodeActivityIcon.qml
@@ -150,6 +143,7 @@ qt_add_qml_module(appqml
         Widgets.qml
         LogsPage.qml
         SettingsPage.qml
+        SettingsForm.qml
         SettingRow.qml
         PeersPage.qml
         PeerConstellation.qml

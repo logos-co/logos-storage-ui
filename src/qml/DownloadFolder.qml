@@ -33,7 +33,7 @@ OnBoardingLayout {
 
         OnBoardingProgress {
             Layout.fillWidth: true
-            currentStep: 3
+            currentStep: 1
             Layout.topMargin: Theme.spacing.small
         }
 
@@ -55,7 +55,7 @@ OnBoardingLayout {
                 }
 
                 LogosText {
-                    text: "4 / 5"
+                    text: "2 / 2"
                     font.pixelSize: Theme.typography.primaryText
                     color: Theme.palette.primary
                     font.family: "monospace"
@@ -145,6 +145,8 @@ OnBoardingLayout {
                 variant: LogosButton.Variant.Primary
                 onClicked: {
                     settings.downloadFolderPath = root.downloadFolder.toString()
+                    // Guided setup: the node runs on the default configuration.
+                    root.backend.saveUserConfig(root.backend.defaultConfigJson)
                     root.next()
                 }
             }

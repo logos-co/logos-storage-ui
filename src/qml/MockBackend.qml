@@ -5,17 +5,15 @@ import QtQuick
 QtObject {
     readonly property bool isMock: true
     property int status: 0
-    property int defaultListenPort: 8500
     property bool mixRunning: false
+    property string natReachability: "Unknown"
     property string uiVersion: "mock"
+    property string defaultConfigJson: "{}"
 
     signal ready
     signal startCompleted
     signal startFailed(string error)
     signal error(string message)
-    signal natExtConfigCompleted
-    signal nodeIsUp
-    signal nodeIsntUp(string reason)
     signal peersUpdated(int count)
     signal peersTableUpdated(var peers)
     signal logLines(var lines)
@@ -41,7 +39,6 @@ QtObject {
         status = 0
     }
     function destroy() {}
-    function checkNodeIsUp() {}
     function fetchWidgetsData() {}
     function uploadFile(url) {}
     function downloadFile(cid, url, totalBytes) {}
@@ -52,7 +49,8 @@ QtObject {
     function remove(cid) {
         removeStarted(cid)
     }
-    function logDebugInfo() {
+    function refreshNodeStatus() {
+        natReachability = "Reachable"
         peersUpdated(3)
         peersTableUpdated([{
                                "peerId": "16Uiu2HAmJwAxtuRLfjP1SfjE7EWWr6zExFBFVLnUnTsc28fmvrpq",
@@ -68,10 +66,6 @@ QtObject {
                                "seen": false
                            }])
     }
-    function logPeerId() {}
-    function logDataDir() {}
-    function logSpr() {}
-    function logVersion() {}
     function restartOnboarding() {}
     function getUserConfig() {
         return JSON.stringify({
@@ -91,13 +85,8 @@ QtObject {
                               }, null, 2)
     }
     function saveUserConfig(json) {}
-    function saveCurrentConfig() {}
     function loadUserConfig() {}
     function reloadIfChanged(json) {}
-    function enableUpnpConfig() {}
-    function enableNatExtConfig(tcpPort) {
-        natExtConfigCompleted()
-    }
     function togglePrivateQueries(enabled) {
         return false
     }

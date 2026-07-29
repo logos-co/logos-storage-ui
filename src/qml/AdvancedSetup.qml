@@ -1,6 +1,6 @@
 import QtQuick
-import QtQuick.Controls
 import QtQuick.Layouts
+import QtCore
 import Logos.Theme
 import Logos.Controls
 
@@ -12,31 +12,76 @@ OnBoardingLayout {
     signal back
     signal completed
 
+    Settings {
+        id: settings
+        category: "Storage"
+
+        property string downloadFolderPath: {
+            const p = StandardPaths.standardLocations(StandardPaths.HomeLocation)[0].toString()
+            return p.startsWith("file://") ? p : "file://" + p
+        }
+    }
+
     OnBoardingContainer {
         spacing: Theme.spacing.medium
 
-        Column {
-            Layout.fillHeight: false
+        OnBoardingProgress {
+            Layout.fillWidth: true
+            currentStep: 1
+            Layout.topMargin: Theme.spacing.small
+        }
 
-            LogosText {
-                text: "Advanced Configuration"
-                font.pixelSize: Theme.typography.titleText
-                font.weight: Font.Bold
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: Theme.spacing.small
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                LogosText {
+                    text: "Advanced Configuration"
+                    font.pixelSize: Theme.typography.titleText
+                    font.weight: Font.Bold
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                LogosText {
+                    text: "2 / 2"
+                    font.pixelSize: Theme.typography.primaryText
+                    color: Theme.palette.primary
+                    font.family: "monospace"
+                }
             }
 
             LogosText {
-                text: "Edit the JSON configuration below, than click Validate. "
+                text: "Review the node settings, then click Continue."
                 font.pixelSize: Theme.typography.panelTitleText
             }
         }
 
-        JsonEditor {
-            id: jsonEditor
-            objectName: "configEditor"
+        Rectangle {
             Layout.fillWidth: true
-            Layout.fillHeight: false
-            Layout.preferredHeight: 250
-            Component.onCompleted: jsonEditor.load(root.backend.defaultConfigJson || "{}")
+            Layout.preferredHeight: 380
+            radius: Theme.spacing.radiusLarge
+            color: Theme.palette.backgroundSecondary
+            border.color: Theme.palette.borderInteractive
+            border.width: 1
+
+            SettingsForm {
+                id: form
+                objectName: "onboardingSettings"
+                anchors.fill: parent
+                anchors.margins: Theme.spacing.medium
+                backend: root.backend
+                showRestartOnboarding: false
+                downloadFolderPath: settings.downloadFolderPath
+                onFolderPathChanged: function (path) {
+                    settings.downloadFolderPath = path
+                }
+            }
         }
 
         RowLayout {
@@ -56,12 +101,11 @@ OnBoardingLayout {
 
             LogosButton {
                 radius: Theme.spacing.radiusLarge
-                text: "Validate"
+                text: "Continue"
                 variant: LogosButton.Variant.Primary
-                enabled: jsonEditor.isValid
                 trailingIcon.source: Qt.resolvedUrl("assets/arrow-right-line.svg")
                 onClicked: {
-                    root.backend.saveUserConfig(jsonEditor.text)
+                    form.save()
                     root.completed()
                 }
             }
