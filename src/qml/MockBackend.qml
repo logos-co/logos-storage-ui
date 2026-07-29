@@ -16,7 +16,7 @@ QtObject {
     signal error(string message)
     signal peersUpdated(int count)
     signal peersTableUpdated(var peers)
-    signal debugInfoUpdated(var rows)
+    signal debugInfoUpdated(var info)
     signal logLines(var lines)
     signal uploadStarted(real totalBytes)
     signal uploadChunk(real len)
@@ -69,44 +69,37 @@ QtObject {
                                "seen": false,
                                "direct": false
                            }])
-        debugInfoUpdated([{
-                              "label": "Peer ID",
-                              "value": "16Uiu2HAmJwAxtuRLfjP1SfjE7EWWr6zExFBFVLnUnTsc28fmvrpq",
-                              "kind": "mono",
-                              "tone": "neutral",
-                              "copyable": true
-                          }, {
-                              "label": "Reachability",
-                              "value": "Reachable",
-                              "kind": "tag",
-                              "tone": "success"
-                          }, {
-                              "label": "Port mapping",
-                              "value": "upnp",
-                              "kind": "tag",
-                              "tone": "success"
-                          }, {
-                              "label": "Relay running",
-                              "value": "No",
-                              "kind": "tag",
-                              "tone": "neutral"
-                          }, {
-                              "label": "Routing table",
-                              "value": "2 verified / 3 known",
-                              "kind": "text",
-                              "tone": "neutral"
-                          }, {
-                              "label": "Listen address",
-                              "value": "/ip4/192.168.1.20/tcp/8500",
-                              "kind": "mono",
-                              "tone": "neutral"
-                          }, {
-                              "label": "SPR",
-                              "value": "spr:CiUIAhIhA11LamlswboRlyrpEXBubPQAr2WRmqjgWRC4JsvFptrC",
-                              "kind": "mono",
-                              "tone": "neutral",
-                              "copyable": true
-                          }])
+        debugInfoUpdated({
+                             "id": "16Uiu2HAmJwAxtuRLfjP1SfjE7EWWr6zExFBFVLnUnTsc28fmvrpq",
+                             "addrs": ["/ip4/192.168.1.20/tcp/8500"],
+                             "providerAddresses": ["/ip4/81.20.11.4/tcp/8500"],
+                             "discoveryAddresses": ["/ip4/81.20.11.4/udp/8090"],
+                             "spr": "spr:CiUIAhIhA11LamlswboRlyrpEXBubPQAr2WRmqjgWRC4JsvFptrC",
+                             "libp2pPubKey": "035d4b6a696cc1ba11972ae911706e6cf400af65919aa8e05910b826cbc5a6dac2",
+                             "storage": {
+                                 "version": "0.1.0",
+                                 "revision": "fadd2a16"
+                             },
+                             "nat": {
+                                 "reachability": "Reachable",
+                                 "clientMode": false,
+                                 "relayRunning": false,
+                                 "portMapping": "upnp"
+                             },
+                             "table": {
+                                 "nodes": [{
+                                         "peerId": "16Uiu2HAmGJx2MWRH66M2A1RcD5TcY5Z2kReNdddpF9kRyfykBFwy",
+                                         "seen": true
+                                     }, {
+                                         "peerId": "16Uiu2HAmDF8zGjsuxM4h1N5x37hzUtGnDHtkVJ8jLiVty1DJyG92",
+                                         "seen": false
+                                     }]
+                             },
+                             "connections": [{
+                                     "peerId": "16Uiu2HAmGJx2MWRH66M2A1RcD5TcY5Z2kReNdddpF9kRyfykBFwy",
+                                     "direct": true
+                                 }]
+                         })
     }
     function restartOnboarding() {}
     function getUserConfig() {

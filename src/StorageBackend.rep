@@ -101,11 +101,9 @@ class StorageBackend
     // connection with the peer is open.
     SIGNAL(peersTableUpdated(QVariantList peers))
 
-    // The node debug info flattened for the debug page. Each row:
-    // {label, value, kind, tone, copyable}, kind is "text", "mono" or "tag",
-    // tone is "success", "warning" or "neutral" and only colours a tag.
-    // copyable marks the identifiers worth copying to the clipboard.
-    SIGNAL(debugInfoUpdated(QVariantList rows))
+    // The node debug info, as the module reports it. The debug page decides
+    // what to show and how.
+    SIGNAL(debugInfoUpdated(QVariantMap info))
 
     // New complete lines tailed from the node log file, streamed as they
     // are appended.

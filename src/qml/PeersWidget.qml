@@ -17,11 +17,25 @@ LogosFrame {
     property bool running: false
     property int peers: 0
     property int maxPeers: 20
+    property int refreshIntervalMs: 15000
 
     signal detailsRequested()
 
     onRunningChanged: {
         if (!running) root.peers = 0
+    }
+
+    // The dashboard keeps its peer count fresh on its own. The peers page has
+    // its own Refresh button, so it is not polled here.
+    Timer {
+        interval: root.refreshIntervalMs
+        repeat: true
+        running: root.running && root.visible
+        triggeredOnStart: true
+        onTriggered: {
+            if (root.backend)
+                root.backend.refreshNodeStatus()
+        }
     }
 
     ColumnLayout {

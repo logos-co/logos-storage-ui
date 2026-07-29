@@ -67,102 +67,6 @@ static int seenPeerCount(const QVariantList& nodes) {
     return count;
 }
 
-// Debug values are strings most of the time, but the module also sends
-// structured ones (keys, records): render those as compact JSON.
-static QString asText(const QVariant& value) {
-    if (value.typeId() == QMetaType::QString) {
-        return value.toString();
-    }
-    if (!value.isValid() || value.isNull()) {
-        return QString();
-    }
-    if (value.typeId() == QMetaType::Bool) {
-        return value.toBool() ? "Yes" : "No";
-    }
-    return QString::fromUtf8(QJsonDocument::fromVariant(value).toJson(QJsonDocument::Compact));
-}
-
-static QVariantMap debugRow(const QString& label, const QString& value, const QString& kind = "text",
-                            const QString& tone = "neutral") {
-    return QVariantMap{
-      {"label", label}, {"value", value}, {"kind", kind}, {"tone", tone}, {"copyable", false}};
-}
-
-// An identifier the user needs elsewhere: the row carries a copy button.
-static QVariantMap copyableRow(const QString& label, const QString& value) {
-    QVariantMap row = debugRow(label, value, "mono");
-    row["copyable"] = true;
-    return row;
-}
-
-// One row per value, so a node announcing three addresses shows three rows.
-static void appendRows(QVariantList& rows, const QString& label, const QVariantList& values) {
-    for (const QVariant& value : values) {
-        const QString text = asText(value);
-        if (!text.isEmpty()) {
-            rows.append(debugRow(label, text, "mono"));
-        }
-    }
-}
-
-// Flatten the node debug info into the rows the debug page displays.
-static QVariantList debugRows(const QVariantMap& info) {
-    const QVariantMap nat = info.value("nat").toMap();
-    const QVariantMap storage = info.value("storage").toMap();
-    const QVariantList nodes = info.value("table").toMap().value("nodes").toList();
-    const QVariantList connections = info.value("connections").toList();
-
-    int directConnections = 0;
-    for (const QVariant& connection : connections) {
-        if (connection.toMap().value("direct").toBool()) {
-            ++directConnections;
-        }
-    }
-
-    const QString reachability = nat.value("reachability").toString();
-    const QString portMapping = nat.value("portMapping").toString();
-
-    QString reachabilityTone = "neutral";
-    if (reachability == "Reachable") {
-        reachabilityTone = "success";
-    } else if (reachability == "NotReachable") {
-        reachabilityTone = "warning";
-    }
-
-    QVariantList rows;
-    rows.append(copyableRow("Peer ID", asText(info.value("id"))));
-    rows.append(debugRow("Reachability", reachability.isEmpty() ? "Unknown" : reachability, "tag",
-                         reachabilityTone));
-    rows.append(debugRow("Port mapping", portMapping.isEmpty() ? "none" : portMapping, "tag",
-                         portMapping.isEmpty() || portMapping == "none" ? "neutral" : "success"));
-    rows.append(debugRow("Relay running", asText(nat.value("relayRunning")), "tag"));
-    rows.append(debugRow("DHT client mode", asText(nat.value("clientMode")), "tag"));
-    rows.append(debugRow("Routing table",
-                         QString("%1 verified / %2 known").arg(seenPeerCount(nodes)).arg(nodes.size())));
-    rows.append(debugRow("Connections",
-                         QString("%1 open / %2 direct").arg(connections.size()).arg(directConnections)));
-    rows.append(debugRow("Storage version", asText(storage.value("version"))));
-    rows.append(debugRow("Storage revision", asText(storage.value("revision")), "mono"));
-
-    appendRows(rows, "Listen address", info.value("addrs").toList());
-    appendRows(rows, "Provider address", info.value("providerAddresses").toList());
-    appendRows(rows, "Discovery address", info.value("discoveryAddresses").toList());
-
-    // Optional in the payload: a node without a record or without mix has none.
-    const QList<QPair<QString, QVariant>> optional = {{"SPR", info.value("spr")},
-                                                      {"Provider record", info.value("providerRecord")},
-                                                      {"libp2p public key", info.value("libp2pPubKey")},
-                                                      {"Mix public key", info.value("mixPubKey")}};
-    for (const auto& [label, value] : optional) {
-        const QString text = asText(value);
-        if (!text.isEmpty()) {
-            rows.append(copyableRow(label, text));
-        }
-    }
-
-    return rows;
-}
-
 void StorageBackend::debug(const QString& log, const QString& level) {
     if (level == "warning") {
         qWarning() << "StorageBackend: " << log;
@@ -566,7 +470,7 @@ void StorageBackend::refreshNodeStatus() {
 
     debug(QString("Peers: %1, NAT reachability: %2").arg(peers).arg(natReachability()));
 
-    emit debugInfoUpdated(debugRows(info));
+    emit debugInfoUpdated(info);
 
     QSet<QString> directPeers;
     for (const QVariant& connection : info.value("connections").toList()) {
