@@ -16,6 +16,7 @@ QtObject {
     signal error(string message)
     signal peersUpdated(int count)
     signal peersTableUpdated(var peers)
+    signal debugInfoUpdated(var rows)
     signal logLines(var lines)
     signal uploadStarted(real totalBytes)
     signal uploadChunk(real len)
@@ -55,16 +56,57 @@ QtObject {
         peersTableUpdated([{
                                "peerId": "16Uiu2HAmJwAxtuRLfjP1SfjE7EWWr6zExFBFVLnUnTsc28fmvrpq",
                                "address": "24.144.78.200:8080",
-                               "seen": true
+                               "seen": true,
+                               "direct": true
                            }, {
                                "peerId": "16Uiu2HAmGJx2MWRH66M2A1RcD5TcY5Z2kReNdddpF9kRyfykBFwy",
                                "address": "188.166.200.119:8080",
-                               "seen": true
+                               "seen": true,
+                               "direct": false
                            }, {
                                "peerId": "16Uiu2HAmDF8zGjsuxM4h1N5x37hzUtGnDHtkVJ8jLiVty1DJyG92",
                                "address": "34.42.230.59:8080",
-                               "seen": false
+                               "seen": false,
+                               "direct": false
                            }])
+        debugInfoUpdated([{
+                              "label": "Peer ID",
+                              "value": "16Uiu2HAmJwAxtuRLfjP1SfjE7EWWr6zExFBFVLnUnTsc28fmvrpq",
+                              "kind": "mono",
+                              "tone": "neutral",
+                              "copyable": true
+                          }, {
+                              "label": "Reachability",
+                              "value": "Reachable",
+                              "kind": "tag",
+                              "tone": "success"
+                          }, {
+                              "label": "Port mapping",
+                              "value": "upnp",
+                              "kind": "tag",
+                              "tone": "success"
+                          }, {
+                              "label": "Relay running",
+                              "value": "No",
+                              "kind": "tag",
+                              "tone": "neutral"
+                          }, {
+                              "label": "Routing table",
+                              "value": "2 verified / 3 known",
+                              "kind": "text",
+                              "tone": "neutral"
+                          }, {
+                              "label": "Listen address",
+                              "value": "/ip4/192.168.1.20/tcp/8500",
+                              "kind": "mono",
+                              "tone": "neutral"
+                          }, {
+                              "label": "SPR",
+                              "value": "spr:CiUIAhIhA11LamlswboRlyrpEXBubPQAr2WRmqjgWRC4JsvFptrC",
+                              "kind": "mono",
+                              "tone": "neutral",
+                              "copyable": true
+                          }])
     }
     function restartOnboarding() {}
     function getUserConfig() {

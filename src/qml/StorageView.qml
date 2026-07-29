@@ -318,6 +318,15 @@ LogosStorageLayout {
         backend: root.backend
     }
 
+    DebugPage {
+        visible: root.currentPage === "debug"
+        anchors.fill: parent
+        anchors.margins: Theme.spacing.medium
+        anchors.leftMargin: root.navWidth + Theme.spacing.medium
+        backend: root.backend
+        running: root.running
+    }
+
     SettingsPage {
         visible: root.currentPage === "settings"
         anchors.fill: parent
@@ -384,7 +393,7 @@ LogosStorageLayout {
     // Safety net for any page not wired above.
     Item {
         id: placeholderPage
-        readonly property var builtPages: ["dashboard", "nodes", "files", "device", "logs", "settings", "peers", "help", "disclaimer"]
+        readonly property var builtPages: ["dashboard", "nodes", "files", "device", "logs", "debug", "settings", "peers", "help", "disclaimer"]
         visible: placeholderPage.builtPages.indexOf(root.currentPage) === -1
         anchors.fill: parent
         anchors.leftMargin: root.navWidth

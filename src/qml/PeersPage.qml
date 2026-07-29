@@ -14,7 +14,8 @@ LogosFrame {
     borderColor: "transparent"
     radius: Theme.spacing.radiusLarge
 
-    // Rows come from the node debug info (table.nodes): {peerId, address, seen}.
+    // Rows come from the node debug info (table.nodes):
+    // {peerId, address, seen, direct}.
     ListModel { id: peersModel }
 
     // Plain-array copy for the constellation canvas.
@@ -26,7 +27,8 @@ LogosFrame {
             peersModel.append({
                 "peerId": list[i].peerId || "",
                 "address": list[i].address || "",
-                "seen": list[i].seen === true
+                "seen": list[i].seen === true,
+                "direct": list[i].direct === true
             })
         }
         root.peerList = list
@@ -227,6 +229,55 @@ LogosFrame {
                                 text: rowItem && rowItem.seen ? "Verified" : "Unverified"
                                 color: rowItem && rowItem.seen ? Theme.palette.success
                                                               : Theme.palette.textTertiary
+                            }
+                        }
+                    }
+                },
+                LogosTableColumn {
+                    title: "Connection"
+                    role: "direct"
+                    minWidth: 130
+                    preferredWidth: 130
+                    headerCellDelegate: Component {
+                        RowLayout {
+                            spacing: Theme.spacing.tiny
+
+                            LogosText {
+                                text: columnDef.title
+                                color: Theme.palette.textSecondary
+                                font.pixelSize: Theme.typography.secondaryText
+                                font.weight: Theme.typography.weightMedium
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                            LogosIcon {
+                                source: Qt.resolvedUrl("assets/question-line.svg")
+                                color: connectionHelp.hovered ? Theme.palette.text : Theme.palette.textTertiary
+                                width: 16
+                                height: 16
+                                Layout.alignment: Qt.AlignVCenter
+
+                                HoverHandler {
+                                    id: connectionHelp
+                                    cursorShape: Qt.PointingHandCursor
+                                }
+                                LogosToolTip {
+                                    text: "Connection with the peer"
+                                    placement: LogosToolTip.Top
+                                    visible: connectionHelp.hovered
+                                }
+                            }
+                            Item { Layout.fillWidth: true }
+                        }
+                    }
+                    cellDelegate: Component {
+                        Item {
+                            LogosText {
+                                anchors.fill: parent
+                                verticalAlignment: Text.AlignVCenter
+                                text: rowItem && rowItem.direct ? "Connected" : "—"
+                                color: rowItem && rowItem.direct ? Theme.palette.text
+                                                                 : Theme.palette.textMuted
+                                font.pixelSize: Theme.typography.secondaryText
                             }
                         }
                     }

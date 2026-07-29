@@ -142,6 +142,7 @@ qt_add_qml_module(appqml
         PlaceholderPage.qml
         Widgets.qml
         LogsPage.qml
+        DebugPage.qml
         SettingsPage.qml
         SettingsForm.qml
         SettingRow.qml
@@ -195,6 +196,7 @@ qt_add_qml_module(appqml
         assets/sidebar-device.svg
         assets/sidebar-peers.svg
         assets/sidebar-logs.svg
+        assets/sidebar-debug.svg
         assets/sidebar-settings.svg
         assets/sidebar-help.svg
         assets/sidebar-disclaimer.svg

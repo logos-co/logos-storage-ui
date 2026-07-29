@@ -52,6 +52,7 @@ Rectangle {
     ]
 
     readonly property var footerPages: [
+        { page: "debug", label: "Debug" },
         { page: "settings", label: "Settings" },
         { page: "help", label: "Help" },
         { page: "disclaimer", label: "Disclaimer" }
