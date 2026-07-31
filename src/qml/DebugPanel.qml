@@ -79,7 +79,7 @@ ColumnLayout {
             width: logFlick.width
             text: root.backend ? root.backend.debugLogs : ""
             color: Theme.palette.textSecondary
-            font.family: "monospace"
+            font.family: Theme.typography.mono
             font.pixelSize: Theme.typography.secondaryText
             wrapMode: Text.WrapAnywhere
             readOnly: true

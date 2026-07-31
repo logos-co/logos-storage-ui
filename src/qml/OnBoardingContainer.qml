@@ -41,7 +41,7 @@ ColumnLayout {
                 LogosText {
                     text: "V. 0.1.3"
                     font.pixelSize: Theme.typography.secondaryText
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                     color: Theme.palette.textMuted
                 }
             }

@@ -63,7 +63,7 @@ OnBoardingLayout {
                 LogosText {
                     text: "Logos Storage is a decentralised data storage protocol, created so the world community can preserve its most important knowledge without risk of censorship."
                     font.pixelSize: Theme.typography.secondaryText
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                     color: Theme.palette.textMuted
                     Layout.preferredWidth: 400
                     wrapMode: Text.WordWrap
@@ -77,7 +77,7 @@ OnBoardingLayout {
                     text: "Legal Disclaimer"
                     font.pixelSize: Theme.typography.secondaryText
                     color: Theme.palette.primary
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                 }
             }
 

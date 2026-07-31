@@ -166,12 +166,12 @@ LogosFrame {
             anchors.fill: parent
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0.0;  color: "#88000000" }
-                GradientStop { position: 0.35; color: "#88000000" }
-                GradientStop { position: 0.55; color: "#66000000" }
-                GradientStop { position: 0.72; color: "#33000000" }
-                GradientStop { position: 0.88; color: "#11000000" }
-                GradientStop { position: 1.0;  color: "#00000000" }
+                GradientStop { position: 0.0;  color: Theme.palette.colors.getColor(Theme.palette.backgroundBlack, 0.53) }
+                GradientStop { position: 0.35; color: Theme.palette.colors.getColor(Theme.palette.backgroundBlack, 0.53) }
+                GradientStop { position: 0.55; color: Theme.palette.colors.getColor(Theme.palette.backgroundBlack, 0.40) }
+                GradientStop { position: 0.72; color: Theme.palette.colors.getColor(Theme.palette.backgroundBlack, 0.20) }
+                GradientStop { position: 0.88; color: Theme.palette.colors.getColor(Theme.palette.backgroundBlack, 0.07) }
+                GradientStop { position: 1.0;  color: Theme.palette.colors.getColor(Theme.palette.backgroundBlack, 0.0) }
             }
         }
 

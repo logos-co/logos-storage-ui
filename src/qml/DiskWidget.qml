@@ -107,7 +107,7 @@ LogosFrame {
                     text: "Total space available"
                     font.pixelSize: Theme.typography.secondaryText
                     color: Theme.palette.textSecondary
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                 }
             }
         }
@@ -167,7 +167,7 @@ LogosFrame {
                 LogosText {
                     text: Utils.formatBytes(root.used) + " Utilized"
                     font.pixelSize: Theme.typography.secondaryText
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                     color: Theme.palette.textSecondary
                 }
             }
@@ -185,7 +185,7 @@ LogosFrame {
                 LogosText {
                     text: Utils.formatBytes(root.total - root.used) + " Free"
                     font.pixelSize: Theme.typography.secondaryText
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                     color: Theme.palette.textMuted
                 }
             }
@@ -213,7 +213,7 @@ LogosFrame {
                 text: "Disk Utilization Rate"
                 font.pixelSize: Theme.typography.secondaryText
                 color: Theme.palette.textSecondary
-                font.family: "monospace"
+                font.family: Theme.typography.mono
             }
         }
     }

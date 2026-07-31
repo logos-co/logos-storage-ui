@@ -46,7 +46,7 @@ Rectangle {
 
         TextArea {
             id: jsonArea
-            font.family: "monospace"
+            font.family: Theme.typography.mono
             font.pixelSize: Theme.typography.secondaryText
             color: Theme.palette.text
             wrapMode: Text.WrapAnywhere

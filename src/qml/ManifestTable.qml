@@ -218,35 +218,35 @@ LogosFrame {
                         anchors.leftMargin: Theme.spacing.medium
                         anchors.rightMargin: Theme.spacing.medium
 
-                        Text {
+                        LogosText {
                             text: "CID"
                             color: Theme.palette.textMuted
                             font.pixelSize: Theme.typography.secondaryText
                             Layout.fillWidth: true
                         }
 
-                        Text {
+                        LogosText {
                             text: "Filename"
                             color: Theme.palette.textSecondary
                             font.pixelSize: Theme.typography.secondaryText
                             Layout.preferredWidth: 140
                         }
 
-                        Text {
+                        LogosText {
                             text: "Mimetype"
                             color: Theme.palette.textSecondary
                             font.pixelSize: Theme.typography.secondaryText
                             Layout.preferredWidth: 100
                         }
 
-                        Text {
+                        LogosText {
                             text: "Size"
                             color: Theme.palette.textSecondary
                             font.pixelSize: Theme.typography.secondaryText
                             Layout.preferredWidth: 80
                         }
 
-                        Text {
+                        LogosText {
                             text: "Actions"
                             color: Theme.palette.textSecondary
                             font.pixelSize: Theme.typography.secondaryText
@@ -310,7 +310,7 @@ LogosFrame {
                                     fillMode: Image.PreserveAspectFit
                                 }
 
-                                Text {
+                                LogosText {
                                     anchors.left: typeIcon.right
                                     anchors.leftMargin: Theme.spacing.medium
                                     anchors.right: copyBtn.left
@@ -367,7 +367,7 @@ LogosFrame {
                                 }
                             }
 
-                            Text {
+                            LogosText {
                                 text: modelData.status === "fetching" ? "Fetching..." : (modelData.status === "error" ? (modelData.error || "Failed") : (rowDeleting ? "Deleting..." : (modelData.filename || "")))
                                 color: modelData.status === "error" ? Theme.palette.error : Theme.palette.text
                                 font.pixelSize: Theme.typography.secondaryText
@@ -381,7 +381,7 @@ LogosFrame {
                                 }
                             }
 
-                            Text {
+                            LogosText {
                                 text: modelData.status ? "-" : (modelData.mimetype || "")
                                 color: Theme.palette.text
                                 font.pixelSize: Theme.typography.secondaryText
@@ -389,7 +389,7 @@ LogosFrame {
                                 Layout.preferredWidth: 100
                             }
 
-                            Text {
+                            LogosText {
                                 text: modelData.status ? "-" : Utils.formatBytes(
                                           parseInt(modelData.datasetSize))
                                 color: Theme.palette.text
@@ -452,7 +452,7 @@ LogosFrame {
                                     }
                                 }
 
-                                Text {
+                                LogosText {
                                     anchors.centerIn: parent
                                     visible: modelData.status === "fetching"
                                     text: "-"

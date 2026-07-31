@@ -92,7 +92,7 @@ OnBoardingLayout {
                     text: "3 / 5"
                     font.pixelSize: Theme.typography.primaryText
                     color: Theme.palette.primary
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                 }
             }
 

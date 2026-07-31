@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Logos.Theme
+import Logos.Controls
 
 Rectangle {
     id: root
@@ -32,14 +33,14 @@ Rectangle {
         }
 
         ColumnLayout {
-            Text {
+            LogosText {
                 text: root.title
                 color: Theme.palette.text
                 font.pixelSize: Theme.typography.panelTitleText
                 Layout.leftMargin: Theme.spacing.medium
             }
 
-            Text {
+            LogosText {
                 Layout.preferredWidth: 280
                 Layout.leftMargin: Theme.spacing.medium
                 Layout.bottomMargin: Theme.spacing.large

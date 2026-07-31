@@ -83,7 +83,7 @@ LogosFrame {
                                      : "No active peer connections."
                 font.pixelSize: Theme.typography.secondaryText
                 color: Theme.palette.textMuted
-                font.family: "monospace"
+                font.family: Theme.typography.mono
                 Layout.alignment: Qt.AlignVCenter
             }
         }
