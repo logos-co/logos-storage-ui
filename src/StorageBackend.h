@@ -13,8 +13,6 @@
 
 static const int RET_OK = 0;
 static const int RET_PROGRESS = 3;
-// static const QString ECHO_PROVIDER = "https://echo.codex.storage/";
-static const QString ECHO_PROVIDER = "https://ipv4.icanhazip.com";
 static const QString PORT_CHECKER_PROVIDER = "https://portchecker.io/api/";
 static const QString APP_HOME = QDir::homePath() + "/.logos_storage";
 static const QString DEFAULT_DATA_DIR = APP_HOME + "/data";
@@ -170,10 +168,6 @@ class StorageBackend : public StorageBackendSimpleSource {
     // into the user config json.
     void saveUserConfig(QString configJson) override;
 
-    // Save the current config object
-    // into the user config json.
-    void saveCurrentConfig() override;
-
     // Load the user config saved previously
     void loadUserConfig() override;
 
@@ -192,15 +186,6 @@ class StorageBackend : public StorageBackendSimpleSource {
     // On success, the status will be set to Stopped.
     //
     void reloadIfChanged(QString configJson) override;
-
-    // Enables the upnp in the config
-    // and re-create a context with the new configuration
-    void enableUpnpConfig() override;
-
-    // Enables the net external in the config
-    // and re-create a context with the new configuration
-    // Emit natExtConfigCompleted
-    void enableNatExtConfig(int tcpPort) override;
 
     // Toggle private DHT queries over Mix on the running node.
     // Requires the node to run with mix-enabled and a non-empty dht-mix-proxy.

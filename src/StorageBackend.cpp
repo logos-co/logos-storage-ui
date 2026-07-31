@@ -31,7 +31,6 @@ StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
     qDebug() << "Initializing StorageBackend...";
 
     setStatus(Destroyed);
-    setDefaultListenPort(DEFAULT_LISTEN_PORT);
     setDefaultConfigJson(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
 
     // Disable system proxy detection — it crashes in Nix/some Linux environments
@@ -629,11 +628,6 @@ void StorageBackend::reloadIfChanged(QString configJsonStr) {
     setStatus(Stopped);
 }
 
-void StorageBackend::saveCurrentConfig() {
-    qDebug() << "StorageBackend::saveCurrentConfig";
-    saveUserConfig(configJson());
-}
-
 void StorageBackend::saveUserConfig(QString configJsonStr) {
     qDebug() << "StorageBackend::saveUserConfig";
 
@@ -762,53 +756,6 @@ bool StorageBackend::togglePrivateQueries(bool enabled) {
         return false;
     }
     return true;
-}
-
-void StorageBackend::enableUpnpConfig() {
-    debug("StorageBackend::enableUpnpConfig called");
-
-    QJsonDocument doc = defaultConfig();
-    QJsonObject obj = doc.object();
-
-    obj["nat"] = "upnp";
-
-    reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented)));
-}
-
-void StorageBackend::enableNatExtConfig(int tcpPort) {
-    qDebug() << "StorageBackend::enableNatExtConfig called with tcpPort" << tcpPort;
-
-    QJsonDocument doc = defaultConfig();
-    QJsonObject obj = doc.object();
-
-    obj["listen-ip"] = "0.0.0.0";
-    obj["listen-port"] = tcpPort;
-
-    qDebug() << "StorageBackend:: Retrieving public IP...";
-
-    QNetworkAccessManager* manager = new QNetworkAccessManager(this);
-    QNetworkRequest request(ECHO_PROVIDER);
-
-    request.setRawHeader("Accept", "text/plain");
-
-    QNetworkReply* reply = manager->get(request);
-
-    connect(reply, &QNetworkReply::finished, this, [this, reply, manager, obj]() mutable {
-        reply->deleteLater();
-        manager->deleteLater();
-
-        if (reply->error() != QNetworkReply::NoError) {
-            qWarning() << "Failed to retrieve public IP: " << reply->errorString() << ". Proceeding without extip NAT.";
-        } else {
-            QString ip = QString::fromUtf8(reply->readAll()).trimmed();
-            debug("Public IP: " + ip);
-            obj["nat"] = "extip:" + ip;
-        }
-
-        reloadIfChanged(QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Compact)));
-
-        emit natExtConfigCompleted();
-    });
 }
 
 void StorageBackend::checkNodeIsUp() {

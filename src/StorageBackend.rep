@@ -13,7 +13,6 @@ class StorageBackend
 
     PROP(QString debugLogs READONLY)
     PROP(StorageStatus status READONLY)
-    PROP(int defaultListenPort READONLY)
     PROP(QString defaultConfigJson READONLY)
 
     // True when the running node was initialised with mix-enabled. Reflects the
@@ -40,15 +39,12 @@ class StorageBackend
 
     // Config
     SLOT(void saveUserConfig(QString configJson))
-    SLOT(void saveCurrentConfig())
     SLOT(void loadUserConfig())
     SLOT(QString getUserConfig())
     SLOT(void reloadIfChanged(QString configJson))
     SLOT(QString configJson())
 
     // Network / Onboarding
-    SLOT(void enableUpnpConfig())
-    SLOT(void enableNatExtConfig(int tcpPort))
     SLOT(void checkNodeIsUp())
     SLOT(void restartOnboarding())
 
@@ -96,7 +92,6 @@ class StorageBackend
 
     // Network / Onboarding
     SIGNAL(onboardingRestarted())
-    SIGNAL(natExtConfigCompleted())
     SIGNAL(nodeIsUp())
     SIGNAL(nodeIsntUp(QString reason))
     SIGNAL(peersUpdated(int count))

@@ -6,14 +6,13 @@ QtObject {
     readonly property bool isMock: true
     property int status: 0
     property string debugLogs: "Hello!"
-    property int defaultListenPort: 8500
     property bool mixRunning: false
+    property string defaultConfigJson: "{}"
 
     signal ready
     signal startCompleted
     signal startFailed(string error)
     signal error(string message)
-    signal natExtConfigCompleted
     signal nodeIsUp
     signal nodeIsntUp(string reason)
     signal peersUpdated(int count)
@@ -57,13 +56,8 @@ QtObject {
     function logVersion() {}
     function restartOnboarding() {}
     function saveUserConfig(json) {}
-    function saveCurrentConfig() {}
     function loadUserConfig() {}
     function reloadIfChanged(json) {}
-    function enableUpnpConfig() {}
-    function enableNatExtConfig(tcpPort) {
-        natExtConfigCompleted()
-    }
     function togglePrivateQueries(enabled) {
         return false
     }
