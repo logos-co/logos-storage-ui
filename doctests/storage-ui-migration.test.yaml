@@ -15,7 +15,8 @@ intro: |
   This test ensures a legacy config is migrated correctly:
     1. the legacy `bootstrap-node` list is removed without adding a `network` field
     2. the Mix configuration is filled
-    3. a version is added to the config
+    3. the `nat` field is dropped when the node no longer accepts its value
+    4. a version is added to the config
 
 what_you_build: "Storage UI returning-user install with a legacy, unversioned config; on startup it is migrated forward — legacy bootstrap stripped, Mix defaults filled, and the config stamped with the current `config-version`."
 
@@ -137,6 +138,10 @@ sections:
       The Mix configuration is also filled with default values when it is missing,
       to make sure that the user has a ready to use Mix setup.
 
+      The `nat` field is dropped when it holds a value the node no longer accepts.
+      It only takes `auto` or `extip:<IP>`, and it refuses to start on anything
+      else, so the seeded `none` would keep the node down.
+
       Finally the config is stamped with the current `config-version`, so a later
       startup recognises it as up to date and skips the migration.
     steps:
@@ -151,6 +156,16 @@ sections:
           test "$(jq '."config-version"' "$cfg")" = "2"
 
           echo "migration OK: legacy bootstrap-node removed, no network preset added, config-version stamped"
+
+      - title: "The obsolete nat value was dropped"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+
+          # The node only accepts "auto" or "extip:<IP>": the seeded "none" is gone
+          # and the node runs on its own default.
+          test "$(jq 'has("nat")' "$cfg")" = "false"
+
+          echo "nat OK: obsolete value removed"
 
       - title: "The Mix configuration is present"
         run: |

@@ -720,6 +720,12 @@ QJsonObject StorageBackend::migrateV1toV2(QJsonObject obj) {
         obj["mix-pool-json"] = QString::fromUtf8(
             QJsonDocument::fromJson(MIX_POOL_JSON.toUtf8()).toJson(QJsonDocument::Compact));
     }
+
+    const QString nat = obj.value("nat").toString();
+    if (!nat.isEmpty() && nat != "auto" && !nat.startsWith("extip:")) {
+        obj.remove("nat");
+    }
+
     return obj;
 }
 
