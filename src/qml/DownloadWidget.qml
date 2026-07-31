@@ -134,8 +134,11 @@ LogosFrame {
                 Layout.fillWidth: true
             }
 
-            Image {
-                source: "assets/close-circle.png"
+            LogosIcon {
+                source: Qt.resolvedUrl("assets/close-circle.png")
+                color: Theme.palette.text
+                width: 23
+                height: 23
                 visible: root.isDone
 
                 MouseArea {

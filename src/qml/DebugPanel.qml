@@ -31,6 +31,8 @@ ColumnLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Debug"
                 implicitHeight: 32
+                topPadding: 0
+                bottomPadding: 0
                 implicitWidth: 70
                 enabled: root.running
                 onClicked: root.backend.logDebugInfo()
@@ -39,6 +41,8 @@ ColumnLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Data dir"
                 implicitHeight: 32
+                topPadding: 0
+                bottomPadding: 0
                 implicitWidth: 80
                 enabled: root.running
                 onClicked: root.backend.logDataDir()
@@ -47,6 +51,8 @@ ColumnLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Version"
                 implicitHeight: 32
+                topPadding: 0
+                bottomPadding: 0
                 implicitWidth: 80
                 enabled: root.running
                 onClicked: root.backend.logVersion()
@@ -55,6 +61,8 @@ ColumnLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Restart onboarding"
                 implicitHeight: 32
+                topPadding: 0
+                bottomPadding: 0
                 implicitWidth: 150
                 enabled: root.running
                 onClicked: root.backend.restartOnboarding()

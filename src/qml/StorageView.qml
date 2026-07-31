@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import QtCore
 import Logos.Theme
+import Logos.Controls
 import Logos.StorageBackend 1.0
 
 // qmllint disable unqualified
@@ -68,13 +69,11 @@ LogosStorageLayout {
         backend: root.backend
     }
 
-    ScrollView {
+    LogosScrollView {
         id: dashboardScroll
         anchors.fill: parent
         anchors.margins: Theme.spacing.medium
-        clip: true
         contentWidth: availableWidth
-        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
         ColumnLayout {
             width: dashboardScroll.availableWidth

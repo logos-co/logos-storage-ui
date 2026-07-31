@@ -34,8 +34,11 @@ ColumnLayout {
                 Layout.alignment: Qt.AlignTop
                 spacing: Theme.spacing.tiny
 
-                Image {
-                    source: "assets/alpha.png"
+                LogosIcon {
+                    source: Qt.resolvedUrl("assets/alpha.png")
+                    color: Theme.palette.text
+                    width: 71
+                    height: 10
                 }
 
                 LogosText {

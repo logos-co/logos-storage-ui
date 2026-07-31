@@ -74,10 +74,13 @@ LogosFrame {
                             Layout.fillWidth: true
                         }
 
-                        Image {
+                        LogosIcon {
                             Layout.alignment: Qt.AlignVCenter
                             Layout.rightMargin: Theme.spacing.small
-                            source: "assets/settings.png"
+                            Layout.preferredWidth: 24
+                            Layout.preferredHeight: 24
+                            source: Qt.resolvedUrl("assets/settings.png")
+                            color: Theme.palette.text
 
                             MouseArea {
                                 anchors.fill: parent
@@ -196,6 +199,11 @@ LogosFrame {
                 text: root.effectiveStatus === StorageBackend.Running ? "Stop" : "Start"
                 implicitHeight: 32
                 implicitWidth: 65
+                // The DS button floors at 44 with 12px vertical padding; at 32
+                // that padding pushes the label off-center.
+                topPadding: 0
+                bottomPadding: 0
+                Layout.alignment: Qt.AlignVCenter
                 background: CardButtonBackground {}
                 enabled: root.backend && (root.effectiveStatus === StorageBackend.Running
                                           || root.effectiveStatus === StorageBackend.Destroyed)

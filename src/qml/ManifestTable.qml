@@ -184,8 +184,11 @@ LogosFrame {
                 Layout.fillWidth: true
             }
 
-            Image {
-                source: "assets/close-circle.png"
+            LogosIcon {
+                source: Qt.resolvedUrl("assets/close-circle.png")
+                color: Theme.palette.text
+                width: 23
+                height: 23
                 visible: root.panelOpen
 
                 MouseArea {
@@ -320,50 +323,28 @@ LogosFrame {
                                     color: Theme.palette.text
                                     font.pixelSize: Theme.typography.secondaryText
                                     elide: Text.ElideRight
-                                    ToolTip.visible: cidHover.hovered
-                                    ToolTip.text: modelData.cid
 
                                     HoverHandler {
                                         id: cidHover
                                     }
+
+                                    LogosToolTip {
+                                        text: modelData.cid
+                                        visible: cidHover.hovered
+                                    }
                                 }
 
-                                LogosIconButton {
+                                LogosCopyButton {
                                     id: copyBtn
                                     anchors.right: parent.right
                                     anchors.verticalCenter: parent.verticalCenter
                                     anchors.rightMargin: Theme.spacing.medium
 
-                                    property bool copied: false
-
-                                    iconSource: copied ? Qt.resolvedUrl("assets/success.png") : Qt.resolvedUrl("assets/file-copy-line.svg")
-                                    iconColor: copied ? Theme.palette.success : Theme.palette.textTertiary
-
-                                    background: Rectangle {
-                                        color: Theme.palette.backgroundInset
-                                        radius: Theme.spacing.radiusPill
-                                        border.width: 1
-                                        border.color: copyBtn.isActive ? Theme.palette.overlayOrange : Theme.palette.borderSubtle
-                                    }
-
-                                    Timer {
-                                        id: resetCopyTimer
-                                        interval: 1500
-                                        onTriggered: copyBtn.copied = false
-                                    }
-
-                                    onClicked: {
-                                        clipboardHelper.text = modelData.cid
-                                        clipboardHelper.selectAll()
-                                        clipboardHelper.copy()
-                                        copyBtn.copied = true
-                                        resetCopyTimer.restart()
-                                    }
-                                }
-
-                                TextEdit {
-                                    id: clipboardHelper
-                                    visible: false
+                                    value: modelData.cid
+                                    // Match the download / delete buttons on the row.
+                                    size: 40
+                                    iconSize: 20
+                                    background: IconButtonBackground {}
                                 }
                             }
 
@@ -372,12 +353,15 @@ LogosFrame {
                                 color: modelData.status === "error" ? Theme.palette.error : Theme.palette.text
                                 font.pixelSize: Theme.typography.secondaryText
                                 elide: Text.ElideRight
-                                ToolTip.visible: modelData.status === "error" && statusHover.hovered
-                                ToolTip.text: modelData.error || ""
                                 Layout.preferredWidth: 140
 
                                 HoverHandler {
                                     id: statusHover
+                                }
+
+                                LogosToolTip {
+                                    text: modelData.error || ""
+                                    visible: modelData.status === "error" && statusHover.hovered
                                 }
                             }
 

@@ -45,7 +45,7 @@ LogosFrame {
             enabled: cidInput.text.length > 0 && root.running && root.enabled
             onClicked: {
                 root.backend.downloadManifest(cidInput.text)
-                cidInput.clear()
+                cidInput.text = ""
             }
         }
     }

@@ -169,7 +169,6 @@ qt_add_qml_module(appqml
         assets/hard-drive.png
         assets/folder-upload.png
         assets/close-circle.png
-        assets/file-copy.png
         assets/global.png
         assets/node-tree.png
         assets/settings.png

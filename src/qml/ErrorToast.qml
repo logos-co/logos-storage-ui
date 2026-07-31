@@ -3,7 +3,7 @@ import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
 
-Rectangle {
+LogosFrame {
     id: root
 
     property alias title: titleText.text
@@ -23,8 +23,10 @@ Rectangle {
     visible: false
     opacity: 0
     width: 500
+    padding: 0
     radius: Theme.spacing.radiusSmall
-    color: Qt.darker(Theme.palette.error, 3)
+    backgroundColor: Qt.darker(Theme.palette.error, 3)
+    borderColor: "transparent"
 
     implicitHeight: content.implicitHeight + Theme.spacing.medium * 2
 

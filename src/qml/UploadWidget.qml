@@ -116,11 +116,14 @@ LogosFrame {
                     Layout.fillWidth: true
                 }
 
-                Image {
+                LogosIcon {
                     Layout.alignment: Qt.AlignTop
                     Layout.topMargin: Theme.spacing.tiny
                     Layout.rightMargin: Theme.spacing.tiny
-                    source: "assets/folder-upload.png"
+                    Layout.preferredWidth: 40
+                    Layout.preferredHeight: 40
+                    source: Qt.resolvedUrl("assets/folder-upload.png")
+                    color: Theme.palette.text
                 }
             }
         }
@@ -206,8 +209,11 @@ LogosFrame {
                 Layout.fillWidth: true
             }
 
-            Image {
-                source: "assets/close-circle.png"
+            LogosIcon {
+                source: Qt.resolvedUrl("assets/close-circle.png")
+                color: Theme.palette.text
+                width: 23
+                height: 23
                 visible: root.isDone
 
                 MouseArea {
@@ -225,15 +231,7 @@ LogosFrame {
             radius: Theme.spacing.radiusSmall
             opacity: 0.8
 
-            property bool copied: false
-
             color: Theme.palette.backgroundInset
-
-            Timer {
-                id: resetCopyTimer
-                interval: 1500
-                onTriggered: cidBox.copied = false
-            }
 
             LogosText {
                 id: cidText
@@ -250,35 +248,13 @@ LogosFrame {
                 elide: Text.ElideRight
             }
 
-            Image {
+            LogosCopyButton {
                 id: copyIcon
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right
                 anchors.rightMargin: Theme.spacing.small
-                source: cidBox.copied ? "assets/success.png" : "assets/file-copy.png"
-
-                Behavior on source {
-                    PropertyAnimation {
-                        duration: 80
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        clipboardHelper.text = root.uploadedCid
-                        clipboardHelper.selectAll()
-                        clipboardHelper.copy()
-                        cidBox.copied = true
-                        resetCopyTimer.restart()
-                    }
-                }
-            }
-
-            TextEdit {
-                id: clipboardHelper
-                visible: false
+                value: root.uploadedCid
+                flat: true
             }
         }
 
