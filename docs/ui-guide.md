@@ -14,8 +14,8 @@ for discovery. You will need to forward both ports in your router.
 In this case, you should use the `Advanced` setup option. This will display a prepopulated configuration JSON which you can then manually edit to suit your needs. See the module's [API reference](https://logos-co.github.io/logos-storage-module/latest/api_reference.html) for a list of configuration options.
 
 Both options then ask you where downloaded files should be saved. Clicking `Continue` opens the dashboard and starts the node. The status
-indicator next to the node status turns green once the node is reachable from the internet. If it stays red, you will need to
-[troubleshoot](#troubleshooting) your connection. You can still use the app, but you will only be able to _download_ files from other nodes.
+indicator stays grey until AutoNAT decides whether other peers can reach you, then turns green if they can. If it turns orange, you will need
+to [troubleshoot](#troubleshooting) your connection. You can still use the app, but you will only be able to _download_ files from other nodes.
 
 
 ## Sharing a File
@@ -60,10 +60,11 @@ Ensure that no process is using port `8090`, or change the default port value in
 ### Node is unreachable
 
 **Symptom:**
-The node starts and connects to peers, but the status indicator stays red.
+The node starts and connects to peers, but the status indicator turns orange.
 
 **Cause:**
-The TCP listen port is not reachable from the internet, usually because it is not forwarded on your router.
+AutoNAT could not open a connection back to your node: the TCP listen port is not reachable from the internet, usually because it is not
+forwarded on your router.
 
 **Fix:**
 Forward the TCP listen port (defaults to `8500`) to the machine running the node, or change it in the advanced configuration to a port you

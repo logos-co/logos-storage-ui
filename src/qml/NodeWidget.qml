@@ -16,9 +16,29 @@ LogosFrame {
     implicitHeight: 150
 
     property var backend: MockBackend
-    property bool nodeIsUp: false
+    property string reachability: "Unknown"
     property bool blinkOn: false
     readonly property int effectiveStatus: root.backend ? root.backend.status : StorageBackend.Destroyed
+
+    readonly property color statusColor: {
+        if (root.effectiveStatus === StorageBackend.Starting) {
+            return Theme.palette.warning
+        }
+
+        if (root.effectiveStatus !== StorageBackend.Running) {
+            return Theme.palette.textMuted
+        }
+
+        if (root.reachability === "Reachable") {
+            return Theme.palette.success
+        }
+
+        if (root.reachability === "NotReachable") {
+            return Theme.palette.warning
+        }
+
+        return Theme.palette.textMuted
+    }
 
     property string downloadFolderPath: ""
 
@@ -101,17 +121,7 @@ LogosFrame {
             StorageIcon {
                 animated: root.effectiveStatus === StorageBackend.Starting
                           || root.effectiveStatus === StorageBackend.Stopping
-                dotColor: {
-                    if (root.effectiveStatus === StorageBackend.Starting) {
-                        return Theme.palette.warning
-                    }
-
-                    if (root.effectiveStatus !== StorageBackend.Running) {
-                        return Theme.palette.textMuted
-                    }
-
-                    return root.nodeIsUp ? Theme.palette.success : Theme.palette.error
-                }
+                dotColor: root.statusColor
             }
         }
 
@@ -133,17 +143,7 @@ LogosFrame {
                     Layout.preferredHeight: 8
                     radius: Theme.spacing.radiusSmall
                     Layout.alignment: Qt.AlignVCenter
-                    color: {
-                        if (root.effectiveStatus === StorageBackend.Starting) {
-                            return Theme.palette.warning
-                        }
-
-                        if (root.effectiveStatus !== StorageBackend.Running) {
-                            return Theme.palette.textMuted
-                        }
-
-                        return root.nodeIsUp ? Theme.palette.success : Theme.palette.error
-                    }
+                    color: root.statusColor
                     opacity: root.effectiveStatus
                              === StorageBackend.Running ? (root.blinkOn ? 1.0 : 0.15) : 1.0
                 }

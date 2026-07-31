@@ -8,13 +8,12 @@ QtObject {
     property string debugLogs: "Hello!"
     property bool mixRunning: false
     property string defaultConfigJson: "{}"
+    property string natReachability: "Unknown"
 
     signal ready
     signal startCompleted
     signal startFailed(string error)
     signal error(string message)
-    signal nodeIsUp
-    signal nodeIsntUp(string reason)
     signal peersUpdated(int count)
     signal uploadStarted(real totalBytes)
     signal uploadChunk(real len)
@@ -38,8 +37,11 @@ QtObject {
         status = 0
     }
     function destroy() {}
-    function checkNodeIsUp() {}
     function fetchWidgetsData() {}
+    function refreshNodeStatus() {
+        natReachability = "Reachable"
+        peersUpdated(3)
+    }
     function uploadFile(url) {}
     function downloadFile(cid, url, totalBytes) {}
     function downloadManifest(cid) {

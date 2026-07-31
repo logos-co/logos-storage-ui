@@ -134,7 +134,7 @@ LogosStorageLayout {
                         Layout.fillWidth: true
                         Layout.preferredHeight: (thirdCol.height - thirdCol.spacing) / 3
                         backend: root.backend
-                        nodeIsUp: health.nodeIsUp
+                        reachability: health.reachability
                         blinkOn: health.blinkOn
                         downloadFolderPath: settings.downloadFolderPath
                         onFolderPathChanged: function(path) { settings.downloadFolderPath = path }
