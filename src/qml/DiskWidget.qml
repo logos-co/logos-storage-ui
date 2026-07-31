@@ -115,7 +115,8 @@ LogosFrame {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
-            color: Theme.palette.borderSecondary
+            color: Theme.palette.textTertiary
+            opacity: 0.2
         }
 
         Rectangle {

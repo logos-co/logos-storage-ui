@@ -63,23 +63,37 @@ Rectangle {
             // Stroke widths: biggest at the base (index 0), smallest at tip — scale with arcWidth
             var s = root.arcWidth / 8
             var widths = [22 * s, 15 * s, 10 * s, 6 * s, 3 * s]
+            // Segments fade toward the tip — depth cue from the design
+            var alphas = [1.0, 0.9, 0.7, 0.6, 0.4]
 
             var f = Math.min(Math.max(root.fraction, 0.0), 1.0)
-            var litCount = Math.min(Math.round(f * numSeg), numSeg)
 
             for (var i = 0; i < numSeg; i++) {
                 var sDeg = startDeg + i * (segDeg + gapDeg)
-                var sRad = sDeg * Math.PI / 180
-                var eRad = (sDeg + segDeg) * Math.PI / 180
+                // Fraction of this segment filled — the fill boundary lands mid-segment
+                var localFill = Math.min(Math.max(f * numSeg - i, 0.0), 1.0)
+                var midDeg = sDeg + localFill * segDeg
 
-                ctx.beginPath()
-                ctx.arc(cx, cy, root.arcRadius, sRad, eRad)
-                ctx.strokeStyle = (i < litCount) ? root.fillColor.toString(
-                                                       ) : root.trackColor.toString()
                 ctx.lineWidth = widths[i]
                 ctx.lineCap = "butt"
-                ctx.stroke()
+                ctx.globalAlpha = alphas[i]
+
+                if (localFill > 0) {
+                    ctx.beginPath()
+                    ctx.arc(cx, cy, root.arcRadius, sDeg * Math.PI / 180,
+                            midDeg * Math.PI / 180)
+                    ctx.strokeStyle = root.fillColor.toString()
+                    ctx.stroke()
+                }
+                if (localFill < 1) {
+                    ctx.beginPath()
+                    ctx.arc(cx, cy, root.arcRadius, midDeg * Math.PI / 180,
+                            (sDeg + segDeg) * Math.PI / 180)
+                    ctx.strokeStyle = root.trackColor.toString()
+                    ctx.stroke()
+                }
             }
+            ctx.globalAlpha = 1
         }
     }
 

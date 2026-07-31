@@ -40,6 +40,7 @@ LogosFrame {
             fraction: root.maxPeers > 0 ? Math.min(root.peers / root.maxPeers,
                                                    1.0) : 0
             fillColor: Theme.palette.primary
+            trackColor: Theme.palette.border
 
             ColumnLayout {
                 anchors.centerIn: parent

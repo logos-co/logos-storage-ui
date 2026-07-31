@@ -208,6 +208,8 @@ LogosFrame {
             Layout.fillWidth: true
             title: root.downloadInProgress ? "Looking for peers..." : "No download in progress"
             visible: !root.isDownloading && !root.isDone
+            color: Theme.palette.textSecondary
+            hasSeparator: false
         }
     }
 

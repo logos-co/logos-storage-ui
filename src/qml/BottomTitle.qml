@@ -6,6 +6,8 @@ Item {
     id: root
 
     property string title: ""
+    property string color: Theme.palette.text
+    property bool hasSeparator: true
 
     implicitHeight: footerLabel.implicitHeight + Theme.spacing.medium * 2
 
@@ -15,7 +17,7 @@ Item {
         anchors.left: parent.left
         text: root.title
         font.pixelSize: Theme.typography.panelTitleText
-        color: Theme.palette.text
+        color: root.color
     }
 
     Rectangle {
@@ -25,6 +27,8 @@ Item {
         anchors.right: parent.right
         anchors.bottomMargin: Theme.spacing.medium + 2
         height: 1
-        color: Theme.palette.borderSecondary
+        color: Theme.palette.textTertiary
+        opacity: 0.2
+        visible: root.hasSeparator
     }
 }

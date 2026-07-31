@@ -176,7 +176,7 @@ LogosFrame {
 
             LogosText {
                 text: root.panelOpen ? "Debug" : "Manifests"
-                font.pixelSize: Theme.typography.titleText
+                font.pixelSize: Theme.typography.panelTitleText
                 color: Theme.palette.text
             }
 

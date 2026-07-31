@@ -56,5 +56,7 @@ LogosFrame {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         title: "Fetch Manifest"
+        color: Theme.palette.textSecondary
+        hasSeparator: false
     }
 }

@@ -133,6 +133,8 @@ LogosFrame {
         anchors.bottom: parent.bottom
         title: "Upload"
         visible: !root.isUploading && !root.isDone
+        color: Theme.palette.textSecondary
+        hasSeparator: false
     }
 
     Rectangle {
