@@ -23,6 +23,9 @@ LogosFrame {
     property string downloadFolderPath: ""
     property var deleting: ({})
 
+    // Two 40px icon buttons, the gap between them and the pill's own padding.
+    readonly property int actionsColumnWidth: 40 * 2 + Theme.spacing.medium * 3
+
     function markDeleting(cid) {
         var d = Object.assign({}, root.deleting)
         d[cid] = true
@@ -54,6 +57,30 @@ LogosFrame {
     // prunes the row; failure switches it to "error" until dismissed).
     property var pending: []
     property var rows: root.pending.concat(root.manifests)
+
+    // LogosTable reads its row through the delegate's `model`, which a plain JS
+    // array does not populate — the rows are mirrored into a ListModel.
+    ListModel {
+        id: rowsModel
+    }
+
+    function rebuildRows() {
+        rowsModel.clear()
+        for (var i = 0; i < root.rows.length; i++) {
+            var r = root.rows[i]
+            rowsModel.append({
+                                 "cid": r.cid || "",
+                                 "filename": r.filename || "",
+                                 "mimetype": r.mimetype || "",
+                                 "datasetSize": String(r.datasetSize || ""),
+                                 "status": r.status || "",
+                                 "error": r.error || ""
+                             })
+        }
+    }
+
+    onRowsChanged: root.rebuildRows()
+    Component.onCompleted: root.rebuildRows()
 
     function addPending(cid) {
         for (var i = 0; i < root.pending.length; i++)
@@ -204,285 +231,17 @@ LogosFrame {
             Layout.fillHeight: true
 
             // ── Vue liste ────────────────────────────────────────────────────
-            ColumnLayout {
+            LogosTable {
+                id: manifestList
                 anchors.fill: parent
-                spacing: Theme.spacing.small
                 visible: !root.panelOpen
+                model: rowsModel
+                rowHeight: 72
+                emptyText: "No manifests yet"
 
-                Rectangle {
-                    id: header
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 30
-                    color: Theme.palette.backgroundInset
-                    radius: Theme.spacing.radiusSmall
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: Theme.spacing.medium
-                        anchors.rightMargin: Theme.spacing.medium
-
-                        LogosText {
-                            text: "CID"
-                            color: Theme.palette.textMuted
-                            font.pixelSize: Theme.typography.secondaryText
-                            Layout.fillWidth: true
-                        }
-
-                        LogosText {
-                            text: "Filename"
-                            color: Theme.palette.textSecondary
-                            font.pixelSize: Theme.typography.secondaryText
-                            Layout.preferredWidth: 140
-                        }
-
-                        LogosText {
-                            text: "Mimetype"
-                            color: Theme.palette.textSecondary
-                            font.pixelSize: Theme.typography.secondaryText
-                            Layout.preferredWidth: 100
-                        }
-
-                        LogosText {
-                            text: "Size"
-                            color: Theme.palette.textSecondary
-                            font.pixelSize: Theme.typography.secondaryText
-                            Layout.preferredWidth: 80
-                        }
-
-                        LogosText {
-                            text: "Actions"
-                            color: Theme.palette.textSecondary
-                            font.pixelSize: Theme.typography.secondaryText
-                            Layout.preferredWidth: 92
-                        }
-                    }
-                }
-
-                ListView {
-                    id: manifestList
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    model: root.rows
-                    clip: true
-
-                    delegate: Rectangle {
-                        width: manifestList.width
-                        height: 72
-                        color: Theme.palette.backgroundSecondary
-
-                        readonly property bool rowDeleting: root.deleting[modelData.cid] === true
-                        readonly property bool rowDownloading: root.downloadingCid === modelData.cid
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: Theme.spacing.medium
-                            anchors.rightMargin: Theme.spacing.medium
-
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-
-                                Image {
-                                    id: typeIcon
-                                    anchors.left: parent.left
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    visible: !modelData.status
-                                    source: root.mimetypeIcon(
-                                                modelData.mimetype)
-                                    width: 32
-                                    height: 32
-                                    fillMode: Image.PreserveAspectFit
-                                }
-
-                                BusyIndicator {
-                                    anchors.left: parent.left
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 32
-                                    height: 32
-                                    running: visible
-                                    visible: modelData.status === "fetching"
-                                }
-
-                                Image {
-                                    anchors.left: parent.left
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    visible: modelData.status === "error"
-                                    source: "assets/error.png"
-                                    width: 32
-                                    height: 32
-                                    fillMode: Image.PreserveAspectFit
-                                }
-
-                                LogosText {
-                                    anchors.left: typeIcon.right
-                                    anchors.leftMargin: Theme.spacing.medium
-                                    anchors.right: copyBtn.left
-                                    anchors.rightMargin: Theme.spacing.medium
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: modelData.cid
-                                    color: Theme.palette.text
-                                    font.pixelSize: Theme.typography.secondaryText
-                                    elide: Text.ElideRight
-
-                                    HoverHandler {
-                                        id: cidHover
-                                    }
-
-                                    LogosToolTip {
-                                        text: modelData.cid
-                                        visible: cidHover.hovered
-                                    }
-                                }
-
-                                LogosCopyButton {
-                                    id: copyBtn
-                                    anchors.right: parent.right
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    anchors.rightMargin: Theme.spacing.medium
-
-                                    value: modelData.cid
-                                    // Match the download / delete buttons on the row.
-                                    size: 40
-                                    iconSize: 20
-                                    background: IconButtonBackground {}
-                                }
-                            }
-
-                            LogosText {
-                                text: modelData.status === "fetching" ? "Fetching..." : (modelData.status === "error" ? (modelData.error || "Failed") : (rowDeleting ? "Deleting..." : (modelData.filename || "")))
-                                color: modelData.status === "error" ? Theme.palette.error : Theme.palette.text
-                                font.pixelSize: Theme.typography.secondaryText
-                                elide: Text.ElideRight
-                                Layout.preferredWidth: 140
-
-                                HoverHandler {
-                                    id: statusHover
-                                }
-
-                                LogosToolTip {
-                                    text: modelData.error || ""
-                                    visible: modelData.status === "error" && statusHover.hovered
-                                }
-                            }
-
-                            LogosText {
-                                text: modelData.status ? "-" : (modelData.mimetype || "")
-                                color: Theme.palette.text
-                                font.pixelSize: Theme.typography.secondaryText
-                                elide: Text.ElideRight
-                                Layout.preferredWidth: 100
-                            }
-
-                            LogosText {
-                                text: modelData.status ? "-" : Utils.formatBytes(
-                                          parseInt(modelData.datasetSize))
-                                color: Theme.palette.text
-                                font.pixelSize: Theme.typography.secondaryText
-                                Layout.preferredWidth: 80
-                            }
-
-                            Item {
-                                // Actions column — fixed width (the download +
-                                // delete pill) so fetching / error rows keep the
-                                // same column alignment as normal rows.
-                                Layout.alignment: Qt.AlignVCenter
-                                Layout.preferredWidth: actionsPill.implicitWidth
-                                implicitHeight: actionsPill.implicitHeight
-
-                                Rectangle {
-                                    id: actionsPill
-                                    anchors.right: parent.right
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    color: Theme.palette.backgroundInset
-                                    radius: Theme.spacing.radiusLarge
-                                    visible: !modelData.status
-                                    implicitWidth: actionsRow.implicitWidth + Theme.spacing.medium * 2
-                                    implicitHeight: actionsRow.implicitHeight + Theme.spacing.small * 2
-
-                                    Row {
-                                        id: actionsRow
-                                        anchors.centerIn: parent
-                                        spacing: Theme.spacing.medium
-
-                                        LogosIconButton {
-                                            objectName: "downloadButton"
-                                            iconSource: Qt.resolvedUrl("assets/download-2-fill.svg")
-                                            background: IconButtonBackground {}
-                                            enabled: root.running && !root.isDownloading && !rowDeleting
-                                            onClicked: {
-                                                const dest = root.downloadFolderPath.replace(/\/$/, "") + "/" + (modelData.filename || modelData.cid || "download")
-                                                root.downloadRequested()
-                                                root.backend.downloadFile(
-                                                            modelData.cid,
-                                                            dest,
-                                                            parseInt(
-                                                                modelData.datasetSize)
-                                                            || 0)
-                                            }
-                                        }
-
-                                        LogosIconButton {
-                                            objectName: "deleteButton"
-                                            iconSource: Qt.resolvedUrl("assets/delete-bin-2-line.svg")
-                                            enabled: root.running && !rowDeleting && !rowDownloading
-                                            background: IconButtonBackground {}
-                                            onClicked: {
-                                                if (modelData.cid.length > 0) {
-                                                    root.backend.remove(
-                                                                modelData.cid)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                LogosText {
-                                    anchors.centerIn: parent
-                                    visible: modelData.status === "fetching"
-                                    text: "-"
-                                    color: Theme.palette.text
-                                    font.pixelSize: Theme.typography.secondaryText
-                                }
-
-                                Rectangle {
-                                    anchors.right: parent.right
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    color: Theme.palette.backgroundInset
-                                    radius: Theme.spacing.radiusLarge
-                                    visible: modelData.status === "error"
-                                    implicitWidth: dismissRow.implicitWidth + Theme.spacing.medium * 2
-                                    implicitHeight: dismissRow.implicitHeight + Theme.spacing.small * 2
-
-                                    Row {
-                                        id: dismissRow
-                                        anchors.centerIn: parent
-                                        spacing: Theme.spacing.medium
-
-                                        LogosIconButton {
-                                            objectName: "dismissButton"
-                                            iconSource: Qt.resolvedUrl("assets/close-circle.png")
-                                            background: IconButtonBackground {}
-                                            onClicked: root.dismissPending(modelData.cid)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Bottom row separator
-                        Rectangle {
-                            anchors.bottom: parent.bottom
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            height: 1
-                            color: Theme.palette.borderSecondary
-                        }
-                    }
-
+                emptyDelegate: Component {
                     ColumnLayout {
-                        anchors.centerIn: parent
                         spacing: Theme.spacing.small
-                        visible: manifestList.count === 0
 
                         DotIcon {
                             pattern: [0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0]
@@ -499,6 +258,247 @@ LogosFrame {
                         }
                     }
                 }
+
+                columns: [
+                    LogosTableColumn {
+                        title: "CID"
+                        role: "cid"
+                        minWidth: 240
+                        fillWidth: true
+                        cellDelegate: Component {
+                            Item {
+                                Image {
+                                    id: typeIcon
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    visible: rowItem && !rowItem.status
+                                    source: rowItem ? root.mimetypeIcon(rowItem.mimetype) : ""
+                                    width: 32
+                                    height: 32
+                                    fillMode: Image.PreserveAspectFit
+                                }
+
+                                BusyIndicator {
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 32
+                                    height: 32
+                                    running: rowItem && rowItem.status === "fetching"
+                                    visible: running
+                                }
+
+                                Image {
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    visible: rowItem && rowItem.status === "error"
+                                    source: "assets/error.png"
+                                    width: 32
+                                    height: 32
+                                    fillMode: Image.PreserveAspectFit
+                                }
+
+                                LogosText {
+                                    anchors.left: typeIcon.right
+                                    anchors.leftMargin: Theme.spacing.medium
+                                    anchors.right: copyBtn.left
+                                    anchors.rightMargin: Theme.spacing.medium
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: rowItem ? rowItem.cid : ""
+                                    color: Theme.palette.text
+                                    font.pixelSize: Theme.typography.secondaryText
+                                    elide: Text.ElideRight
+
+                                    HoverHandler {
+                                        id: cidHover
+                                    }
+
+                                    LogosToolTip {
+                                        text: rowItem ? rowItem.cid : ""
+                                        visible: cidHover.hovered
+                                    }
+                                }
+
+                                LogosCopyButton {
+                                    id: copyBtn
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    value: rowItem ? rowItem.cid : ""
+                                    // Match the download / delete buttons on the row.
+                                    size: 40
+                                    iconSize: 20
+                                    background: IconButtonBackground {}
+                                }
+                            }
+                        }
+                    },
+                    LogosTableColumn {
+                        title: "Filename"
+                        role: "filename"
+                        minWidth: 140
+                        preferredWidth: 140
+                        cellDelegate: Component {
+                            Item {
+                                id: filenameCell
+                                readonly property bool rowDeleting: rowItem && root.deleting[rowItem.cid] === true
+
+                                LogosText {
+                                    id: statusLabel
+                                    anchors.fill: parent
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: {
+                                        if (!rowItem)
+                                            return ""
+                                        if (rowItem.status === "fetching")
+                                            return "Fetching..."
+                                        if (rowItem.status === "error")
+                                            return rowItem.error || "Failed"
+                                        return filenameCell.rowDeleting ? "Deleting..." : (rowItem.filename || "")
+                                    }
+                                    color: rowItem && rowItem.status === "error" ? Theme.palette.error
+                                                                                 : Theme.palette.text
+                                    font.pixelSize: Theme.typography.secondaryText
+                                    elide: Text.ElideRight
+
+                                    HoverHandler {
+                                        id: statusHover
+                                    }
+
+                                    LogosToolTip {
+                                        text: rowItem ? (rowItem.error || "") : ""
+                                        visible: rowItem && rowItem.status === "error" && statusHover.hovered
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    LogosTableColumn {
+                        title: "Mimetype"
+                        role: "mimetype"
+                        minWidth: 100
+                        preferredWidth: 100
+                        cellDelegate: Component {
+                            Item {
+                                LogosText {
+                                    anchors.fill: parent
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: rowItem ? (rowItem.status ? "-" : (rowItem.mimetype || "")) : ""
+                                    color: Theme.palette.text
+                                    font.pixelSize: Theme.typography.secondaryText
+                                    elide: Text.ElideRight
+                                }
+                            }
+                        }
+                    },
+                    LogosTableColumn {
+                        title: "Size"
+                        role: "datasetSize"
+                        minWidth: 80
+                        preferredWidth: 80
+                        cellDelegate: Component {
+                            Item {
+                                LogosText {
+                                    anchors.fill: parent
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: rowItem ? (rowItem.status ? "-" : Utils.formatBytes(
+                                                         parseInt(rowItem.datasetSize))) : ""
+                                    color: Theme.palette.text
+                                    font.pixelSize: Theme.typography.secondaryText
+                                }
+                            }
+                        }
+                    },
+                    LogosTableColumn {
+                        title: "Actions"
+                        minWidth: root.actionsColumnWidth
+                        preferredWidth: root.actionsColumnWidth
+                        cellPadding: 0
+                        alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                        cellDelegate: Component {
+                            Item {
+                                id: actionsCell
+                                readonly property bool rowDeleting: rowItem && root.deleting[rowItem.cid] === true
+                                readonly property bool rowDownloading: rowItem && root.downloadingCid === rowItem.cid
+
+                                Rectangle {
+                                    id: actionsPill
+                                    anchors.centerIn: parent
+                                    color: Theme.palette.backgroundInset
+                                    radius: Theme.spacing.radiusLarge
+                                    visible: rowItem && !rowItem.status
+                                    implicitWidth: actionsRow.implicitWidth + Theme.spacing.medium * 2
+                                    implicitHeight: actionsRow.implicitHeight + Theme.spacing.small * 2
+
+                                    Row {
+                                        id: actionsRow
+                                        anchors.centerIn: parent
+                                        spacing: Theme.spacing.medium
+
+                                        LogosIconButton {
+                                            objectName: "downloadButton"
+                                            iconSource: Qt.resolvedUrl("assets/download-2-fill.svg")
+                                            background: IconButtonBackground {}
+                                            enabled: root.running && !root.isDownloading
+                                                     && !actionsCell.rowDeleting
+                                            onClicked: {
+                                                const dest = root.downloadFolderPath.replace(/\/$/, "") + "/" + (rowItem.filename || rowItem.cid || "download")
+                                                root.downloadRequested()
+                                                root.backend.downloadFile(
+                                                            rowItem.cid,
+                                                            dest,
+                                                            parseInt(
+                                                                rowItem.datasetSize)
+                                                            || 0)
+                                            }
+                                        }
+
+                                        LogosIconButton {
+                                            objectName: "deleteButton"
+                                            iconSource: Qt.resolvedUrl("assets/delete-bin-2-line.svg")
+                                            background: IconButtonBackground {}
+                                            enabled: root.running && !actionsCell.rowDeleting
+                                                     && !actionsCell.rowDownloading
+                                            onClicked: {
+                                                if (rowItem.cid.length > 0) {
+                                                    root.backend.remove(rowItem.cid)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                LogosText {
+                                    anchors.centerIn: parent
+                                    visible: rowItem && rowItem.status === "fetching"
+                                    text: "-"
+                                    color: Theme.palette.text
+                                    font.pixelSize: Theme.typography.secondaryText
+                                }
+
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    color: Theme.palette.backgroundInset
+                                    radius: Theme.spacing.radiusLarge
+                                    visible: rowItem && rowItem.status === "error"
+                                    implicitWidth: dismissRow.implicitWidth + Theme.spacing.medium * 2
+                                    implicitHeight: dismissRow.implicitHeight + Theme.spacing.small * 2
+
+                                    Row {
+                                        id: dismissRow
+                                        anchors.centerIn: parent
+                                        spacing: Theme.spacing.medium
+
+                                        LogosIconButton {
+                                            objectName: "dismissButton"
+                                            iconSource: Qt.resolvedUrl("assets/close-circle.png")
+                                            background: IconButtonBackground {}
+                                            onClicked: root.dismissPending(rowItem.cid)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
             }
 
             DebugPanel {
