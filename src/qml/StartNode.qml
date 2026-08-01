@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Logos.Controls
+import Logos.Icons
 import Logos.Theme
 
 OnBoardingLayout {
@@ -137,8 +138,10 @@ OnBoardingLayout {
 
             LogosButton {
                 radius: Theme.spacing.radiusLarge
-                leadingIcon.source: Qt.resolvedUrl("assets/arrow-left-line.svg")
-                text: "Back"
+                leadingIcon.source: LogosIcons.arrowLeft
+                leadingIcon.color: Theme.palette.text
+                leadingIcon.brightness: 1.0
+                                text: "Back"
                 enabled: !root.starting
                 onClicked: {
                     root.backend.stop()
@@ -152,8 +155,10 @@ OnBoardingLayout {
 
             LogosButton {
                 radius: Theme.spacing.radiusLarge
-                trailingIcon.source: Qt.resolvedUrl("assets/arrow-right-line.svg")
-                text: "Continue"
+                trailingIcon.source: LogosIcons.arrowRight
+                trailingIcon.color: Theme.palette.text
+                trailingIcon.brightness: 1.0
+                                text: "Continue"
                 enabled: root.success
                 onClicked: {
                     root.backend.saveCurrentConfig()

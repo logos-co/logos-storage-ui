@@ -99,7 +99,11 @@ LogosFrame {
                     }
 
                     Image {
-                        source: "assets/hard-drive.png"
+                        width: 28
+                        height: 28
+                        source: Qt.resolvedUrl("assets/hard-drive-2-line.svg")
+                        sourceSize: Qt.size(64, 64)
+                        fillMode: Image.PreserveAspectFit
                     }
                 }
 

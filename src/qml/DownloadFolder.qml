@@ -4,6 +4,7 @@ import QtQuick.Dialogs
 import QtQuick.Window
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 import QtCore
 
 OnBoardingLayout {
@@ -130,8 +131,10 @@ OnBoardingLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Back"
                 onClicked: root.back()
-                leadingIcon.source: Qt.resolvedUrl("assets/arrow-left-line.svg")
-            }
+                leadingIcon.source: LogosIcons.arrowLeft
+                leadingIcon.color: Theme.palette.text
+                leadingIcon.brightness: 1.0
+                            }
 
             Item {
                 Layout.fillWidth: true
@@ -141,8 +144,10 @@ OnBoardingLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Continue"
                 objectName: "downloadFolderContinue"
-                trailingIcon.source: Qt.resolvedUrl("assets/arrow-right-line.svg")
-                variant: LogosButton.Variant.Primary
+                trailingIcon.source: LogosIcons.arrowRight
+                trailingIcon.color: Theme.palette.text
+                trailingIcon.brightness: 1.0
+                                variant: LogosButton.Variant.Primary
                 onClicked: {
                     settings.downloadFolderPath = root.downloadFolder.toString()
                     root.next()

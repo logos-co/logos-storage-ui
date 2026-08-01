@@ -4,6 +4,7 @@ import QtQuick.Dialogs
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 import "Utils.js" as Utils
 
 // qmllint disable unqualified
@@ -133,15 +134,17 @@ LogosFrame {
     //     }]
     function mimetypeIcon(mimetype) {
         if (!mimetype)
-            return "assets/other.png"
+            return "assets/images.svg"
         var m = mimetype.toLowerCase()
-        if (m.indexOf("image/") === 0)
-            return "assets/image.png"
         if (m.indexOf("video/") === 0)
-            return "assets/video.png"
-        if (m === "application/pdf")
-            return "assets/pdf.png"
-        return "assets/other.png"
+            return "assets/videos.svg"
+        if (m.indexOf("image/") === 0)
+            return "assets/images.svg"
+        if (m === "application/pdf" || m.indexOf("text/") === 0
+                || m.indexOf("document") >= 0 || m.indexOf("word") >= 0
+                || m.indexOf("pdf") >= 0)
+            return "assets/documents.svg"
+        return "assets/images.svg"
     }
 
     implicitWidth: 1200
@@ -212,7 +215,7 @@ LogosFrame {
             }
 
             LogosIcon {
-                source: Qt.resolvedUrl("assets/close-circle.png")
+                source: Qt.resolvedUrl("assets/close-circle-line.svg")
                 color: Theme.palette.text
                 width: 23
                 height: 23
@@ -287,14 +290,15 @@ LogosFrame {
                                     visible: running
                                 }
 
-                                Image {
+                                LogosIcon {
                                     anchors.left: parent.left
                                     anchors.verticalCenter: parent.verticalCenter
                                     visible: rowItem && rowItem.status === "error"
-                                    source: "assets/error.png"
+                                    source: LogosIcons.warning
+                                    color: Theme.palette.error
+                                    brightness: 1.0
                                     width: 32
                                     height: 32
-                                    fillMode: Image.PreserveAspectFit
                                 }
 
                                 LogosText {
@@ -489,7 +493,7 @@ LogosFrame {
 
                                         LogosIconButton {
                                             objectName: "dismissButton"
-                                            iconSource: Qt.resolvedUrl("assets/close-circle.png")
+                                            iconSource: Qt.resolvedUrl("assets/close-circle-line.svg")
                                             background: IconButtonBackground {}
                                             onClicked: root.dismissPending(rowItem.cid)
                                         }

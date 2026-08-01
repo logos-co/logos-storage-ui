@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 
 LogosFrame {
     id: root
@@ -122,8 +123,8 @@ LogosFrame {
                     Layout.rightMargin: Theme.spacing.tiny
                     Layout.preferredWidth: 40
                     Layout.preferredHeight: 40
-                    source: Qt.resolvedUrl("assets/folder-upload.png")
-                    color: Theme.palette.text
+                    source: Qt.resolvedUrl("assets/folder-upload-line.svg")
+                    color: Theme.palette.textTertiary
                 }
             }
         }
@@ -210,7 +211,7 @@ LogosFrame {
             }
 
             LogosIcon {
-                source: Qt.resolvedUrl("assets/close-circle.png")
+                source: Qt.resolvedUrl("assets/close-circle-line.svg")
                 color: Theme.palette.text
                 width: 23
                 height: 23

@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 import "Utils.js" as Utils
 
 // qmllint disable unqualified
@@ -135,7 +136,7 @@ LogosFrame {
             }
 
             LogosIcon {
-                source: Qt.resolvedUrl("assets/close-circle.png")
+                source: Qt.resolvedUrl("assets/close-circle-line.svg")
                 color: Theme.palette.text
                 width: 23
                 height: 23

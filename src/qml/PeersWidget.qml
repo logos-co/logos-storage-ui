@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 
 LogosFrame {
     id: root
@@ -30,7 +31,11 @@ LogosFrame {
         spacing: Theme.spacing.medium
 
         Image {
-            source: "assets/global.png"
+            width: 28
+            height: 26
+            source: Qt.resolvedUrl("assets/global-line.svg")
+            sourceSize: Qt.size(64, 58)
+            fillMode: Image.PreserveAspectFit
         }
 
         ArcWidget {
@@ -73,9 +78,15 @@ LogosFrame {
             Layout.alignment: Qt.AlignHCenter
             Layout.bottomMargin: Theme.spacing.medium * 1.25
 
-            Image {
+            LogosIcon {
                 Layout.alignment: Qt.AlignVCenter
-                source: root.peers > 0 ? "assets/success.png" : "assets/error.png"
+                Layout.preferredWidth: 20
+                Layout.preferredHeight: 20
+                source: root.peers > 0 ? LogosIcons.check : LogosIcons.warning
+                color: root.peers > 0 ? Theme.palette.success : Theme.palette.error
+                // The DS glyphs are dark; colorization preserves luminance, so
+                // they need normalizing before they take the tint.
+                brightness: 1.0
             }
 
             LogosText {

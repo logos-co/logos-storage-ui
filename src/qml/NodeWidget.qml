@@ -41,7 +41,13 @@ LogosFrame {
 
                     Image {
                         Layout.alignment: Qt.AlignTop
-                        source: "assets/node-tree.png"
+                        Layout.preferredWidth: 28
+                        Layout.preferredHeight: 28
+                        // The asset already ships in Theme.palette.primary, so it
+                        // is drawn as-is: colorizing it would only dull it.
+                        source: Qt.resolvedUrl("assets/node-tree.svg")
+                        sourceSize: Qt.size(64, 64)
+                        fillMode: Image.PreserveAspectFit
                     }
 
                     LogosText {
@@ -79,8 +85,8 @@ LogosFrame {
                             Layout.rightMargin: Theme.spacing.small
                             Layout.preferredWidth: 24
                             Layout.preferredHeight: 24
-                            source: Qt.resolvedUrl("assets/settings.png")
-                            color: Theme.palette.text
+                            source: Qt.resolvedUrl("assets/settings-5-line.svg")
+                            color: Theme.palette.textTertiary
 
                             MouseArea {
                                 anchors.fill: parent

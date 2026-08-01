@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 
 OnBoardingLayout {
     id: root
@@ -47,8 +48,10 @@ OnBoardingLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Back"
                 onClicked: root.back()
-                leadingIcon.source: Qt.resolvedUrl("assets/arrow-left-line.svg")
-            }
+                leadingIcon.source: LogosIcons.arrowLeft
+                leadingIcon.color: Theme.palette.text
+                leadingIcon.brightness: 1.0
+                            }
 
             Item {
                 Layout.fillWidth: true
@@ -59,8 +62,10 @@ OnBoardingLayout {
                 text: "Validate"
                 variant: LogosButton.Variant.Primary
                 enabled: jsonEditor.isValid
-                trailingIcon.source: Qt.resolvedUrl("assets/arrow-right-line.svg")
-                onClicked: {
+                trailingIcon.source: LogosIcons.arrowRight
+                trailingIcon.color: Theme.palette.text
+                trailingIcon.brightness: 1.0
+                                onClicked: {
                     root.backend.saveUserConfig(jsonEditor.text)
                     root.completed()
                 }

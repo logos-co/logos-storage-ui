@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 
 OnBoardingLayout {
     id: root
@@ -85,8 +86,10 @@ OnBoardingLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Continue"
                 variant: LogosButton.Variant.Primary
-                trailingIcon.source: Qt.resolvedUrl("assets/arrow-right-line.svg")
-                onClicked: root.completed(root.selectedMode === 0)
+                trailingIcon.source: LogosIcons.arrowRight
+                trailingIcon.color: Theme.palette.text
+                trailingIcon.brightness: 1.0
+                                onClicked: root.completed(root.selectedMode === 0)
             }
         }
     }

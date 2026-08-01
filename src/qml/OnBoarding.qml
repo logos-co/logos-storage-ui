@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 
 OnBoardingLayout {
     id: root
@@ -91,8 +92,10 @@ OnBoardingLayout {
             LogosButton {
                 radius: Theme.spacing.radiusLarge
                 text: "Back"
-                leadingIcon.source: Qt.resolvedUrl("assets/arrow-left-line.svg")
-                onClicked: root.back()
+                leadingIcon.source: LogosIcons.arrowLeft
+                leadingIcon.color: Theme.palette.text
+                leadingIcon.brightness: 1.0
+                                onClicked: root.back()
             }
 
             Item {
@@ -103,8 +106,10 @@ OnBoardingLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Continue"
                 variant: LogosButton.Variant.Primary
-                trailingIcon.source: Qt.resolvedUrl("assets/arrow-right-line.svg")
-                enabled: root.selectedMode !== -1
+                trailingIcon.source: LogosIcons.arrowRight
+                trailingIcon.color: Theme.palette.text
+                trailingIcon.brightness: 1.0
+                                enabled: root.selectedMode !== -1
                 onClicked: {
                     if (root.selectedMode === 0) {
                         root.backend.enableUpnpConfig()

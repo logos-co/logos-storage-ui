@@ -158,24 +158,18 @@ qt_add_qml_module(appqml
         DiskActivityGraph.qml
 
         assets/bg.png
-        assets/image.png
-        assets/pdf.png
-        assets/video.png
-        assets/other.png
         assets/badge-alpha.png
         assets/alpha.png
-        assets/arrow-right-line.svg
-        assets/arrow-left-line.svg
-        assets/hard-drive.png
-        assets/folder-upload.png
-        assets/close-circle.png
-        assets/global.png
-        assets/node-tree.png
-        assets/settings.png
-        assets/error.png
-        assets/success.png
-        assets/file-copy-line.svg
+        assets/close-circle-line.svg
+        assets/documents.svg
+        assets/images.svg
+        assets/videos.svg
         assets/download-2-fill.svg
+        assets/node-tree.svg
+        assets/settings-5-line.svg
+        assets/hard-drive-2-line.svg
+        assets/global-line.svg
+        assets/folder-upload-line.svg
         assets/delete-bin-2-line.svg
         BottomTitle.qml
         DownloadFolder.qml
