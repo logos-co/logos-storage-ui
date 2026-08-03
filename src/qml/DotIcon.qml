@@ -75,7 +75,9 @@ Item {
                         return root.activeOpacity
                     if (diff === 1)
                         return 0.35
-                    return root.inactiveOpacity
+                    // Not inactiveOpacity: the static branch dims via
+                    // inactiveDotColor and leaves it at 1.0.
+                    return 0.1
                 }
             }
         }
