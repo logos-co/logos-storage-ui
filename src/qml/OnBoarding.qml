@@ -95,7 +95,7 @@ OnBoardingLayout {
                 leadingIcon.source: LogosIcons.arrowLeft
                 leadingIcon.color: Theme.palette.text
                 leadingIcon.brightness: 1.0
-                                onClicked: root.back()
+                onClicked: root.back()
             }
 
             Item {
@@ -109,7 +109,7 @@ OnBoardingLayout {
                 trailingIcon.source: LogosIcons.arrowRight
                 trailingIcon.color: Theme.palette.text
                 trailingIcon.brightness: 1.0
-                                enabled: root.selectedMode !== -1
+                enabled: root.selectedMode !== -1
                 onClicked: {
                     if (root.selectedMode === 0) {
                         root.backend.enableUpnpConfig()

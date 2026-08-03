@@ -6,7 +6,7 @@ Item {
     id: root
 
     property string title: ""
-    property string color: Theme.palette.text
+    property color color: Theme.palette.text
     property bool hasSeparator: true
 
     implicitHeight: footerLabel.implicitHeight + Theme.spacing.medium * 2

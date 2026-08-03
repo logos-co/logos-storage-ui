@@ -51,7 +51,7 @@ OnBoardingLayout {
                 leadingIcon.source: LogosIcons.arrowLeft
                 leadingIcon.color: Theme.palette.text
                 leadingIcon.brightness: 1.0
-                            }
+            }
 
             Item {
                 Layout.fillWidth: true

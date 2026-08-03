@@ -141,7 +141,7 @@ OnBoardingLayout {
                 leadingIcon.source: LogosIcons.arrowLeft
                 leadingIcon.color: Theme.palette.text
                 leadingIcon.brightness: 1.0
-                                text: "Back"
+                text: "Back"
                 enabled: !root.starting
                 onClicked: {
                     root.backend.stop()

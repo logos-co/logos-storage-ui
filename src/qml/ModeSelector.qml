@@ -89,7 +89,7 @@ OnBoardingLayout {
                 trailingIcon.source: LogosIcons.arrowRight
                 trailingIcon.color: Theme.palette.text
                 trailingIcon.brightness: 1.0
-                                onClicked: root.completed(root.selectedMode === 0)
+                onClicked: root.completed(root.selectedMode === 0)
             }
         }
     }

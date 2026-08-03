@@ -134,7 +134,7 @@ OnBoardingLayout {
                 leadingIcon.source: LogosIcons.arrowLeft
                 leadingIcon.color: Theme.palette.text
                 leadingIcon.brightness: 1.0
-                            }
+            }
 
             Item {
                 Layout.fillWidth: true
@@ -147,7 +147,7 @@ OnBoardingLayout {
                 trailingIcon.source: LogosIcons.arrowRight
                 trailingIcon.color: Theme.palette.text
                 trailingIcon.brightness: 1.0
-                                variant: LogosButton.Variant.Primary
+                variant: LogosButton.Variant.Primary
                 onClicked: {
                     settings.downloadFolderPath = root.downloadFolder.toString()
                     root.next()
