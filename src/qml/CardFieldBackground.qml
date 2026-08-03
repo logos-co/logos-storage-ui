@@ -10,12 +10,14 @@ Rectangle {
 
     radius: Theme.spacing.radiusSmall
     color: Theme.palette.backgroundInset
-    border.width: 0
+    // Transparent at rest: the mockup has no border on fields, but reserving the
+    // width keeps the focus ring from shifting the layout.
+    border.width: 1
     border.color: {
         if (ti && ti.validator && ti.text.length > 0 && !ti.acceptableInput)
             return Theme.palette.error
         if (ti && ti.activeFocus)
             return Theme.palette.overlayOrange
-        return Theme.palette.borderSubtle
+        return "transparent"
     }
 }
