@@ -211,8 +211,8 @@ LogosFrame {
             LogosIcon {
                 source: Qt.resolvedUrl("assets/close-circle-line.svg")
                 color: Theme.palette.text
-                width: 23
-                height: 23
+                Layout.preferredWidth: 23
+                Layout.preferredHeight: 23
                 visible: root.panelOpen
 
                 MouseArea {
