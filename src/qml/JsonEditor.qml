@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import Logos.Theme
+import Logos.Controls
 
 // Reusable JSON editor with live validation.
 // Usage:
@@ -14,7 +15,7 @@ import Logos.Theme
 //   // Read back:
 //   editor.text      // current text
 //   editor.isValid   // false when JSON.parse would throw
-Rectangle {
+LogosFrame {
     id: root
 
     property alias text: jsonArea.text
@@ -22,10 +23,11 @@ Rectangle {
 
     Component.onCompleted: root.validate()
 
-    color: Theme.palette.backgroundElevated
-    radius: 8
-    border.color: root.isValid ? Theme.palette.borderSecondary : Theme.palette.error
-    border.width: 1
+    backgroundColor: Theme.palette.backgroundElevated
+    radius: Theme.spacing.radiusLarge
+    borderColor: root.isValid ? Theme.palette.borderSecondary : Theme.palette.error
+    // The editor fills the frame; the inner ScrollView keeps its own inset.
+    padding: 0
 
     function load(_text) {
         text = _text
@@ -40,15 +42,14 @@ Rectangle {
         }
     }
 
-    ScrollView {
+    LogosScrollView {
         anchors.fill: parent
-        anchors.margins: 2
+        anchors.margins: Theme.spacing.tiny
 
-        TextArea {
+        LogosTextArea {
             id: jsonArea
-            font.family: "monospace"
-            font.pixelSize: 12
-            color: Theme.palette.text
+            font.family: Theme.typography.mono
+            font.pixelSize: Theme.typography.secondaryText
             wrapMode: Text.WrapAnywhere
             background: Item {}
             onTextChanged: root.validate()

@@ -2,9 +2,14 @@ import QtQuick
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 
-Card {
+LogosFrame {
     id: root
+
+    backgroundColor: Theme.palette.backgroundSecondary
+    borderColor: "transparent"
+    radius: Theme.spacing.radiusLarge
 
     implicitWidth: 320
     implicitHeight: 300
@@ -26,7 +31,11 @@ Card {
         spacing: Theme.spacing.medium
 
         Image {
-            source: "assets/global.png"
+            Layout.preferredWidth: 28
+            Layout.preferredHeight: 26
+            source: Qt.resolvedUrl("assets/global-line.svg")
+            sourceSize: Qt.size(64, 58)
+            fillMode: Image.PreserveAspectFit
         }
 
         ArcWidget {
@@ -36,14 +45,15 @@ Card {
             fraction: root.maxPeers > 0 ? Math.min(root.peers / root.maxPeers,
                                                    1.0) : 0
             fillColor: Theme.palette.primary
+            trackColor: Theme.palette.border
 
             ColumnLayout {
                 anchors.centerIn: parent
 
                 LogosText {
                     text: root.peers
-                    font.pixelSize: Theme.typography.primaryText * 1.5
-                    font.bold: true
+                    font.pixelSize: Theme.typography.panelTitleText
+                    font.weight: Theme.typography.weightBold
                     Layout.alignment: Qt.AlignHCenter
                 }
 
@@ -68,17 +78,23 @@ Card {
             Layout.alignment: Qt.AlignHCenter
             Layout.bottomMargin: Theme.spacing.medium * 1.25
 
-            Image {
+            LogosIcon {
                 Layout.alignment: Qt.AlignVCenter
-                source: root.peers > 0 ? "assets/success.png" : "assets/error.png"
+                Layout.preferredWidth: 20
+                Layout.preferredHeight: 20
+                source: root.peers > 0 ? LogosIcons.check : LogosIcons.warning
+                color: root.peers > 0 ? Theme.palette.success : Theme.palette.error
+                // The DS glyphs are dark; colorization preserves luminance, so
+                // they need normalizing before they take the tint.
+                brightness: 1.0
             }
 
             LogosText {
-                text: root.peers > 0 ? "Peer connections are in good standing."
-                                     : "No active peer connections."
+                text: root.peers > 0 ? "Detected peers are in good standing."
+                                     : "No active peer detected."
                 font.pixelSize: Theme.typography.secondaryText
                 color: Theme.palette.textMuted
-                font.family: "monospace"
+                font.family: Theme.typography.mono
                 Layout.alignment: Qt.AlignVCenter
             }
         }

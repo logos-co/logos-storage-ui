@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 
 OnBoardingLayout {
     id: root
@@ -33,7 +34,7 @@ OnBoardingLayout {
 
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.topMargin: 10
+            Layout.topMargin: Theme.spacing.small
 
             RowLayout {
                 Layout.fillWidth: true
@@ -52,13 +53,13 @@ OnBoardingLayout {
                     text: "2 / 5"
                     font.pixelSize: Theme.typography.primaryText
                     color: Theme.palette.primary
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                 }
             }
 
             LogosText {
                 text: "The TCP port must be open to connect with remote peers."
-                font.pixelSize: Theme.typography.primaryText * 1.8
+                font.pixelSize: Theme.typography.panelTitleText
             }
         }
 
@@ -70,7 +71,7 @@ OnBoardingLayout {
             Layout.preferredHeight: 230
             radius: Theme.spacing.radiusLarge
             color: Theme.palette.backgroundSecondary
-            border.color: selected ? Theme.palette.primary : Theme.palette.textMuted
+            border.color: selected ? Theme.palette.primary : Theme.palette.borderInteractive
             border.width: 1
 
             ColumnLayout {
@@ -87,12 +88,12 @@ OnBoardingLayout {
 
                 LogosText {
                     text: "Port"
-                    font.pixelSize: Theme.typography.primaryText * 1.2
+                    font.pixelSize: Theme.typography.subtitleText
                     Layout.leftMargin: Theme.spacing.medium
                     Layout.bottomMargin: Theme.spacing.tiny
                 }
 
-                LogosStorageTextField {
+                LogosTextField {
                     Layout.fillWidth: true
                     Layout.leftMargin: Theme.spacing.medium
                     Layout.rightMargin: Theme.spacing.medium
@@ -102,9 +103,9 @@ OnBoardingLayout {
                     placeholderText: "Enter the TCP port"
                     text: root.tcpPort
                     enabled: !root.loading
-                    isValid: {
-                        const val = parseInt(text)
-                        return !isNaN(val) && val >= 0 && val <= 65535
+                    validator: IntValidator {
+                        bottom: 0
+                        top: 65535
                     }
                     onTextChanged: {
                         const val = parseInt(text)
@@ -120,24 +121,28 @@ OnBoardingLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: Theme.spacing.small
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Back"
                 enabled: !root.loading
                 onClicked: root.back()
-                iconSource: "assets/arrow-left.png"
-                iconPosition: "left"
+                leadingIcon.source: LogosIcons.arrowLeft
+                leadingIcon.color: Theme.palette.text
+                leadingIcon.brightness: 1.0
             }
 
             Item {
                 Layout.fillWidth: true
             }
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Continue"
-                enabled: !root.loading && tcpPortTextField.isValid
-                iconSource: "assets/arrow-right.png"
-                iconPosition: "right"
-                variant: "primary"
+                enabled: !root.loading && tcpPortTextField.textInput.acceptableInput
+                trailingIcon.source: LogosIcons.arrowRight
+                trailingIcon.color: Theme.palette.text
+                trailingIcon.brightness: 1.0
+                                variant: LogosButton.Variant.Primary
                 onClicked: {
                     root.loading = true
                     root.backend.enableNatExtConfig(root.tcpPort)

@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 
 OnBoardingLayout {
     id: root
@@ -21,7 +22,7 @@ OnBoardingLayout {
 
             LogosText {
                 text: "How would you like to set up your node?"
-                font.pixelSize: Theme.typography.primaryText * 1.8
+                font.pixelSize: Theme.typography.panelTitleText
             }
         }
 
@@ -63,7 +64,7 @@ OnBoardingLayout {
                 LogosText {
                     text: "Logos Storage is a decentralised data storage protocol, created so the world community can preserve its most important knowledge without risk of censorship."
                     font.pixelSize: Theme.typography.secondaryText
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                     color: Theme.palette.textMuted
                     Layout.preferredWidth: 400
                     wrapMode: Text.WordWrap
@@ -77,15 +78,17 @@ OnBoardingLayout {
                     text: "Legal Disclaimer"
                     font.pixelSize: Theme.typography.secondaryText
                     color: Theme.palette.primary
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                 }
             }
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Continue"
-                variant: "primary"
-                iconSource: "assets/arrow-right.png"
-                iconPosition: "right"
+                variant: LogosButton.Variant.Primary
+                trailingIcon.source: LogosIcons.arrowRight
+                trailingIcon.color: Theme.palette.text
+                trailingIcon.brightness: 1.0
                 onClicked: root.completed(root.selectedMode === 0)
             }
         }

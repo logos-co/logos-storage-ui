@@ -1,8 +1,9 @@
 import QtQuick
 import QtQuick.Layouts
 import Logos.Theme
+import Logos.Controls
 
-Rectangle {
+LogosFrame {
     id: root
 
     property bool selected: false
@@ -13,10 +14,10 @@ Rectangle {
     signal cardSelected
 
     height: 230
+    padding: 0
     radius: Theme.spacing.radiusLarge
-    color: selected ? Theme.palette.backgroundSecondary : Theme.palette.background
-    border.color: selected ? Theme.palette.primary : Theme.palette.textMuted
-    border.width: 1
+    backgroundColor: selected ? Theme.palette.backgroundSecondary : Theme.palette.background
+    borderColor: selected ? Theme.palette.primary : Theme.palette.borderInteractive
 
     ColumnLayout {
         anchors.fill: parent
@@ -32,14 +33,14 @@ Rectangle {
         }
 
         ColumnLayout {
-            Text {
+            LogosText {
                 text: root.title
                 color: Theme.palette.text
-                font.pixelSize: Theme.typography.titleText * 0.8
+                font.pixelSize: Theme.typography.panelTitleText
                 Layout.leftMargin: Theme.spacing.medium
             }
 
-            Text {
+            LogosText {
                 Layout.preferredWidth: 280
                 Layout.leftMargin: Theme.spacing.medium
                 Layout.bottomMargin: Theme.spacing.large

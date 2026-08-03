@@ -4,11 +4,16 @@ import QtQuick.Dialogs
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 import "Utils.js" as Utils
 
 // qmllint disable unqualified
-Card {
+LogosFrame {
     id: root
+
+    backgroundColor: Theme.palette.backgroundSecondary
+    borderColor: "transparent"
+    radius: Theme.spacing.radiusLarge
 
     property var backend: MockBackend
     property bool running: false
@@ -18,6 +23,9 @@ Card {
     property string downloadingCid: ""
     property string downloadFolderPath: ""
     property var deleting: ({})
+
+    // Two 40px icon buttons, the gap between them and the pill's own padding.
+    readonly property int actionsColumnWidth: 40 * 2 + Theme.spacing.medium * 3
 
     function markDeleting(cid) {
         var d = Object.assign({}, root.deleting)
@@ -50,6 +58,30 @@ Card {
     // prunes the row; failure switches it to "error" until dismissed).
     property var pending: []
     property var rows: root.pending.concat(root.manifests)
+
+    // LogosTable reads its row through the delegate's `model`, which a plain JS
+    // array does not populate — the rows are mirrored into a ListModel.
+    ListModel {
+        id: rowsModel
+    }
+
+    function rebuildRows() {
+        rowsModel.clear()
+        for (var i = 0; i < root.rows.length; i++) {
+            var r = root.rows[i]
+            rowsModel.append({
+                                 "cid": r.cid || "",
+                                 "filename": r.filename || "",
+                                 "mimetype": r.mimetype || "",
+                                 "datasetSize": String(r.datasetSize || 0),
+                                 "status": r.status || "",
+                                 "error": r.error || ""
+                             })
+        }
+    }
+
+    onRowsChanged: root.rebuildRows()
+    Component.onCompleted: root.rebuildRows()
 
     function addPending(cid) {
         for (var i = 0; i < root.pending.length; i++)
@@ -101,16 +133,12 @@ Card {
     //         "size": 12222
     //     }]
     function mimetypeIcon(mimetype) {
-        if (!mimetype)
-            return "assets/other.png"
-        var m = mimetype.toLowerCase()
-        if (m.indexOf("image/") === 0)
-            return "assets/image.png"
+        var m = (mimetype || "").toLowerCase()
         if (m.indexOf("video/") === 0)
-            return "assets/video.png"
-        if (m === "application/pdf")
-            return "assets/pdf.png"
-        return "assets/other.png"
+            return "assets/videos.svg"
+        if (m.indexOf("image/") === 0)
+            return "assets/images.svg"
+        return "assets/documents.svg"
     }
 
     implicitWidth: 1200
@@ -172,7 +200,7 @@ Card {
 
             LogosText {
                 text: root.panelOpen ? "Debug" : "Manifests"
-                font.pixelSize: Theme.typography.titleText
+                font.pixelSize: Theme.typography.panelTitleText
                 color: Theme.palette.text
             }
 
@@ -180,8 +208,11 @@ Card {
                 Layout.fillWidth: true
             }
 
-            Image {
-                source: "assets/close-circle.png"
+            LogosIcon {
+                source: Qt.resolvedUrl("assets/close-circle-line.svg")
+                color: Theme.palette.text
+                Layout.preferredWidth: 23
+                Layout.preferredHeight: 23
                 visible: root.panelOpen
 
                 MouseArea {
@@ -197,396 +228,17 @@ Card {
             Layout.fillHeight: true
 
             // ── Vue liste ────────────────────────────────────────────────────
-            ColumnLayout {
+            LogosTable {
+                id: manifestList
                 anchors.fill: parent
-                spacing: Theme.spacing.small
                 visible: !root.panelOpen
+                model: rowsModel
+                rowHeight: 72
+                emptyText: "No manifests yet"
 
-                Rectangle {
-                    id: header
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 30
-                    color: Theme.palette.backgroundInset
-                    radius: Theme.spacing.radiusSmall
-
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: Theme.spacing.medium
-                        anchors.rightMargin: Theme.spacing.medium
-
-                        Text {
-                            text: "CID"
-                            color: Theme.palette.textMuted
-                            font.pixelSize: Theme.typography.secondaryText
-                            Layout.fillWidth: true
-                        }
-
-                        Text {
-                            text: "Filename"
-                            color: Theme.palette.textSecondary
-                            font.pixelSize: Theme.typography.secondaryText
-                            Layout.preferredWidth: 140
-                        }
-
-                        Text {
-                            text: "Mimetype"
-                            color: Theme.palette.textSecondary
-                            font.pixelSize: Theme.typography.secondaryText
-                            Layout.preferredWidth: 100
-                        }
-
-                        Text {
-                            text: "Size"
-                            color: Theme.palette.textSecondary
-                            font.pixelSize: Theme.typography.secondaryText
-                            Layout.preferredWidth: 80
-                        }
-
-                        Text {
-                            text: "Actions"
-                            color: Theme.palette.textSecondary
-                            font.pixelSize: Theme.typography.secondaryText
-                            Layout.preferredWidth: 92
-                        }
-                    }
-                }
-
-                ListView {
-                    id: manifestList
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    model: root.rows
-                    clip: true
-
-                    delegate: Rectangle {
-                        width: manifestList.width
-                        height: 72
-                        color: Theme.palette.backgroundSecondary
-
-                        readonly property bool rowDeleting: root.deleting[modelData.cid] === true
-                        readonly property bool rowDownloading: root.downloadingCid === modelData.cid
-
-                        RowLayout {
-                            anchors.fill: parent
-                            anchors.leftMargin: Theme.spacing.medium
-                            anchors.rightMargin: Theme.spacing.medium
-
-                            Item {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-
-                                Image {
-                                    id: typeIcon
-                                    anchors.left: parent.left
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    visible: !modelData.status
-                                    source: root.mimetypeIcon(
-                                                modelData.mimetype)
-                                    width: 32
-                                    height: 32
-                                    fillMode: Image.PreserveAspectFit
-                                }
-
-                                BusyIndicator {
-                                    anchors.left: parent.left
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    width: 32
-                                    height: 32
-                                    running: visible
-                                    visible: modelData.status === "fetching"
-                                }
-
-                                Image {
-                                    anchors.left: parent.left
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    visible: modelData.status === "error"
-                                    source: "assets/error.png"
-                                    width: 32
-                                    height: 32
-                                    fillMode: Image.PreserveAspectFit
-                                }
-
-                                Text {
-                                    anchors.left: typeIcon.right
-                                    anchors.leftMargin: Theme.spacing.medium
-                                    anchors.right: copyBtn.left
-                                    anchors.rightMargin: Theme.spacing.medium
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    text: modelData.cid
-                                    color: Theme.palette.text
-                                    font.pixelSize: Theme.typography.secondaryText
-                                    elide: Text.ElideRight
-                                    ToolTip.visible: cidHover.hovered
-                                    ToolTip.text: modelData.cid
-
-                                    HoverHandler {
-                                        id: cidHover
-                                    }
-                                }
-
-                                Rectangle {
-                                    id: copyBtn
-                                    anchors.right: parent.right
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    anchors.rightMargin: Theme.spacing.medium
-                                    width: 40
-                                    height: 40
-                                    radius: Theme.spacing.radiusXlarge * 2
-                                    border.color: copyHover.hovered
-                                                  && root.running ? Theme.palette.primary : Theme.palette.borderSubtle
-                                    border.width: 1
-
-                                    property bool copied: false
-
-                                    color: Theme.palette.backgroundInset
-
-                                    Timer {
-                                        id: resetCopyTimer
-                                        interval: 1500
-                                        onTriggered: copyBtn.copied = false
-                                    }
-
-                                    Image {
-                                        anchors.centerIn: parent
-                                        source: copyBtn.copied ? "assets/success.png" : "assets/file-copy-line.png"
-                                        width: 20
-                                        height: 20
-                                        fillMode: Image.PreserveAspectFit
-                                    }
-                                    HoverHandler {
-                                        id: copyHover
-                                    }
-                                    MouseArea {
-                                        anchors.fill: parent
-                                        cursorShape: Qt.PointingHandCursor
-                                        onClicked: {
-                                            clipboardHelper.text = modelData.cid
-                                            clipboardHelper.selectAll()
-                                            clipboardHelper.copy()
-                                            copyBtn.copied = true
-                                            resetCopyTimer.restart()
-                                        }
-                                    }
-                                }
-
-                                TextEdit {
-                                    id: clipboardHelper
-                                    visible: false
-                                }
-                            }
-
-                            Text {
-                                text: modelData.status === "fetching" ? "Fetching..." : (modelData.status === "error" ? (modelData.error || "Failed") : (rowDeleting ? "Deleting..." : (modelData.filename || "")))
-                                color: modelData.status === "error" ? Theme.palette.error : Theme.palette.text
-                                font.pixelSize: Theme.typography.secondaryText
-                                elide: Text.ElideRight
-                                ToolTip.visible: modelData.status === "error" && statusHover.hovered
-                                ToolTip.text: modelData.error || ""
-                                Layout.preferredWidth: 140
-
-                                HoverHandler {
-                                    id: statusHover
-                                }
-                            }
-
-                            Text {
-                                text: modelData.status ? "-" : (modelData.mimetype || "")
-                                color: Theme.palette.text
-                                font.pixelSize: Theme.typography.secondaryText
-                                elide: Text.ElideRight
-                                Layout.preferredWidth: 100
-                            }
-
-                            Text {
-                                text: modelData.status ? "-" : Utils.formatBytes(
-                                          parseInt(modelData.datasetSize))
-                                color: Theme.palette.text
-                                font.pixelSize: Theme.typography.secondaryText
-                                Layout.preferredWidth: 80
-                            }
-
-                            Item {
-                                // Actions column — fixed width (the download +
-                                // delete pill) so fetching / error rows keep the
-                                // same column alignment as normal rows.
-                                Layout.alignment: Qt.AlignVCenter
-                                Layout.preferredWidth: actionsPill.implicitWidth
-                                implicitHeight: actionsPill.implicitHeight
-
-                                Rectangle {
-                                    id: actionsPill
-                                    anchors.right: parent.right
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    color: Theme.palette.backgroundInset
-                                    radius: Theme.spacing.radiusLarge
-                                    visible: !modelData.status
-                                    implicitWidth: actionsRow.implicitWidth + Theme.spacing.medium * 2
-                                    implicitHeight: actionsRow.implicitHeight + Theme.spacing.small * 2
-
-                                    Row {
-                                        id: actionsRow
-                                        anchors.centerIn: parent
-                                        spacing: Theme.spacing.medium
-
-                                        Rectangle {
-                                            width: 40
-                                            height: 40
-                                            radius: Theme.spacing.radiusXlarge * 2
-                                            color: Theme.palette.backgroundButton
-                                            border.color: dlHover.hovered
-                                                          && root.running && !root.isDownloading && !rowDeleting ? Theme.palette.primary : Theme.palette.borderInteractive
-                                            border.width: 1
-                                            opacity: root.running && !root.isDownloading && !rowDeleting ? 1.0 : 0.35
-
-                                            Behavior on opacity {
-                                                NumberAnimation {
-                                                    duration: 200
-                                                }
-                                            }
-
-                                            Image {
-                                                anchors.centerIn: parent
-                                                source: "assets/download.png"
-                                                width: 24
-                                                height: 24
-                                                fillMode: Image.PreserveAspectFit
-                                            }
-
-                                            HoverHandler {
-                                                id: dlHover
-                                            }
-
-                                            MouseArea {
-                                                objectName: "downloadButton"
-                                                anchors.fill: parent
-                                                enabled: root.running && !root.isDownloading && !rowDeleting
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: {
-                                                    const dest = root.downloadFolderPath.replace(/\/$/, "") + "/" + (modelData.filename || modelData.cid || "download")
-                                                    root.downloadRequested()
-                                                    root.backend.downloadFile(
-                                                                modelData.cid,
-                                                                dest,
-                                                                parseInt(
-                                                                    modelData.datasetSize)
-                                                                || 0)
-                                                }
-                                            }
-                                        }
-
-                                        Rectangle {
-                                            width: 40
-                                            height: 40
-                                            radius: Theme.spacing.radiusXlarge * 2
-                                            color: Theme.palette.backgroundButton
-                                            border.color: rmHover.hovered
-                                                          && root.running && !rowDeleting && !rowDownloading ? Theme.palette.primary : Theme.palette.borderInteractive
-                                            border.width: 1
-                                            opacity: root.running && !rowDeleting && !rowDownloading ? 1.0 : 0.35
-
-                                            Behavior on opacity {
-                                                NumberAnimation {
-                                                    duration: 200
-                                                }
-                                            }
-
-                                            Image {
-                                                anchors.centerIn: parent
-                                                source: "assets/delete.png"
-                                                width: 20
-                                                height: 20
-                                                fillMode: Image.PreserveAspectFit
-                                            }
-
-                                            HoverHandler {
-                                                id: rmHover
-                                            }
-
-                                            MouseArea {
-                                                objectName: "deleteButton"
-                                                anchors.fill: parent
-                                                enabled: root.running && !rowDeleting && !rowDownloading
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: {
-                                                    if (modelData.cid.length > 0) {
-                                                        root.backend.remove(
-                                                                    modelData.cid)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                Text {
-                                    anchors.centerIn: parent
-                                    visible: modelData.status === "fetching"
-                                    text: "-"
-                                    color: Theme.palette.text
-                                    font.pixelSize: Theme.typography.secondaryText
-                                }
-
-                                Rectangle {
-                                    anchors.right: parent.right
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    color: Theme.palette.backgroundInset
-                                    radius: Theme.spacing.radiusLarge
-                                    visible: modelData.status === "error"
-                                    implicitWidth: dismissRow.implicitWidth + Theme.spacing.medium * 2
-                                    implicitHeight: dismissRow.implicitHeight + Theme.spacing.small * 2
-
-                                    Row {
-                                        id: dismissRow
-                                        anchors.centerIn: parent
-                                        spacing: Theme.spacing.medium
-
-                                        Rectangle {
-                                            width: 40
-                                            height: 40
-                                            radius: Theme.spacing.radiusXlarge * 2
-                                            color: Theme.palette.backgroundButton
-                                            border.color: dismissHover.hovered ? Theme.palette.primary : Theme.palette.borderInteractive
-                                            border.width: 1
-
-                                            Image {
-                                                anchors.centerIn: parent
-                                                source: "assets/close-circle.png"
-                                                width: 20
-                                                height: 20
-                                                opacity: 0.6
-                                                fillMode: Image.PreserveAspectFit
-                                            }
-
-                                            HoverHandler {
-                                                id: dismissHover
-                                            }
-
-                                            MouseArea {
-                                                objectName: "dismissButton"
-                                                anchors.fill: parent
-                                                cursorShape: Qt.PointingHandCursor
-                                                onClicked: root.dismissPending(modelData.cid)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Bottom row separator
-                        Rectangle {
-                            anchors.bottom: parent.bottom
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            height: 1
-                            color: Theme.palette.borderSecondary
-                        }
-                    }
-
+                emptyDelegate: Component {
                     ColumnLayout {
-                        anchors.centerIn: parent
-                        spacing: 10
-                        visible: manifestList.count === 0
+                        spacing: Theme.spacing.small
 
                         DotIcon {
                             pattern: [0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0]
@@ -598,11 +250,253 @@ Card {
                         LogosText {
                             text: "No manifests yet"
                             color: Theme.palette.textMuted
-                            font.pixelSize: 12
+                            font.pixelSize: Theme.typography.secondaryText
                             Layout.alignment: Qt.AlignHCenter
                         }
                     }
                 }
+
+                columns: [
+                    LogosTableColumn {
+                        title: "CID"
+                        role: "cid"
+                        minWidth: 240
+                        fillWidth: true
+                        cellDelegate: Component {
+                            Item {
+                                Image {
+                                    id: typeIcon
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    visible: rowItem && !rowItem.status
+                                    source: rowItem ? root.mimetypeIcon(rowItem.mimetype) : ""
+                                    width: 32
+                                    height: 32
+                                    fillMode: Image.PreserveAspectFit
+                                }
+
+                                BusyIndicator {
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: 32
+                                    height: 32
+                                    running: rowItem && rowItem.status === "fetching"
+                                    visible: running
+                                }
+
+                                LogosIcon {
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    visible: rowItem && rowItem.status === "error"
+                                    source: LogosIcons.warning
+                                    color: Theme.palette.error
+                                    brightness: 1.0
+                                    width: 32
+                                    height: 32
+                                }
+
+                                LogosText {
+                                    anchors.left: typeIcon.right
+                                    anchors.leftMargin: Theme.spacing.medium
+                                    anchors.right: copyBtn.left
+                                    anchors.rightMargin: Theme.spacing.medium
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    text: rowItem ? rowItem.cid : ""
+                                    color: Theme.palette.text
+                                    font.pixelSize: Theme.typography.secondaryText
+                                    elide: Text.ElideRight
+
+                                    HoverHandler {
+                                        id: cidHover
+                                    }
+
+                                    LogosToolTip {
+                                        text: rowItem ? rowItem.cid : ""
+                                        visible: cidHover.hovered
+                                    }
+                                }
+
+                                LogosCopyButton {
+                                    id: copyBtn
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    value: rowItem ? rowItem.cid : ""
+                                    // Match the download / delete buttons on the row.
+                                    size: 40
+                                    iconSize: 20
+                                    background: IconButtonBackground {}
+                                }
+                            }
+                        }
+                    },
+                    LogosTableColumn {
+                        title: "Filename"
+                        role: "filename"
+                        minWidth: 140
+                        preferredWidth: 140
+                        cellDelegate: Component {
+                            Item {
+                                id: filenameCell
+                                readonly property bool rowDeleting: rowItem && root.deleting[rowItem.cid] === true
+
+                                LogosText {
+                                    id: statusLabel
+                                    anchors.fill: parent
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: {
+                                        if (!rowItem)
+                                            return ""
+                                        if (rowItem.status === "fetching")
+                                            return "Fetching..."
+                                        if (rowItem.status === "error")
+                                            return rowItem.error || "Failed"
+                                        return filenameCell.rowDeleting ? "Deleting..." : (rowItem.filename || "")
+                                    }
+                                    color: rowItem && rowItem.status === "error" ? Theme.palette.error
+                                                                                 : Theme.palette.text
+                                    font.pixelSize: Theme.typography.secondaryText
+                                    elide: Text.ElideRight
+
+                                    HoverHandler {
+                                        id: statusHover
+                                    }
+
+                                    LogosToolTip {
+                                        text: rowItem ? (rowItem.error || "") : ""
+                                        visible: rowItem && rowItem.status === "error" && statusHover.hovered
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    LogosTableColumn {
+                        title: "Mimetype"
+                        role: "mimetype"
+                        minWidth: 100
+                        preferredWidth: 100
+                        cellDelegate: Component {
+                            Item {
+                                LogosText {
+                                    anchors.fill: parent
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: rowItem ? (rowItem.status ? "-" : (rowItem.mimetype || "")) : ""
+                                    color: Theme.palette.text
+                                    font.pixelSize: Theme.typography.secondaryText
+                                    elide: Text.ElideRight
+                                }
+                            }
+                        }
+                    },
+                    LogosTableColumn {
+                        title: "Size"
+                        role: "datasetSize"
+                        minWidth: 80
+                        preferredWidth: 80
+                        cellDelegate: Component {
+                            Item {
+                                LogosText {
+                                    anchors.fill: parent
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: rowItem ? (rowItem.status ? "-" : Utils.formatBytes(
+                                                         parseInt(rowItem.datasetSize))) : ""
+                                    color: Theme.palette.text
+                                    font.pixelSize: Theme.typography.secondaryText
+                                }
+                            }
+                        }
+                    },
+                    LogosTableColumn {
+                        title: "Actions"
+                        minWidth: root.actionsColumnWidth
+                        preferredWidth: root.actionsColumnWidth
+                        cellPadding: 0
+                        alignment: Qt.AlignHCenter | Qt.AlignVCenter
+                        cellDelegate: Component {
+                            Item {
+                                id: actionsCell
+                                readonly property bool rowDeleting: rowItem && root.deleting[rowItem.cid] === true
+                                readonly property bool rowDownloading: rowItem && root.downloadingCid === rowItem.cid
+
+                                Rectangle {
+                                    id: actionsPill
+                                    anchors.centerIn: parent
+                                    color: Theme.palette.backgroundInset
+                                    radius: Theme.spacing.radiusLarge
+                                    visible: rowItem && !rowItem.status
+                                    implicitWidth: actionsRow.implicitWidth + Theme.spacing.medium * 2
+                                    implicitHeight: actionsRow.implicitHeight + Theme.spacing.small * 2
+
+                                    Row {
+                                        id: actionsRow
+                                        anchors.centerIn: parent
+                                        spacing: Theme.spacing.medium
+
+                                        LogosIconButton {
+                                            objectName: "downloadButton"
+                                            iconSource: Qt.resolvedUrl("assets/download-2-fill.svg")
+                                            background: IconButtonBackground {}
+                                            enabled: root.running && !root.isDownloading
+                                                     && !actionsCell.rowDeleting
+                                            onClicked: {
+                                                const dest = root.downloadFolderPath.replace(/\/$/, "") + "/" + (rowItem.filename || rowItem.cid || "download")
+                                                root.downloadRequested()
+                                                root.backend.downloadFile(
+                                                            rowItem.cid,
+                                                            dest,
+                                                            parseInt(
+                                                                rowItem.datasetSize)
+                                                            || 0)
+                                            }
+                                        }
+
+                                        LogosIconButton {
+                                            objectName: "deleteButton"
+                                            iconSource: Qt.resolvedUrl("assets/delete-bin-2-line.svg")
+                                            background: IconButtonBackground {}
+                                            enabled: root.running && !actionsCell.rowDeleting
+                                                     && !actionsCell.rowDownloading
+                                            onClicked: {
+                                                if (rowItem.cid.length > 0) {
+                                                    root.backend.remove(rowItem.cid)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                LogosText {
+                                    anchors.centerIn: parent
+                                    visible: rowItem && rowItem.status === "fetching"
+                                    text: "-"
+                                    color: Theme.palette.text
+                                    font.pixelSize: Theme.typography.secondaryText
+                                }
+
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    color: Theme.palette.backgroundInset
+                                    radius: Theme.spacing.radiusLarge
+                                    visible: rowItem && rowItem.status === "error"
+                                    implicitWidth: dismissRow.implicitWidth + Theme.spacing.medium * 2
+                                    implicitHeight: dismissRow.implicitHeight + Theme.spacing.small * 2
+
+                                    Row {
+                                        id: dismissRow
+                                        anchors.centerIn: parent
+                                        spacing: Theme.spacing.medium
+
+                                        LogosIconButton {
+                                            objectName: "dismissButton"
+                                            iconSource: Qt.resolvedUrl("assets/close-circle-line.svg")
+                                            background: IconButtonBackground {}
+                                            onClicked: root.dismissPending(rowItem.cid)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
             }
 
             DebugPanel {

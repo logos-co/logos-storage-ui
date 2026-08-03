@@ -2,12 +2,17 @@ import QtQuick
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 import "Utils.js" as Utils
 
 // qmllint disable unqualified
-Card {
+LogosFrame {
     id: root
     objectName: "downloadWidget"
+
+    backgroundColor: Theme.palette.backgroundSecondary
+    borderColor: "transparent"
+    radius: Theme.spacing.radiusLarge
 
     implicitWidth: 300
     implicitHeight: 180
@@ -30,10 +35,15 @@ Card {
     readonly property bool isDone: progress >= 1.0
 
     // ── Grid config ───────────────────────────────────────────────────────────
-    readonly property int gridCols: 28
     readonly property int gridRows: 6
+    readonly property int maxCols: 30
+    readonly property real blockSize: 12
+    readonly property int blockGap: 4
+
+    // Fixed block size; fit as many columns as the width allows, fewer when narrow.
+    readonly property int gridCols: Math.max(6, Math.min(maxCols, Math.floor(
+        (gridItem.width + blockGap) / (blockSize + blockGap))))
     readonly property int totalBlocks: gridCols * gridRows
-    readonly property int blockGap: 2
 
     property var filledBlocks: []
 
@@ -78,6 +88,10 @@ Card {
     }
 
     onProgressChanged: applyProgress(progress)
+    onTotalBlocksChanged: {
+        initBlocks()
+        applyProgress(progress)
+    }
     Component.onCompleted: initBlocks()
 
     Connections {
@@ -121,8 +135,11 @@ Card {
                 Layout.fillWidth: true
             }
 
-            Image {
-                source: "assets/close-circle.png"
+            LogosIcon {
+                source: Qt.resolvedUrl("assets/close-circle-line.svg")
+                color: Theme.palette.text
+                Layout.preferredWidth: 23
+                Layout.preferredHeight: 23
                 visible: root.isDone
 
                 MouseArea {
@@ -140,20 +157,21 @@ Card {
         // ── Grid ──────────────────────────────────────────────────────────────
         Item {
             id: gridItem
+            Layout.fillWidth: true
             Layout.alignment: Qt.AlignHCenter
 
-            readonly property real blockSize: 12
-            implicitWidth: root.gridCols * blockSize + (root.gridCols - 1) * root.blockGap
-            implicitHeight: root.gridRows * blockSize + (root.gridRows - 1) * root.blockGap
+            readonly property real gridWidth: root.gridCols * root.blockSize + (root.gridCols - 1) * root.blockGap
+            readonly property real xOffset: (width - gridWidth) / 2
+            implicitHeight: root.gridRows * root.blockSize + (root.gridRows - 1) * root.blockGap
 
             Repeater {
                 model: root.totalBlocks
                 Rectangle {
-                    x: (index % root.gridCols) * (gridItem.blockSize + root.blockGap)
+                    x: gridItem.xOffset + (index % root.gridCols) * (root.blockSize + root.blockGap)
                     y: Math.floor(
-                           index / root.gridCols) * (gridItem.blockSize + root.blockGap)
-                    width: gridItem.blockSize
-                    height: gridItem.blockSize
+                           index / root.gridCols) * (root.blockSize + root.blockGap)
+                    width: root.blockSize
+                    height: root.blockSize
                     radius: Theme.spacing.radiusSmall
                     color: root.filledBlocks[index] ? Theme.palette.primary : Theme.palette.borderInteractive
                     Behavior on color {
@@ -176,7 +194,7 @@ Card {
 
             LogosText {
                 text: root.isDone ? "Complete" : "Downloading..."
-                font.pixelSize: Theme.typography.titleText * 0.8
+                font.pixelSize: Theme.typography.panelTitleText
                 color: Theme.palette.text
             }
             Item {
@@ -194,28 +212,20 @@ Card {
             Layout.fillWidth: true
             title: root.downloadInProgress ? "Looking for peers..." : "No download in progress"
             visible: !root.isDownloading && !root.isDone
+            color: Theme.palette.textSecondary
+            hasSeparator: false
         }
+    }
 
-        // ── Progress bar — flush with card edges ──────────────────────────────
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.leftMargin: -Theme.spacing.medium
-            Layout.rightMargin: -Theme.spacing.medium
-            Layout.bottomMargin: -Theme.spacing.medium - 4
-            Layout.preferredHeight: 6
-            color: Theme.palette.backgroundSecondary
-
-            Rectangle {
-                width: parent.width * root.progress
-                height: parent.height
-                color: Theme.palette.primary
-                Behavior on width {
-                    NumberAnimation {
-                        duration: 300
-                        easing.type: Easing.OutCubic
-                    }
-                }
-            }
-        }
+    // ── Progress bar — thin, flush with the card's bottom edge ───────────────
+    LogosProgressBar {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.leftMargin: -Theme.spacing.medium
+        anchors.rightMargin: -Theme.spacing.medium
+        anchors.bottomMargin: -Theme.spacing.medium
+        height: 2
+        value: root.progress
     }
 }

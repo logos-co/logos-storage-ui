@@ -1,6 +1,11 @@
 import QtQuick
 
-// Downward arrow — download (mirrored UploadIcon)
+// Downward arrow — download
+//   . . ● . .
+//   . . ● . .
+//   ● ● ● ● ●
+//   . ● ● ● .
+//   . . ● . .
 DotIcon {
     pattern: [
         0, 0, 1, 0, 0,

@@ -5,8 +5,12 @@ import Logos.Controls
 import Logos.StorageBackend 1.0
 
 // qmllint disable unqualified
-Card {
+LogosFrame {
     id: root
+
+    backgroundColor: Theme.palette.backgroundSecondary
+    borderColor: "transparent"
+    radius: Theme.spacing.radiusLarge
 
     implicitWidth: 320
     implicitHeight: 150
@@ -37,13 +41,19 @@ Card {
 
                     Image {
                         Layout.alignment: Qt.AlignTop
-                        source: "assets/node-tree.png"
+                        Layout.preferredWidth: 28
+                        Layout.preferredHeight: 28
+                        // The asset already ships in Theme.palette.primary, so it
+                        // is drawn as-is: colorizing it would only dull it.
+                        source: Qt.resolvedUrl("assets/node-tree.svg")
+                        sourceSize: Qt.size(64, 64)
+                        fillMode: Image.PreserveAspectFit
                     }
 
                     LogosText {
                         Layout.alignment: Qt.AlignTop
                         text: "Node"
-                        font.pixelSize: Theme.typography.titleText * 0.7
+                        font.pixelSize: Theme.typography.panelTitleText
                         color: Theme.palette.text
                     }
                 }
@@ -70,10 +80,13 @@ Card {
                             Layout.fillWidth: true
                         }
 
-                        Image {
+                        LogosIcon {
                             Layout.alignment: Qt.AlignVCenter
                             Layout.rightMargin: Theme.spacing.small
-                            source: "assets/settings.png"
+                            Layout.preferredWidth: 24
+                            Layout.preferredHeight: 24
+                            source: Qt.resolvedUrl("assets/settings-5-line.svg")
+                            color: Theme.palette.textTertiary
 
                             MouseArea {
                                 anchors.fill: parent
@@ -105,7 +118,8 @@ Card {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
-            color: Theme.palette.borderSecondary
+            color: Theme.palette.textTertiary
+            opacity: 0.2
         }
 
         RowLayout {
@@ -161,7 +175,7 @@ Card {
                 Layout.fillWidth: true
             }
 
-            LogosStorageSwitch {
+            LogosSwitch {
                 id: mixSwitch
                 text: "Mix"
                 // Mix is always configured; private queries default on when the
@@ -186,11 +200,17 @@ Card {
                 }
             }
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: root.effectiveStatus === StorageBackend.Running ? "Stop" : "Start"
-                variant: "secondary"
                 implicitHeight: 32
                 implicitWidth: 65
+                // The DS button floors at 44 with 12px vertical padding; at 32
+                // that padding pushes the label off-center.
+                topPadding: 0
+                bottomPadding: 0
+                Layout.alignment: Qt.AlignVCenter
+                background: CardButtonBackground {}
                 enabled: root.backend && (root.effectiveStatus === StorageBackend.Running
                                           || root.effectiveStatus === StorageBackend.Destroyed)
                 onClicked: {

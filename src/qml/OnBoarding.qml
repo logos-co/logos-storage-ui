@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 
 OnBoardingLayout {
     id: root
@@ -23,7 +24,7 @@ OnBoardingLayout {
 
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.topMargin: 10
+            Layout.topMargin: Theme.spacing.small
 
             RowLayout {
                 Layout.fillWidth: true
@@ -42,13 +43,13 @@ OnBoardingLayout {
                     text: "1 / 5"
                     font.pixelSize: Theme.typography.primaryText
                     color: Theme.palette.primary
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                 }
             }
 
             LogosText {
                 text: "How would you like to set up your node?"
-                font.pixelSize: Theme.typography.primaryText * 1.8
+                font.pixelSize: Theme.typography.panelTitleText
             }
         }
 
@@ -88,10 +89,12 @@ OnBoardingLayout {
         RowLayout {
             spacing: Theme.spacing.medium
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Back"
-                iconSource: "assets/arrow-left.png"
-                iconPosition: "left"
+                leadingIcon.source: LogosIcons.arrowLeft
+                leadingIcon.color: Theme.palette.text
+                leadingIcon.brightness: 1.0
                 onClicked: root.back()
             }
 
@@ -99,11 +102,13 @@ OnBoardingLayout {
                 Layout.fillWidth: true
             }
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Continue"
-                variant: "primary"
-                iconSource: "assets/arrow-right.png"
-                iconPosition: "right"
+                variant: LogosButton.Variant.Primary
+                trailingIcon.source: LogosIcons.arrowRight
+                trailingIcon.color: Theme.palette.text
+                trailingIcon.brightness: 1.0
                 enabled: root.selectedMode !== -1
                 onClicked: {
                     if (root.selectedMode === 0) {

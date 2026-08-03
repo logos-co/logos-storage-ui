@@ -1,6 +1,11 @@
 import QtQuick
 
 // Filled square — stop
+//   . . . . .
+//   . ● ● ● .
+//   . ● ● ● .
+//   . ● ● ● .
+//   . . . . .
 DotIcon {
     pattern: [
         0, 0, 0, 0, 0,

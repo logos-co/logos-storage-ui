@@ -4,6 +4,7 @@ import QtQuick.Dialogs
 import QtQuick.Window
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 import QtCore
 
 OnBoardingLayout {
@@ -39,7 +40,7 @@ OnBoardingLayout {
 
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.topMargin: 10
+            Layout.topMargin: Theme.spacing.small
 
             RowLayout {
                 Layout.fillWidth: true
@@ -58,13 +59,13 @@ OnBoardingLayout {
                     text: "4 / 5"
                     font.pixelSize: Theme.typography.primaryText
                     color: Theme.palette.primary
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                 }
             }
 
             LogosText {
                 text: "Decide which drive you wish to use alongside your storage node."
-                font.pixelSize: Theme.typography.primaryText * 1.8
+                font.pixelSize: Theme.typography.panelTitleText
             }
         }
 
@@ -76,7 +77,7 @@ OnBoardingLayout {
             Layout.preferredHeight: 230
             radius: Theme.spacing.radiusLarge
             color: Theme.palette.backgroundSecondary
-            border.color: selected ? Theme.palette.primary : Theme.palette.textMuted
+            border.color: selected ? Theme.palette.primary : Theme.palette.borderInteractive
             border.width: 1
 
             ColumnLayout {
@@ -93,7 +94,7 @@ OnBoardingLayout {
 
                 LogosText {
                     text: "Downloads folder"
-                    font.pixelSize: Theme.typography.primaryText * 1.2
+                    font.pixelSize: Theme.typography.subtitleText
                     Layout.leftMargin: Theme.spacing.medium
                     Layout.bottomMargin: Theme.spacing.tiny
                 }
@@ -104,13 +105,14 @@ OnBoardingLayout {
                     currentFolder: root.downloadFolder
                 }
 
-                LogosStorageTextField {
+                LogosTextField {
                     Layout.fillWidth: true
                     Layout.leftMargin: Theme.spacing.medium
                     Layout.rightMargin: Theme.spacing.medium
                     Layout.bottomMargin: Theme.spacing.large
                     readOnly: true
                     text: root.downloadFolderPath
+                    background: CardFieldBackground {}
 
                     MouseArea {
                         anchors.fill: parent
@@ -125,23 +127,27 @@ OnBoardingLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: Theme.spacing.small
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Back"
                 onClicked: root.back()
-                iconSource: "assets/arrow-left.png"
-                iconPosition: "left"
+                leadingIcon.source: LogosIcons.arrowLeft
+                leadingIcon.color: Theme.palette.text
+                leadingIcon.brightness: 1.0
             }
 
             Item {
                 Layout.fillWidth: true
             }
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Continue"
                 objectName: "downloadFolderContinue"
-                iconSource: "assets/arrow-right.png"
-                iconPosition: "right"
-                variant: "primary"
+                trailingIcon.source: LogosIcons.arrowRight
+                trailingIcon.color: Theme.palette.text
+                trailingIcon.brightness: 1.0
+                variant: LogosButton.Variant.Primary
                 onClicked: {
                     settings.downloadFolderPath = root.downloadFolder.toString()
                     root.next()

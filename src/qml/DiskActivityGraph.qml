@@ -77,7 +77,7 @@ Item {
 
             // ── Subtle horizontal grid ────────────────────────────────────────
             ctx.setLineDash([2, 5])
-            ctx.strokeStyle = Qt.rgba(1, 1, 1, 0.07).toString()
+            ctx.strokeStyle = Theme.palette.colors.getColor(Theme.palette.text, 0.07).toString()
             ctx.lineWidth = 1
             for (var g = 1; g <= 3; g++) {
                 ctx.beginPath()

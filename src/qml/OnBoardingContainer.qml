@@ -22,7 +22,7 @@ ColumnLayout {
 
             LogosText {
                 text: "Logos Storage"
-                font.pixelSize: Theme.typography.primaryText * 1.2
+                font.pixelSize: Theme.typography.subtitleText
                 Layout.alignment: Qt.AlignTop
             }
 
@@ -34,14 +34,17 @@ ColumnLayout {
                 Layout.alignment: Qt.AlignTop
                 spacing: Theme.spacing.tiny
 
-                Image {
-                    source: "assets/alpha.png"
+                LogosIcon {
+                    source: Qt.resolvedUrl("assets/alpha.png")
+                    color: Theme.palette.text
+                    width: 71
+                    height: 10
                 }
 
                 LogosText {
                     text: "V. 0.1.3"
                     font.pixelSize: Theme.typography.secondaryText
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                     color: Theme.palette.textMuted
                 }
             }

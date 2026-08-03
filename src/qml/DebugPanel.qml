@@ -27,30 +27,42 @@ ColumnLayout {
             anchors.rightMargin: Theme.spacing.medium
             spacing: Theme.spacing.small
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Debug"
                 implicitHeight: 32
+                topPadding: 0
+                bottomPadding: 0
                 implicitWidth: 70
                 enabled: root.running
                 onClicked: root.backend.logDebugInfo()
             }
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Data dir"
                 implicitHeight: 32
+                topPadding: 0
+                bottomPadding: 0
                 implicitWidth: 80
                 enabled: root.running
                 onClicked: root.backend.logDataDir()
             }
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Version"
                 implicitHeight: 32
+                topPadding: 0
+                bottomPadding: 0
                 implicitWidth: 80
                 enabled: root.running
                 onClicked: root.backend.logVersion()
             }
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Restart onboarding"
                 implicitHeight: 32
+                topPadding: 0
+                bottomPadding: 0
                 implicitWidth: 150
                 enabled: root.running
                 onClicked: root.backend.restartOnboarding()
@@ -75,8 +87,8 @@ ColumnLayout {
             width: logFlick.width
             text: root.backend ? root.backend.debugLogs : ""
             color: Theme.palette.textSecondary
-            font.family: "monospace"
-            font.pixelSize: 11
+            font.family: Theme.typography.mono
+            font.pixelSize: Theme.typography.secondaryText
             wrapMode: Text.WrapAnywhere
             readOnly: true
             padding: Theme.spacing.small

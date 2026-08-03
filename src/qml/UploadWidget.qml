@@ -2,9 +2,14 @@ import QtQuick
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 
-Card {
+LogosFrame {
     id: root
+
+    backgroundColor: Theme.palette.backgroundSecondary
+    borderColor: "transparent"
+    radius: Theme.spacing.radiusLarge
 
     implicitWidth: 300
     implicitHeight: 120
@@ -112,11 +117,14 @@ Card {
                     Layout.fillWidth: true
                 }
 
-                Image {
+                LogosIcon {
                     Layout.alignment: Qt.AlignTop
                     Layout.topMargin: Theme.spacing.tiny
                     Layout.rightMargin: Theme.spacing.tiny
-                    source: "assets/folder-upload.png"
+                    Layout.preferredWidth: 40
+                    Layout.preferredHeight: 40
+                    source: Qt.resolvedUrl("assets/folder-upload-line.svg")
+                    color: Theme.palette.textTertiary
                 }
             }
         }
@@ -129,6 +137,8 @@ Card {
         anchors.bottom: parent.bottom
         title: "Upload"
         visible: !root.isUploading && !root.isDone
+        color: Theme.palette.textSecondary
+        hasSeparator: false
     }
 
     Rectangle {
@@ -160,12 +170,12 @@ Card {
             anchors.fill: parent
             gradient: Gradient {
                 orientation: Gradient.Horizontal
-                GradientStop { position: 0.0;  color: "#88000000" }
-                GradientStop { position: 0.35; color: "#88000000" }
-                GradientStop { position: 0.55; color: "#66000000" }
-                GradientStop { position: 0.72; color: "#33000000" }
-                GradientStop { position: 0.88; color: "#11000000" }
-                GradientStop { position: 1.0;  color: "#00000000" }
+                GradientStop { position: 0.0;  color: Theme.palette.colors.getColor(Theme.palette.backgroundBlack, 0.53) }
+                GradientStop { position: 0.35; color: Theme.palette.colors.getColor(Theme.palette.backgroundBlack, 0.53) }
+                GradientStop { position: 0.55; color: Theme.palette.colors.getColor(Theme.palette.backgroundBlack, 0.40) }
+                GradientStop { position: 0.72; color: Theme.palette.colors.getColor(Theme.palette.backgroundBlack, 0.20) }
+                GradientStop { position: 0.88; color: Theme.palette.colors.getColor(Theme.palette.backgroundBlack, 0.07) }
+                GradientStop { position: 1.0;  color: Theme.palette.colors.getColor(Theme.palette.backgroundBlack, 0.0) }
             }
         }
 
@@ -200,8 +210,11 @@ Card {
                 Layout.fillWidth: true
             }
 
-            Image {
-                source: "assets/close-circle.png"
+            LogosIcon {
+                source: Qt.resolvedUrl("assets/close-circle-line.svg")
+                color: Theme.palette.text
+                Layout.preferredWidth: 23
+                Layout.preferredHeight: 23
                 visible: root.isDone
 
                 MouseArea {
@@ -219,15 +232,7 @@ Card {
             radius: Theme.spacing.radiusSmall
             opacity: 0.8
 
-            property bool copied: false
-
             color: Theme.palette.backgroundInset
-
-            Timer {
-                id: resetCopyTimer
-                interval: 1500
-                onTriggered: cidBox.copied = false
-            }
 
             LogosText {
                 id: cidText
@@ -244,42 +249,20 @@ Card {
                 elide: Text.ElideRight
             }
 
-            Image {
+            LogosCopyButton {
                 id: copyIcon
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right
                 anchors.rightMargin: Theme.spacing.small
-                source: cidBox.copied ? "assets/success.png" : "assets/file-copy.png"
-
-                Behavior on source {
-                    PropertyAnimation {
-                        duration: 80
-                    }
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        clipboardHelper.text = root.uploadedCid
-                        clipboardHelper.selectAll()
-                        clipboardHelper.copy()
-                        cidBox.copied = true
-                        resetCopyTimer.restart()
-                    }
-                }
-            }
-
-            TextEdit {
-                id: clipboardHelper
-                visible: false
+                value: root.uploadedCid
+                flat: true
             }
         }
 
         RowLayout {
             LogosText {
                 text: root.isUploading ? "Uploading..." : "Complete"
-                font.pixelSize: Theme.typography.titleText * 0.6
+                font.pixelSize: Theme.typography.subtitleText
                 color: Theme.palette.text
                 visible: root.isUploading || root.isDone
             }
@@ -290,8 +273,8 @@ Card {
 
             LogosText {
                 text: root.uploadProgress + "%"
-                font.pixelSize: Theme.typography.titleText * 0.6
-                font.bold: true
+                font.pixelSize: Theme.typography.subtitleText
+                font.weight: Theme.typography.weightBold
                 color: Theme.palette.text
                 visible: root.isUploading || root.isDone
             }

@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Logos.Controls
+import Logos.Icons
 import Logos.Theme
 
 OnBoardingLayout {
@@ -73,7 +74,7 @@ OnBoardingLayout {
 
         ColumnLayout {
             Layout.fillWidth: true
-            Layout.topMargin: 10
+            Layout.topMargin: Theme.spacing.small
 
             RowLayout {
                 Layout.fillWidth: true
@@ -92,13 +93,13 @@ OnBoardingLayout {
                     text: "3 / 5"
                     font.pixelSize: Theme.typography.primaryText
                     color: Theme.palette.primary
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                 }
             }
 
             LogosText {
                 text: root.status
-                font.pixelSize: Theme.typography.primaryText * 1.8
+                font.pixelSize: Theme.typography.panelTitleText
             }
         }
 
@@ -110,7 +111,7 @@ OnBoardingLayout {
             Layout.preferredHeight: 230
             radius: Theme.spacing.radiusLarge
             color: Theme.palette.backgroundSecondary
-            border.color: selected ? Theme.palette.primary : Theme.palette.textMuted
+            border.color: selected ? Theme.palette.primary : Theme.palette.borderInteractive
             border.width: 1
 
             NodeStatusIcon {
@@ -135,9 +136,11 @@ OnBoardingLayout {
             Layout.alignment: Qt.AlignHCenter
             spacing: Theme.spacing.small
 
-            LogosStorageButton {
-                iconSource: "assets/arrow-left.png"
-                iconPosition: "left"
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
+                leadingIcon.source: LogosIcons.arrowLeft
+                leadingIcon.color: Theme.palette.text
+                leadingIcon.brightness: 1.0
                 text: "Back"
                 enabled: !root.starting
                 onClicked: {
@@ -150,10 +153,12 @@ OnBoardingLayout {
                 Layout.fillWidth: true
             }
 
-            LogosStorageButton {
-                iconSource: "assets/arrow-right.png"
-                iconPosition: "right"
-                text: "Continue"
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
+                trailingIcon.source: LogosIcons.arrowRight
+                trailingIcon.color: Theme.palette.text
+                trailingIcon.brightness: 1.0
+                                text: "Continue"
                 enabled: root.success
                 onClicked: {
                     root.backend.saveCurrentConfig()

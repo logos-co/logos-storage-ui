@@ -4,8 +4,12 @@ import Logos.Theme
 import Logos.Controls
 import "Utils.js" as Utils
 
-Card {
+LogosFrame {
     id: root
+
+    backgroundColor: Theme.palette.backgroundSecondary
+    borderColor: "transparent"
+    radius: Theme.spacing.radiusLarge
 
     implicitWidth: 500
     implicitHeight: 500
@@ -64,7 +68,7 @@ Card {
 
                 LogosText {
                     text: "Logos Storage"
-                    font.pixelSize: Theme.typography.titleText * 0.8
+                    font.pixelSize: Theme.typography.panelTitleText
                     color: Theme.palette.textMuted
                 }
 
@@ -84,18 +88,22 @@ Card {
 
                     LogosText {
                         text: Utils.formatBytes(root.used)
-                        font.pixelSize: Theme.typography.titleText * 0.8
+                        font.pixelSize: Theme.typography.panelTitleText
                         color: Theme.palette.text
                     }
 
                     LogosText {
                         text: " / " + Utils.formatBytes(root.total)
-                        font.pixelSize: Theme.typography.titleText * 0.8
+                        font.pixelSize: Theme.typography.panelTitleText
                         color: Theme.palette.textMuted
                     }
 
                     Image {
-                        source: "assets/hard-drive.png"
+                        Layout.preferredWidth: 28
+                        Layout.preferredHeight: 28
+                        source: Qt.resolvedUrl("assets/hard-drive-2-line.svg")
+                        sourceSize: Qt.size(64, 64)
+                        fillMode: Image.PreserveAspectFit
                     }
                 }
 
@@ -103,7 +111,7 @@ Card {
                     text: "Total space available"
                     font.pixelSize: Theme.typography.secondaryText
                     color: Theme.palette.textSecondary
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                 }
             }
         }
@@ -111,7 +119,8 @@ Card {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
-            color: Theme.palette.borderSecondary
+            color: Theme.palette.textTertiary
+            opacity: 0.2
         }
 
         Rectangle {
@@ -124,8 +133,7 @@ Card {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 height: 40
-                // TODO: Logos Design Systen
-                color: "#313131"
+                color: Theme.palette.borderSubtle
 
                 Rectangle {
                     width: parent.width * root.fraction + 10
@@ -163,7 +171,7 @@ Card {
                 LogosText {
                     text: Utils.formatBytes(root.used) + " Utilized"
                     font.pixelSize: Theme.typography.secondaryText
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                     color: Theme.palette.textSecondary
                 }
             }
@@ -181,7 +189,7 @@ Card {
                 LogosText {
                     text: Utils.formatBytes(root.total - root.used) + " Free"
                     font.pixelSize: Theme.typography.secondaryText
-                    font.family: "monospace"
+                    font.family: Theme.typography.mono
                     color: Theme.palette.textMuted
                 }
             }
@@ -209,7 +217,7 @@ Card {
                 text: "Disk Utilization Rate"
                 font.pixelSize: Theme.typography.secondaryText
                 color: Theme.palette.textSecondary
-                font.family: "monospace"
+                font.family: Theme.typography.mono
             }
         }
     }

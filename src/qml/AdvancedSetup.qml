@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.Icons
 
 OnBoardingLayout {
     id: root
@@ -26,7 +27,7 @@ OnBoardingLayout {
 
             LogosText {
                 text: "Edit the JSON configuration below, than click Validate. "
-                font.pixelSize: Theme.typography.primaryText * 1.8
+                font.pixelSize: Theme.typography.panelTitleText
             }
         }
 
@@ -43,24 +44,28 @@ OnBoardingLayout {
             Layout.fillWidth: true
             spacing: Theme.spacing.medium
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Back"
                 onClicked: root.back()
-                iconSource: "assets/arrow-left.png"
-                iconPosition: "left"
+                leadingIcon.source: LogosIcons.arrowLeft
+                leadingIcon.color: Theme.palette.text
+                leadingIcon.brightness: 1.0
             }
 
             Item {
                 Layout.fillWidth: true
             }
 
-            LogosStorageButton {
+            LogosButton {
+                radius: Theme.spacing.radiusLarge
                 text: "Validate"
-                variant: "primary"
+                variant: LogosButton.Variant.Primary
                 enabled: jsonEditor.isValid
-                iconSource: "assets/arrow-right.png"
-                iconPosition: "right"
-                onClicked: {
+                trailingIcon.source: LogosIcons.arrowRight
+                trailingIcon.color: Theme.palette.text
+                trailingIcon.brightness: 1.0
+                                onClicked: {
                     root.backend.saveUserConfig(jsonEditor.text)
                     root.completed()
                 }

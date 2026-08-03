@@ -113,31 +113,30 @@ qt_add_qml_module(appqml
         OnBoarding.qml
         Main.qml
         StartNode.qml
-        LogosStorageTextField.qml
-        LogosStorageButton.qml
         LogosStorageLayout.qml
-        LogosStorageSwitch.qml
         PortForwarding.qml
         ErrorToast.qml
         HealthIndicator.qml
         ModeSelector.qml
         AdvancedSetup.qml
-        icons/DotIcon.qml
-        icons/NodeStatusIcon.qml
-        icons/GuideIcon.qml
-        icons/AdvancedIcon.qml
-        icons/UpnpIcon.qml
-        icons/PortIcon.qml
-        icons/StorageIcon.qml
-        icons/PlayIcon.qml
-        icons/StopIcon.qml
-        icons/SettingsIcon.qml
-        icons/UploadIcon.qml
-        icons/DownloadIcon.qml
-        icons/DeleteIcon.qml
+        DotIcon.qml
+        NodeStatusIcon.qml
+        GuideIcon.qml
+        AdvancedIcon.qml
+        UpnpIcon.qml
+        PortIcon.qml
+        StorageIcon.qml
+        PlayIcon.qml
+        StopIcon.qml
+        SettingsIcon.qml
+        UploadIcon.qml
+        DownloadIcon.qml
+        DeleteIcon.qml
         ArcGauge.qml
         ArcWidget.qml
-        Card.qml
+        CardButtonBackground.qml
+        CardFieldBackground.qml
+        IconButtonBackground.qml
         DiskWidget.qml
         UploadWidget.qml
         PeersWidget.qml
@@ -159,26 +158,19 @@ qt_add_qml_module(appqml
         DiskActivityGraph.qml
 
         assets/bg.png
-        assets/image.png
-        assets/pdf.png
-        assets/video.png
-        assets/other.png
         assets/badge-alpha.png
         assets/alpha.png
-        assets/arrow-right.png
-        assets/arrow-left.png
-        assets/hard-drive.png
-        assets/folder-upload.png
-        assets/close-circle.png
-        assets/file-copy.png
-        assets/file-copy-line.png
-        assets/global.png
-        assets/node-tree.png
-        assets/settings.png
-        assets/error.png
-        assets/success.png
-        assets/download.png
-        assets/delete.png
+        assets/close-circle-line.svg
+        assets/documents.svg
+        assets/images.svg
+        assets/videos.svg
+        assets/download-2-fill.svg
+        assets/node-tree.svg
+        assets/settings-5-line.svg
+        assets/hard-drive-2-line.svg
+        assets/global-line.svg
+        assets/folder-upload-line.svg
+        assets/delete-bin-2-line.svg
         BottomTitle.qml
         DownloadFolder.qml
 )
