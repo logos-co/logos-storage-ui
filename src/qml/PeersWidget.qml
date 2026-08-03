@@ -90,7 +90,7 @@ LogosFrame {
             }
 
             LogosText {
-                text: root.peers > 0 ? "Peer detected are in good standing."
+                text: root.peers > 0 ? "Detected peers are in good standing."
                                      : "No active peer detected."
                 font.pixelSize: Theme.typography.secondaryText
                 color: Theme.palette.textMuted
