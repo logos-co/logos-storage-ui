@@ -94,12 +94,7 @@ Thanks to this, you should have a working IDE. You can now open the project:
 
 Then open `StorageWidget.h`: you should not see any error.
 
-Repeat this operation for the `app` and `qml` folders by opening their respective `CMakeLists.txt` files.
-The `qml` folder contains a Qt Quick application used only to preview QML files.
-
-Each project should be opened on its own, not as part of another project.
-At the end, you should have something like this:
-
-![Qt Creator projects overview](./screenshots/qtcreator.png)
+There is a single CMake project. To preview QML files, use `./preview.sh`
+instead (see [development documentation](docs/development.md)).
 
 You are now ready for coding.

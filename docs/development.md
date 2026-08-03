@@ -4,11 +4,21 @@ This documentation provides instructions for setting up the development environm
 
 ## Architecture
 
-The project is divided into two CMake entry points:
+**StorageUIPlugin** uses the root `CMakeLists.txt` and the sources under `src/`. This is the main UI. It is a plugin because it can be reused in the Logos main app or in a standalone application.
 
-1. **StorageUIPlugin**: It uses the root `CMakeLists.txt` and the sources under `src/`. This is the main UI. It is a plugin because it can be reused in the Logos main app or in a standalone application.
+## QML preview
 
-2. **qml**: It uses `src/qml/CMakeLists.txt`. It is a dev application used to run the QML preview easily. Note that it relies on the `StorageUIPlugin` build folder, so **YOU MUST** build `StorageUIPlugin` before using the QML preview.
+Runs one screen through the `qml` runtime, with no backend: widgets keep their
+`backend: MockBackend` default.
+
+```bash
+./preview.sh                            # StorageView.qml, reloads on save
+./preview.sh OnBoarding.qml             # any file under src/qml/
+./preview.sh --no-watch OnBoarding.qml  # load once, no reload
+```
+
+Needs `qml` and `qmlpreview` in `PATH` (Fedora: `sudo dnf install
+qt6-qtdeclarative`). The system Qt, not the Nix one.
 
 ## Qt Creator (for development)
 
@@ -33,15 +43,13 @@ Ensure that you already have the build tools installed (see the previous section
 
 ### Configuration
 
-You need to import the CMake projects for the plugin (`CMakeLists.txt` at the repo root) and for `src/qml` into Qt Creator.
+You need to import the CMake project for the plugin (`CMakeLists.txt` at the repo root) into Qt Creator.
 
 To import the project into Qt Creator, click on `File -> Open File or Project` and select the `CMakeLists.txt` file. A configuration popup will appear. Make sure you have a **Debug** build configuration pointing to the `build` directory and then click on `Configure project`.
 
 Enable CMake debug logging, add `--log-level=DEBUG` in `Projects` -> `Imported Kits` -> `Build` -> `Additional CMake options`.
 
 Ensure that `clangd` is enabled for your project. Go to `Projects` on the left, then click on `Manage Kits` at the top. Select the `C++` tab and open the last tab, `Clangd`. Check `Use clangd` and, if needed, configure it to use the `clangd` installed on your system.
-
-Then go to `Projects` -> `qml` -> `Build` -> `Build Environment`. Click Add to create a new variable, set the name to `QML_IMPORT_TYPE`, and set the value to the absolute path of your QML build directory (for example, /path/to/your/project/src/qml/build/qml).
 
 That's it. The configuration defined in `CMakeLists.txt` should allow the project to build correctly.
 

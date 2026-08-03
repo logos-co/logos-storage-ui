@@ -1,0 +1,2 @@
+module Logos.StorageBackend
+StorageBackend 1.0 StorageBackend.qml

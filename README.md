@@ -16,6 +16,14 @@ You can override a dependency by using a local version with `--override-input`. 
 nix run --override-input storage_module/logos-storage git+file:///somewhere/logos-storage-nim?submodules=1
 ```
 
+To preview a single QML screen without the backend:
+
+```bash
+./preview.sh StorageView.qml   # reloads on save
+```
+
+See the [development documentation](docs/development.md) for details.
+
 ## How to Build
 
 ### Build the app

@@ -69146,6 +69146,10 @@
     },
     "root": {
       "inputs": {
+        "logos-design-system": [
+          "logos-module-builder",
+          "logos-design-system"
+        ],
         "logos-module-builder": "logos-module-builder",
         "nix-bundle-lgx": "nix-bundle-lgx_46",
         "storage_module": "storage_module"
