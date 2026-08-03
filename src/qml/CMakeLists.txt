@@ -165,6 +165,7 @@ qt_add_qml_module(appqml
         assets/images.svg
         assets/videos.svg
         assets/download-2-fill.svg
+        assets/external-link-line.svg
         assets/node-tree.svg
         assets/settings-5-line.svg
         assets/hard-drive-2-line.svg

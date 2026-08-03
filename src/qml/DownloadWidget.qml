@@ -36,13 +36,14 @@ LogosFrame {
 
     // ── Grid config ───────────────────────────────────────────────────────────
     readonly property int gridRows: 6
-    readonly property int maxCols: 30
     readonly property real blockSize: 12
     readonly property int blockGap: 4
 
     // Fixed block size; fit as many columns as the width allows, fewer when narrow.
-    readonly property int gridCols: Math.max(6, Math.min(maxCols, Math.floor(
-        (gridItem.width + blockGap) / (blockSize + blockGap))))
+    // Width comes from contentCol (the full padded content width); gridItem's own
+    // width can be 0 with absolutely-positioned children.
+    readonly property int gridCols: Math.max(6, Math.floor(
+        (contentCol.width + blockGap) / (blockSize + blockGap)))
     readonly property int totalBlocks: gridCols * gridRows
 
     property var filledBlocks: []
@@ -120,12 +121,14 @@ LogosFrame {
     }
 
     ColumnLayout {
+        id: contentCol
         anchors.fill: parent
         spacing: 0
 
+        // Kept in the layout when idle: the header, the footer and the title all
+        // hold their height so the grid never moves when a download starts.
         RowLayout {
             Layout.fillWidth: true
-            visible: root.isDownloading || root.isDone
 
             LogosText {
                 text: root.downloadFilename
@@ -137,13 +140,14 @@ LogosFrame {
 
             LogosIcon {
                 source: Qt.resolvedUrl("assets/close-circle-line.svg")
-                color: Theme.palette.text
-                Layout.preferredWidth: 23
-                Layout.preferredHeight: 23
-                visible: root.isDone
+                color: Theme.palette.textTertiary
+                Layout.preferredWidth: Theme.spacing.xlarge
+                Layout.preferredHeight: Theme.spacing.xlarge
+                opacity: root.isDone ? 1 : 0
 
                 MouseArea {
                     anchors.fill: parent
+                    enabled: root.isDone
                     cursorShape: Qt.PointingHandCursor
                     onClicked: root.reset()
                 }
@@ -158,16 +162,18 @@ LogosFrame {
         Item {
             id: gridItem
             Layout.fillWidth: true
-            Layout.alignment: Qt.AlignHCenter
+            Layout.preferredWidth: contentCol.width
+            Layout.preferredHeight: root.gridRows * root.blockSize + (root.gridRows - 1) * root.blockGap
 
-            readonly property real gridWidth: root.gridCols * root.blockSize + (root.gridCols - 1) * root.blockGap
-            readonly property real xOffset: (width - gridWidth) / 2
-            implicitHeight: root.gridRows * root.blockSize + (root.gridRows - 1) * root.blockGap
+            // Blocks are spread edge to edge rather than centred with a fixed gap.
+            readonly property real colStep: root.gridCols > 1
+                ? (contentCol.width - root.blockSize) / (root.gridCols - 1)
+                : 0
 
             Repeater {
                 model: root.totalBlocks
                 Rectangle {
-                    x: gridItem.xOffset + (index % root.gridCols) * (root.blockSize + root.blockGap)
+                    x: (index % root.gridCols) * gridItem.colStep
                     y: Math.floor(
                            index / root.gridCols) * (root.blockSize + root.blockGap)
                     width: root.blockSize
@@ -187,33 +193,43 @@ LogosFrame {
             Layout.fillHeight: true
         }
 
-        // ── Footer: label + progress % ────────────────────────────────────────
-        RowLayout {
+        // ── Footer: progress while downloading, title when idle ───────────────
+        Item {
             Layout.fillWidth: true
-            visible: root.isDownloading || root.isDone
+            // BottomTitle's own padding would push the grid up: the slot is sized
+            // to the progress line, both are anchored to its bottom edge.
+            implicitHeight: footerRow.implicitHeight
 
-            LogosText {
-                text: root.isDone ? "Complete" : "Downloading..."
-                font.pixelSize: Theme.typography.panelTitleText
-                color: Theme.palette.text
-            }
-            Item {
-                Layout.fillWidth: true
-            }
-            LogosText {
-                text: Math.round(root.progress * 100) + "%"
-                font.pixelSize: Theme.typography.secondaryText
-                color: Theme.palette.textMuted
-            }
-        }
+            RowLayout {
+                id: footerRow
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                visible: root.isDownloading || root.isDone
 
-        // ── BottomTitle — visible when idle ───────────────────────────────────
-        BottomTitle {
-            Layout.fillWidth: true
-            title: root.downloadInProgress ? "Looking for peers..." : "No download in progress"
-            visible: !root.isDownloading && !root.isDone
-            color: Theme.palette.textSecondary
-            hasSeparator: false
+                LogosText {
+                    text: root.isDone ? "Complete" : "Downloading..."
+                    font.pixelSize: Theme.typography.subtitleText
+                    color: root.isDone ? Theme.palette.primary : Theme.palette.text
+                }
+                Item {
+                    Layout.fillWidth: true
+                }
+                LogosText {
+                    text: Math.round(root.progress * 100) + "%"
+                    font.pixelSize: Theme.typography.subtitleText
+                    color: root.isDone ? Theme.palette.primary : Theme.palette.textMuted
+                }
+            }
+
+            BottomTitle {
+                id: bottomTitle
+                anchors.fill: parent
+                title: root.downloadInProgress ? "Looking for peers..." : "No download in progress"
+                visible: !root.isDownloading && !root.isDone
+                color: Theme.palette.textSecondary
+                hasSeparator: false
+            }
         }
     }
 
