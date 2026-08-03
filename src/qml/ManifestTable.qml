@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
 import QtQuick.Layouts
+import Qt.labs.folderlistmodel
 import Logos.Theme
 import Logos.Controls
 import Logos.Icons
@@ -26,6 +27,36 @@ LogosFrame {
 
     // Two 40px icon buttons, the gap between them and the pill's own padding.
     readonly property int actionsColumnWidth: 40 * 2 + Theme.spacing.medium * 3
+
+    // A manifest is "downloaded" when a file with its name sits in the download
+    // folder; otherwise it's only "fetched" (manifest present, no local file).
+    property var downloadedNames: ({})
+
+    FolderListModel {
+        id: downloadFolder
+        folder: root.downloadFolderPath
+        showDirs: false
+        showHidden: false
+        nameFilters: ["*"]
+        onCountChanged: root.rebuildDownloaded()
+        onFolderChanged: root.rebuildDownloaded()
+    }
+
+    function rebuildDownloaded() {
+        var names = {}
+        for (var i = 0; i < downloadFolder.count; i++)
+            names[downloadFolder.get(i, "fileName")] = true
+        root.downloadedNames = names
+    }
+
+    function isDownloaded(item) {
+        return !!(item && item.filename && root.downloadedNames[item.filename])
+    }
+
+    function openDownloaded(item) {
+        Qt.openUrlExternally(root.downloadFolderPath.replace(/\/$/, "")
+                             + "/" + encodeURIComponent(item.filename))
+    }
 
     function markDeleting(cid) {
         var d = Object.assign({}, root.deleting)
@@ -431,8 +462,19 @@ LogosFrame {
                                         anchors.centerIn: parent
                                         spacing: Theme.spacing.medium
 
+                                        readonly property bool rowDownloaded: root.isDownloaded(rowItem)
+
+                                        LogosIconButton {
+                                            objectName: "openButton"
+                                            visible: actionsRow.rowDownloaded
+                                            iconSource: Qt.resolvedUrl("assets/external-link-line.svg")
+                                            background: IconButtonBackground {}
+                                            onClicked: root.openDownloaded(rowItem)
+                                        }
+
                                         LogosIconButton {
                                             objectName: "downloadButton"
+                                            visible: !actionsRow.rowDownloaded
                                             iconSource: Qt.resolvedUrl("assets/download-2-fill.svg")
                                             background: IconButtonBackground {}
                                             enabled: root.running && !root.isDownloading
