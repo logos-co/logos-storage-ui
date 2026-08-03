@@ -73,7 +73,7 @@ LogosFrame {
                                  "cid": r.cid || "",
                                  "filename": r.filename || "",
                                  "mimetype": r.mimetype || "",
-                                 "datasetSize": String(r.datasetSize || ""),
+                                 "datasetSize": String(r.datasetSize || 0),
                                  "status": r.status || "",
                                  "error": r.error || ""
                              })
