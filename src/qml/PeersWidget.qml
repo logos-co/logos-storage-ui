@@ -31,8 +31,8 @@ LogosFrame {
         spacing: Theme.spacing.medium
 
         Image {
-            width: 28
-            height: 26
+            Layout.preferredWidth: 28
+            Layout.preferredHeight: 26
             source: Qt.resolvedUrl("assets/global-line.svg")
             sourceSize: Qt.size(64, 58)
             fillMode: Image.PreserveAspectFit
@@ -90,8 +90,8 @@ LogosFrame {
             }
 
             LogosText {
-                text: root.peers > 0 ? "Peer connections are in good standing."
-                                     : "No active peer connections."
+                text: root.peers > 0 ? "Peer detected are in good standing."
+                                     : "No active peer detected."
                 font.pixelSize: Theme.typography.secondaryText
                 color: Theme.palette.textMuted
                 font.family: Theme.typography.mono
