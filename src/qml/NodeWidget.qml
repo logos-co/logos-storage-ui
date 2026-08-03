@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
@@ -20,15 +21,19 @@ LogosFrame {
     property bool blinkOn: false
     readonly property int effectiveStatus: root.backend ? root.backend.status : StorageBackend.Destroyed
 
-    readonly property color statusColor: {
-        if (root.effectiveStatus === StorageBackend.Starting) {
+    readonly property color nodeStatusColor: {
+        switch (root.effectiveStatus) {
+        case StorageBackend.Starting:
+        case StorageBackend.Stopping:
             return Theme.palette.warning
+        case StorageBackend.Running:
+            return Theme.palette.success
+        default:
+            return Theme.palette.error
         }
+    }
 
-        if (root.effectiveStatus !== StorageBackend.Running) {
-            return Theme.palette.textMuted
-        }
-
+    readonly property color natColor: {
         if (root.reachability === "Reachable") {
             return Theme.palette.success
         }
@@ -38,6 +43,18 @@ LogosFrame {
         }
 
         return Theme.palette.textMuted
+    }
+
+    readonly property string natLabel: {
+        if (root.reachability === "Reachable") {
+            return "Reachable"
+        }
+
+        if (root.reachability === "NotReachable") {
+            return "Not reachable"
+        }
+
+        return "Unknown"
     }
 
     property string downloadFolderPath: ""
@@ -119,9 +136,27 @@ LogosFrame {
             }
 
             StorageIcon {
+                id: statusMatrix
+                visible: root.effectiveStatus === StorageBackend.Starting
+                         || root.effectiveStatus === StorageBackend.Stopping
+                         || root.effectiveStatus === StorageBackend.Running
                 animated: root.effectiveStatus === StorageBackend.Starting
                           || root.effectiveStatus === StorageBackend.Stopping
-                dotColor: root.statusColor
+                dotColor: root.nodeStatusColor
+            }
+
+            DotIcon {
+                visible: !statusMatrix.visible
+                pattern: [0, 0, 0, 0, 0,
+                          0, 0, 0, 0, 0,
+                          1, 0, 1, 0, 1,
+                          0, 0, 0, 0, 0,
+                          0, 0, 0, 0, 0]
+                dotSize: 12
+                dotSpacing: 4
+                dotRadius: 4
+                dotColor: Theme.palette.error
+                inactiveDotColor: Theme.palette.border
             }
         }
 
@@ -136,38 +171,55 @@ LogosFrame {
             id: actionRow
 
             RowLayout {
+                id: statusRow
                 spacing: Theme.spacing.medium
+
+                // While running the node status is already on the matrix above,
+                // so this line reports AutoNAT reachability instead.
+                readonly property bool showsNat: root.effectiveStatus === StorageBackend.Running
 
                 Rectangle {
                     Layout.preferredWidth: 8
                     Layout.preferredHeight: 8
                     radius: Theme.spacing.radiusSmall
                     Layout.alignment: Qt.AlignVCenter
-                    color: root.statusColor
-                    opacity: root.effectiveStatus
-                             === StorageBackend.Running ? (root.blinkOn ? 1.0 : 0.15) : 1.0
+                    color: statusRow.showsNat ? root.natColor : root.nodeStatusColor
+                    opacity: statusRow.showsNat ? (root.blinkOn ? 1.0 : 0.15) : 1.0
                 }
 
                 LogosText {
                     text: {
+                        if (statusRow.showsNat)
+                            return root.natLabel
+
                         switch (root.effectiveStatus) {
-                        case StorageBackend.Stopped:
-                            return "Stopped"
                         case StorageBackend.Starting:
                             return "Starting…"
-                        case StorageBackend.Running:
-                            return "Running"
                         case StorageBackend.Stopping:
                             return "Stopping…"
-                        case StorageBackend.Destroyed:
-                            return "Stopped"
                         default:
-                            return "Unknown"
+                            return "Stopped"
                         }
                     }
                     font.pixelSize: Theme.typography.primaryText
                     color: Theme.palette.textSecondary
                     Layout.alignment: Qt.AlignVCenter
+                }
+
+                LogosIcon {
+                    visible: statusRow.showsNat
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.leftMargin: -Theme.spacing.small
+                    Layout.preferredWidth: 16
+                    Layout.preferredHeight: 16
+                    source: Qt.resolvedUrl("assets/question-line.svg")
+                    color: Theme.palette.textTertiary
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: natDrawer.open()
+                    }
                 }
             }
 
@@ -227,6 +279,13 @@ LogosFrame {
             backend: root.backend
             downloadFolderPath: root.downloadFolderPath
             onFolderPathChanged: function(path) { root.folderPathChanged(path) }
+        }
+
+        NatDrawer {
+            id: natDrawer
+            parent: Overlay.overlay
+            stateColor: root.natColor
+            stateLabel: root.natLabel
         }
 
         // Rectangle {
