@@ -133,18 +133,12 @@ LogosFrame {
     //         "size": 12222
     //     }]
     function mimetypeIcon(mimetype) {
-        if (!mimetype)
-            return "assets/images.svg"
-        var m = mimetype.toLowerCase()
+        var m = (mimetype || "").toLowerCase()
         if (m.indexOf("video/") === 0)
             return "assets/videos.svg"
         if (m.indexOf("image/") === 0)
             return "assets/images.svg"
-        if (m === "application/pdf" || m.indexOf("text/") === 0
-                || m.indexOf("document") >= 0 || m.indexOf("word") >= 0
-                || m.indexOf("pdf") >= 0)
-            return "assets/documents.svg"
-        return "assets/images.svg"
+        return "assets/documents.svg"
     }
 
     implicitWidth: 1200
