@@ -30,6 +30,7 @@ OnBoardingLayout {
     }
 
     OnBoardingContainer {
+        backend: root.backend
         spacing: Theme.spacing.medium
 
         OnBoardingProgress {

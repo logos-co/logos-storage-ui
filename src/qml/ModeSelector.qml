@@ -9,10 +9,15 @@ OnBoardingLayout {
 
     signal completed(bool isGuide)
 
+    property var backend: MockBackend
     property int selectedMode: 0
-    property bool backendReady: true
+
+    // The guided path writes defaultConfigJson, which stays empty until the
+    // replica has synced.
+    readonly property bool backendReady: !!(root.backend && root.backend.defaultConfigJson)
 
     OnBoardingContainer {
+        backend: root.backend
 
         Column {
             LogosText {

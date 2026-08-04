@@ -14,6 +14,7 @@ OnBoardingLayout {
     signal completed
 
     OnBoardingContainer {
+        backend: root.backend
         spacing: Theme.spacing.medium
 
         Column {
@@ -68,6 +69,7 @@ OnBoardingLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Validate"
                 variant: LogosButton.Variant.Primary
+                enabled: form.valid
                 trailingIcon.source: LogosIcons.arrowRight
                 trailingIcon.color: Theme.palette.text
                 trailingIcon.brightness: 1.0

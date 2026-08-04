@@ -10,13 +10,14 @@ intro: |
 
   1. A value the node reads as a byte count is entered in a friendlier unit. The
      storage quota field takes GiB and is written as `storage-quota` in bytes.
-  2. Keys the popup does not expose — `data-dir`, `mix-enabled`, `dht-mix-proxy`,
-     `mix-pool-json`, `config-version` — must survive a save untouched. The form
-     merges its values onto the config it loaded instead of rebuilding one.
+  2. Keys the popup shows without editing them — `data-dir`, `mix-enabled`,
+     `config-version` — and the JSON ones left untouched must survive a save
+     byte for byte. The form merges its values onto the config it loaded instead
+     of rebuilding one.
 
   This test drives the popup through the QML inspector and asserts, for every
   editable setting, that the value lands on the right key with the right type,
-  and that the read-only keys are still there afterwards.
+  and that what was not edited is still there afterwards.
 
 what_you_build: "A Storage UI install whose node settings are edited from the UI, then verified on disk: log level, storage quota, listen port, discovery port, NAT and network all written to `config.json`, with the read-only keys preserved."
 
@@ -80,7 +81,7 @@ sections:
             "log-level": "info",
             "listen-port": 8500,
             "disc-port": 9090,
-            "mix-enabled": false,
+            "mix-enabled": true,
             "dht-mix-proxy": [
               "spr:CiUIAhIhA11LamlswboRlyrpEXBubPQAr2WRmqjgWRC4JsvFptrCEgIDARpHCicAJQgCEiEDXUtqaWzBuhGXKukRcG5s9ACvZZGaqOBZELgmy8Wm2sIQnO-N0gYaCgoIBBiQTsgGH5AaCgoIBBiQTsgGH5AqRjBEAiAjgWii--TgYd2tPwyekCu4H3yDw-qngLo1SfbmDcL7SAIgE2o_HdzRO3MXyn3MtMMmPJtUdnhBS3uMJrxGy6sf6xY"
             ],
@@ -99,6 +100,7 @@ sections:
           test "$(jq 'has("nat")' "$cfg")" = "false"
           test "$(jq 'has("storage-quota")' "$cfg")" = "false"
           test "$(jq 'has("network")' "$cfg")" = "false"
+          test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
 
           echo "starting config in place"
 
@@ -194,6 +196,18 @@ sections:
               property: "vNetwork"
               value: "logos.dev"
 
+            - name: "Type the bootstrap list as raw JSON"
+              action: set_property
+              find_value: "settingsForm"
+              property: "vBootstrap"
+              value: "[\"spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE\", \"spr:CiUIAhIhAn67-cPFkDpqyeTEjDPbhtN8NUxt9S-niBc5QRLyc2xrEgIDARpJCicAJQgCEiECfrv5w8WQOmrJ5MSMM9uG03w1TG31L6eIFzlBEvJzbGsQ3LWT0gYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDX2BuLjlWusHeQC-bI50ynRHSXfchFSSFfup2NFHB3dwIgLEUpNwVgcaP7Rj_GkClm3pmQ1KSqB1GeaKDbipsZJ3o\"]"
+
+            - name: "The network preset is locked by the custom bootstrap"
+              action: expect_property
+              find_value: "networkSelect"
+              property: "enabled"
+              value: false
+
             # The wording shortens on a narrow popup, so assert the notice is
             # shown rather than the sentence it renders.
             - name: "The form announces the edits need a restart"
@@ -266,6 +280,16 @@ sections:
 
           echo "OK: storage-quota is 8 GiB expressed in bytes"
 
+      - title: "The bootstrap records are written as a list"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+
+          test "$(jq '."bootstrap-node" | length' "$cfg")" = "2"
+          test "$(jq -r '."bootstrap-node"[0]' "$cfg")" = "spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE"
+          test "$(jq -r '."bootstrap-node"[1]' "$cfg")" = "spr:CiUIAhIhAn67-cPFkDpqyeTEjDPbhtN8NUxt9S-niBc5QRLyc2xrEgIDARpJCicAJQgCEiECfrv5w8WQOmrJ5MSMM9uG03w1TG31L6eIFzlBEvJzbGsQ3LWT0gYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDX2BuLjlWusHeQC-bI50ynRHSXfchFSSFfup2NFHB3dwIgLEUpNwVgcaP7Rj_GkClm3pmQ1KSqB1GeaKDbipsZJ3o"
+
+          echo "OK: bootstrap-node holds one entry per line"
+
       - title: "The NAT mode and the external IP are joined into one value"
         run: |
           cfg="$HOME/.logos_storage/config.json"
@@ -274,17 +298,17 @@ sections:
 
           echo "OK: nat"
 
-      - title: "The read-only keys survived the save"
+      - title: "The keys left alone survived the save"
         run: |
           cfg="$HOME/.logos_storage/config.json"
 
           test "$(jq -r '."data-dir"' "$cfg")" = "/tmp/storage-ui-settings-data"
           test "$(jq '."config-version"' "$cfg")" = "2"
-          test "$(jq '."mix-enabled"' "$cfg")" = "false"
+          test "$(jq '."mix-enabled"' "$cfg")" = "true"
           test "$(jq -r '."dht-mix-proxy"[0]' "$cfg")" = "spr:CiUIAhIhA11LamlswboRlyrpEXBubPQAr2WRmqjgWRC4JsvFptrCEgIDARpHCicAJQgCEiEDXUtqaWzBuhGXKukRcG5s9ACvZZGaqOBZELgmy8Wm2sIQnO-N0gYaCgoIBBiQTsgGH5AaCgoIBBiQTsgGH5AqRjBEAiAjgWii--TgYd2tPwyekCu4H3yDw-qngLo1SfbmDcL7SAIgE2o_HdzRO3MXyn3MtMMmPJtUdnhBS3uMJrxGy6sf6xY"
           test "$(jq -r '."mix-pool-json"' "$cfg")" = '{"version":1,"relays":[]}'
 
-          echo "OK: data-dir, config-version and the Mix keys are untouched"
+          echo "OK: data-dir, config-version and the untouched Mix keys are intact"
 
   - title: "Reopening the popup shows the saved values"
     step: true
@@ -398,6 +422,12 @@ sections:
                 `extip:203.0.113.7` is split back into the mode selector and the
                 address field, so a save that changes nothing writes the same value.
 
+            - name: "The bootstrap list is shown back as indented JSON"
+              action: expect_property
+              find_value: "bootstrapField"
+              property: "text"
+              value: "[\n  \"spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE\",\n  \"spr:CiUIAhIhAn67-cPFkDpqyeTEjDPbhtN8NUxt9S-niBc5QRLyc2xrEgIDARpJCicAJQgCEiECfrv5w8WQOmrJ5MSMM9uG03w1TG31L6eIFzlBEvJzbGsQ3LWT0gYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDX2BuLjlWusHeQC-bI50ynRHSXfchFSSFfup2NFHB3dwIgLEUpNwVgcaP7Rj_GkClm3pmQ1KSqB1GeaKDbipsZJ3o\"\n]"
+
             - name: "Nothing is pending, so Save is disabled"
               action: expect_property
               find_value: "saveButton"
@@ -412,5 +442,6 @@ sections:
           test "$(jq '."storage-quota"' "$cfg")" = "8589934592"
           test "$(jq -r '.nat' "$cfg")" = "extip:203.0.113.7"
           test "$(jq -r '.network' "$cfg")" = "logos.dev"
+          test "$(jq '."bootstrap-node" | length' "$cfg")" = "2"
 
           echo "round trip OK: the popup reloads what it saved"

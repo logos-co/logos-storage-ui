@@ -235,7 +235,6 @@ LogosFrame {
                 LogosIcon {
                     visible: statusRow.showsNat
                     Layout.alignment: Qt.AlignVCenter
-                    Layout.leftMargin: -Theme.spacing.small
                     Layout.preferredWidth: 16
                     Layout.preferredHeight: 16
                     source: Qt.resolvedUrl("assets/question-line.svg")
@@ -307,6 +306,11 @@ LogosFrame {
             id: debugPopup
             backend: root.backend
             running: root.effectiveStatus === StorageBackend.Running
+        }
+
+        Shortcut {
+            sequence: "Ctrl+D"
+            onActivated: debugPopup.open()
         }
 
         NatDrawer {

@@ -4,6 +4,7 @@ import QtQuick.Dialogs
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
+import Logos.StorageBackend 1.0
 
 // qmllint disable unqualified
 // The node configuration, field by field: reads a config, edits it and writes it
@@ -24,7 +25,6 @@ ScrollView {
 
     signal folderPathChanged(string path)
     signal privateQueriesToggled(bool enabled)
-    signal restartOnboardingRequested
     signal saved(bool restartNeeded)
 
     readonly property string displayFolderPath: downloadFolderPath.replace(
@@ -39,6 +39,13 @@ ScrollView {
     readonly property bool dirty: root.loadedOnce
                                   && JSON.stringify(root.buildConfig()) !== root.baselineJson
 
+    // An extip mode with no usable address would silently drop the nat key.
+    readonly property bool natExtIpValid: /^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/.test(root.vNatExtIp)
+    readonly property bool valid: (root.vNatMode !== "extip" || root.natExtIpValid)
+                                 && root.isJson(root.vBootstrap)
+                                 && root.isJson(root.vMixProxies)
+                                 && root.isJson(root.vMixPool)
+
     // A pending edit the node will only pick up on its next start.
     readonly property bool restartRequired: root.loadedOnce
                                             && root.needsRestart(root.loaded, root.buildConfig())
@@ -46,25 +53,73 @@ ScrollView {
     // Editable values, kept as strings and parsed on save.
     property string vLogLevel: "INFO"
     property string vQuotaGiB: ""
+    // The byte count as read, so an untouched quota is written back unrounded.
+    property var loadedQuota: undefined
     property string vListenPort: ""
     property string vDiscPort: ""
     property string vNatMode: "auto"
     property string vNatExtIp: ""
     property string vNetwork: ""
+    // JSON edited as it sits in the config, not split into records.
+    property string vBootstrap: ""
+    property string vMixProxies: ""
+    property string vMixPool: ""
 
     // Read-only values.
     property string vDataDir: ""
     property bool vMixEnabled: false
-    property var vMixProxies: []
-    property string vMixPool: ""
     property string vConfigVersion: ""
 
-    readonly property var logLevels: ["TRACE", "DEBUG", "INFO", "WARN", "ERROR"]
+    readonly property var logLevels: ["TRACE", "DEBUG", "INFO", "NOTICE", "WARN", "ERROR", "FATAL"]
     readonly property var natModes: ["auto", "extip"]
     readonly property var networks: ["logos.test", "logos.dev"]
 
+    // A config can hold a value no preset lists. Offering it keeps it visible
+    // and keeps a save that touches another field from dropping it.
+    function optionsWith(options, value) {
+        if (value === "" || options.indexOf(value) >= 0)
+            return options
+        return options.concat([value])
+    }
+
+    // An empty field means "no such key", which is valid.
+    function isJson(text) {
+        if (text.trim().length === 0)
+            return true
+        try {
+            JSON.parse(text)
+            return true
+        } catch (e) {
+            return false
+        }
+    }
+
+    function asJson(text, fallback) {
+        try {
+            return JSON.parse(text)
+        } catch (e) {
+            return fallback
+        }
+    }
+
+    // The raw value as the config carries it, one entry per line once indented.
+    function toJsonText(value) {
+        if (value === undefined || value === null)
+            return ""
+        return JSON.stringify(value, null, 2)
+    }
+
+    // mixRunning only says the config asked for Mix: the toggle reaches a live
+    // module, so the node has to be up as well.
+    readonly property bool mixReady: root.backend && root.backend.mixRunning
+                                     && root.backend.status === StorageBackend.Running
+
+    // A bootstrap list of their own is what the user joined instead of a preset.
+    readonly property bool hasCustomBootstrap: root.asJson(root.vBootstrap, []).length > 0
+
     // Keys the node only reads when it starts.
-    readonly property var restartKeys: ["storage-quota", "listen-port", "disc-port", "nat", "network"]
+    readonly property var restartKeys: ["storage-quota", "listen-port", "disc-port", "nat",
+                                        "network", "bootstrap-node"]
 
     clip: true
     contentWidth: availableWidth
@@ -90,6 +145,8 @@ ScrollView {
         if (root.backend.isMock) {
             root.applyConfig(root.backend.getUserConfig() || "{}")
         } else if (typeof logos !== "undefined" && logos) {
+            // Reopening: hold the previous values back until the file answers.
+            root.loadedOnce = false
             logos.watch(root.backend.getUserConfig(), function (text) {
                 root.applyConfig(text || "{}")
             }, function (err) {
@@ -110,10 +167,12 @@ ScrollView {
         root.loaded = cfg
 
         root.vLogLevel = (cfg["log-level"] || "info").toUpperCase()
+        root.loadedQuota = cfg["storage-quota"]
         root.vQuotaGiB = root.bytesToGiB(cfg["storage-quota"])
         root.vListenPort = cfg["listen-port"] !== undefined ? String(cfg["listen-port"]) : ""
         root.vDiscPort = cfg["disc-port"] !== undefined ? String(cfg["disc-port"]) : ""
         root.vNetwork = cfg["network"] || ""
+        root.vBootstrap = root.toJsonText(cfg["bootstrap-node"])
 
         const nat = cfg["nat"] || "auto"
         if (nat.indexOf("extip:") === 0) {
@@ -126,7 +185,7 @@ ScrollView {
 
         root.vDataDir = cfg["data-dir"] || ""
         root.vMixEnabled = !!cfg["mix-enabled"]
-        root.vMixProxies = cfg["dht-mix-proxy"] || []
+        root.vMixProxies = root.toJsonText(cfg["dht-mix-proxy"])
         root.vMixPool = cfg["mix-pool-json"] || ""
         root.vConfigVersion = cfg["config-version"] !== undefined ? String(cfg["config-version"]) : "0"
 
@@ -168,6 +227,15 @@ ScrollView {
             put(key, text === "" || isNaN(n) ? "" : n)
         }
 
+        // The field holds JSON: an empty one drops the key, anything else is
+        // written parsed. Save is blocked while it does not parse.
+        function putJson(key, text) {
+            if (text.trim().length === 0)
+                delete cfg[key]
+            else
+                cfg[key] = root.asJson(text, cfg[key])
+        }
+
         cfg["log-level"] = root.vLogLevel.toLowerCase()
 
         // "auto" carries no key: the node picks its own strategy, and not every
@@ -175,8 +243,15 @@ ScrollView {
         put("nat", root.vNatMode === "extip" && root.vNatExtIp.length > 0
             ? "extip:" + root.vNatExtIp : "")
 
-        put("storage-quota", root.giBToBytes(root.vQuotaGiB))
+        if (root.vQuotaGiB === root.bytesToGiB(root.loadedQuota))
+            put("storage-quota", root.loadedQuota === undefined ? "" : root.loadedQuota)
+        else
+            put("storage-quota", root.giBToBytes(root.vQuotaGiB))
         put("network", root.vNetwork)
+
+        putJson("bootstrap-node", root.vBootstrap)
+        putJson("dht-mix-proxy", root.vMixProxies)
+        put("mix-pool-json", root.vMixPool)
         putInt("listen-port", root.vListenPort)
         putInt("disc-port", root.vDiscPort)
 
@@ -212,6 +287,7 @@ ScrollView {
         Layout.fillWidth: true
         Layout.preferredWidth: 0
         Layout.minimumWidth: 0
+        background: SettingsFieldBackground {}
     }
 
     // `value` flows in, `picked` flows out on a real click only. ComboBox writes
@@ -275,7 +351,8 @@ ScrollView {
         }
     }
 
-    // A long read-only value: peer records, relay pool.
+    // A long value shown on demand: peer records, relay pool. An editable one
+    // reports every keystroke through edited(); the field holds no state.
     component Blob: ColumnLayout {
         id: blob
 
@@ -283,6 +360,12 @@ ScrollView {
         property string summary: ""
         property string body: ""
         property bool expanded: false
+        property bool editable: false
+        property string fieldObjectName: ""
+
+        readonly property bool bodyValid: !blob.editable || root.isJson(blob.body)
+
+        signal edited(string text)
 
         Layout.fillWidth: true
         spacing: 2
@@ -335,10 +418,15 @@ ScrollView {
             clip: true
 
             TextArea {
-                readOnly: true
+                objectName: blob.fieldObjectName
+                readOnly: !blob.editable
                 text: blob.body
+                onTextChanged: {
+                    if (blob.editable)
+                        blob.edited(text)
+                }
                 wrapMode: Text.WrapAnywhere
-                font.family: "monospace"
+                font.family: Theme.typography.mono
                 font.pixelSize: Theme.typography.secondaryText
                 color: Theme.palette.textSecondary
                 selectByMouse: true
@@ -348,14 +436,34 @@ ScrollView {
                 }
             }
         }
+
+        // Save is blocked while this shows: say why.
+        LogosText {
+            Layout.fillWidth: true
+            Layout.topMargin: Theme.spacing.small
+            visible: !blob.bodyValid
+            text: "Not valid JSON"
+            font.pixelSize: Theme.typography.secondaryText
+            color: Theme.palette.error
+        }
     }
 
     Item {
         width: root.availableWidth
         implicitHeight: sections.implicitHeight + 2 * Theme.spacing.large
 
+        // load() resolves over an async logos.watch(): showing the fields before
+        // the values land invites edits that applyConfig then wipes.
+        LogosText {
+            anchors.centerIn: parent
+            visible: !root.loadedOnce
+            text: "Loading the configuration…"
+            color: Theme.palette.textSecondary
+        }
+
         ColumnLayout {
             id: sections
+            visible: root.loadedOnce
             x: Theme.spacing.large
             y: Theme.spacing.large
             width: parent.width - 2 * Theme.spacing.large
@@ -370,7 +478,7 @@ ScrollView {
 
                     SSelect {
                         objectName: "logLevelSelect"
-                        model: root.logLevels
+                        model: root.optionsWith(root.logLevels, root.vLogLevel)
                         value: root.vLogLevel
                         onPicked: function (level) {
                             root.vLogLevel = level
@@ -485,21 +593,38 @@ ScrollView {
                         visible: root.vNatMode === "extip"
                         text: root.vNatExtIp
                         placeholderText: "External IP address"
+                        validator: RegularExpressionValidator {
+                            regularExpression: /^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){0,3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)?$/
+                        }
                         onTextChanged: root.vNatExtIp = text
                     }
                 }
 
                 SettingRow {
                     title: "Network"
-                    description: "The network preset the node bootstraps from."
+                    description: root.hasCustomBootstrap
+                                 ? "Overridden by the bootstrap records below."
+                                 : "The network preset the node bootstraps from."
 
                     SSelect {
                         objectName: "networkSelect"
-                        model: root.networks
+                        enabled: !root.hasCustomBootstrap
+                        model: root.optionsWith(root.networks, root.vNetwork)
                         value: root.vNetwork === "" ? "logos.test" : root.vNetwork
                         onPicked: function (network) {
                             root.vNetwork = network
                         }
+                    }
+                }
+
+                Blob {
+                    title: "Bootstrap nodes"
+                    summary: "Peer records the node dials first. Empty lets the network preset decide."
+                    body: root.vBootstrap
+                    editable: true
+                    fieldObjectName: "bootstrapField"
+                    onEdited: function (text) {
+                        root.vBootstrap = text
                     }
                 }
             }
@@ -523,7 +648,7 @@ ScrollView {
 
                 SettingRow {
                     title: "Private DHT queries"
-                    description: root.backend && root.backend.mixRunning
+                    description: root.mixReady
                                  ? "Applied immediately, no restart needed."
                                  : "Needs a node running with Mix enabled."
 
@@ -533,21 +658,31 @@ ScrollView {
 
                     LogosSwitch {
                         checked: root.privateQueries
-                        enabled: root.backend && root.backend.mixRunning
+                        enabled: root.mixReady
                         onToggled: root.privateQueriesToggled(checked)
                     }
                 }
 
                 Blob {
                     title: "DHT mix proxies"
-                    summary: root.vMixProxies.length + " peer records used as proxy destinations."
-                    body: root.vMixProxies.join("\n\n")
+                    summary: "Peer records used as proxy destinations."
+                    body: root.vMixProxies
+                    editable: true
+                    fieldObjectName: "mixProxiesField"
+                    onEdited: function (text) {
+                        root.vMixProxies = text
+                    }
                 }
 
                 Blob {
                     title: "Mix relay pool"
-                    summary: "The bundled relay pool the node mixes through."
+                    summary: "The relay pool the node mixes through."
                     body: root.vMixPool
+                    editable: true
+                    fieldObjectName: "mixPoolField"
+                    onEdited: function (text) {
+                        root.vMixPool = text
+                    }
                 }
             }
 
@@ -569,25 +704,6 @@ ScrollView {
 
                     SValue {
                         text: root.vConfigVersion
-                    }
-                }
-            }
-
-            Section {
-                visible: !root.onboarding
-                title: "Advanced"
-
-                SettingRow {
-                    title: "Restart onboarding"
-                    description: "Go back to the initial setup. The node keeps its data."
-                    controlWidth: 180
-
-                    LogosButton {
-                        Layout.fillWidth: true
-                        radius: Theme.spacing.radiusLarge
-                        text: "Restart onboarding"
-                        implicitHeight: 36
-                        onClicked: root.restartOnboardingRequested()
                     }
                 }
             }

@@ -25,6 +25,7 @@ QtObject {
     signal error(string message)
     signal peersUpdated(int count)
     signal debugInfoUpdated(var info)
+    signal logLines(var lines)
     signal uploadStarted(real totalBytes)
     signal uploadChunk(real len)
     signal uploadCompleted(string cid)

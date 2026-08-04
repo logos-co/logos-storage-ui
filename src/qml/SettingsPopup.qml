@@ -141,10 +141,6 @@ Popup {
                 if (restartNeeded)
                     root.restartPending = true
             }
-            onRestartOnboardingRequested: {
-                root.close()
-                root.backend.restartOnboarding()
-            }
         }
 
         Rectangle {
@@ -198,21 +194,12 @@ Popup {
 
             LogosButton {
                 radius: Theme.spacing.radiusLarge
-                text: "Reset"
-                implicitHeight: 40
-                implicitWidth: root.compact ? 80 : 110
-                enabled: form.dirty
-                onClicked: form.load()
-            }
-
-            LogosButton {
-                radius: Theme.spacing.radiusLarge
                 objectName: "saveButton"
                 text: "Save"
                 variant: LogosButton.Variant.Primary
                 implicitHeight: 40
                 implicitWidth: root.compact ? 90 : 130
-                enabled: form.dirty
+                enabled: form.dirty && form.valid
                 onClicked: form.save()
             }
         }

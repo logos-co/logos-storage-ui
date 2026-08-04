@@ -4,6 +4,10 @@ import Logos.Theme
 import Logos.Controls
 
 ColumnLayout {
+    id: container
+
+    property var backend: MockBackend
+
     anchors.centerIn: parent
     spacing: Theme.spacing.medium
     width: 830
@@ -42,7 +46,8 @@ ColumnLayout {
                 }
 
                 LogosText {
-                    text: "V. 0.1.3"
+                    text: "V. " + (container.backend && container.backend.uiVersion
+                                   ? container.backend.uiVersion : "unknown")
                     font.pixelSize: Theme.typography.secondaryText
                     font.family: Theme.typography.mono
                     color: Theme.palette.textMuted

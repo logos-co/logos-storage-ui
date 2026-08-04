@@ -140,11 +140,12 @@ qt_add_qml_module(appqml
         SettingsForm.qml
         SettingRow.qml
         SettingsComboBox.qml
+        SettingsFieldBackground.qml
         DebugPopup.qml
+        LogsView.qml
         ManifestTable.qml
         NodeWidget.qml
         Widgets.qml
-        DebugPanel.qml
         Utils.js
         MockBackend.qml
         OnBoardingLayout.qml

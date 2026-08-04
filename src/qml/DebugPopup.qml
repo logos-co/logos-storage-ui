@@ -160,7 +160,8 @@ Popup {
                 }
 
                 LogosText {
-                    text: "What the node reports about itself."
+                    text: tabs.currentIndex === 0 ? "What the node reports about itself."
+                                                  : "What the node writes to its log file."
                     font.pixelSize: Theme.typography.secondaryText
                     color: Theme.palette.textSecondary
                 }
@@ -168,6 +169,18 @@ Popup {
 
             Item {
                 Layout.fillWidth: true
+            }
+
+            LogosSearchBar {
+                objectName: "logSearch"
+                Layout.alignment: Qt.AlignVCenter
+                Layout.preferredWidth: 280
+                visible: tabs.currentIndex === 1
+                placeholderText: "Search logs..."
+                onTextChanged: {
+                    logsView.filter = text
+                    logsView.rebuild()
+                }
             }
 
             LogosIcon {
@@ -185,120 +198,146 @@ Popup {
             }
         }
 
-        Rectangle {
+        LogosTabBar {
+            id: tabs
             Layout.fillWidth: true
-            Layout.preferredHeight: 1
-            color: Theme.palette.borderSecondary
+            Layout.leftMargin: Theme.spacing.large
+            Layout.rightMargin: Theme.spacing.large
+
+            LogosTabButton {
+                objectName: "infoTab"
+                text: "Info"
+            }
+
+            LogosTabButton {
+                objectName: "logsTab"
+                text: "Logs"
+            }
         }
 
-        ScrollView {
-            id: scroll
-
+        StackLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            clip: true
-            contentWidth: availableWidth
-            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            currentIndex: tabs.currentIndex
 
-            Item {
-                width: scroll.availableWidth
-                implicitHeight: card.implicitHeight + 2 * Theme.spacing.large
+            ScrollView {
+                id: scroll
 
-                Rectangle {
-                    id: card
-                    x: Theme.spacing.large
-                    y: Theme.spacing.large
-                    width: parent.width - 2 * Theme.spacing.large
-                    implicitHeight: Math.max(rows.implicitHeight + 2 * Theme.spacing.large, 80)
-                    color: Theme.palette.backgroundSecondary
-                    border.color: Theme.palette.borderSecondary
-                    border.width: 1
-                    radius: Theme.spacing.radiusLarge
+                clip: true
+                contentWidth: availableWidth
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
-                    LogosText {
-                        anchors.centerIn: parent
-                        visible: rowsModel.count === 0
-                        text: root.running ? "No debug info yet"
-                                           : "Start the node to read its debug info"
-                        color: Theme.palette.textSecondary
-                    }
+                Item {
+                    width: scroll.availableWidth
+                    implicitHeight: card.implicitHeight + 2 * Theme.spacing.large
 
-                    ColumnLayout {
-                        id: rows
-                        anchors.fill: parent
-                        anchors.margins: Theme.spacing.large
-                        spacing: 0
+                    Rectangle {
+                        id: card
+                        x: Theme.spacing.large
+                        y: Theme.spacing.large
+                        width: parent.width - 2 * Theme.spacing.large
+                        implicitHeight: Math.max(rows.implicitHeight + 2 * Theme.spacing.large, 80)
+                        color: Theme.palette.backgroundSecondary
+                        border.color: Theme.palette.borderSecondary
+                        border.width: 1
+                        radius: Theme.spacing.radiusLarge
 
-                        Repeater {
-                            model: rowsModel
+                        LogosText {
+                            anchors.centerIn: parent
+                            visible: rowsModel.count === 0
+                            text: root.running ? "No debug info yet"
+                                               : "Start the node to read its debug info"
+                            color: Theme.palette.textSecondary
+                        }
 
-                            RowLayout {
-                                id: row
+                        ColumnLayout {
+                            id: rows
+                            anchors.fill: parent
+                            anchors.margins: Theme.spacing.large
+                            spacing: 0
 
-                                required property int index
-                                required property string label
-                                required property string value
-                                required property string kind
-                                required property string tone
-                                required property bool copyable
+                            Repeater {
+                                model: rowsModel
 
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 40
-                                spacing: Theme.spacing.large
+                                RowLayout {
+                                    id: row
 
-                                LogosText {
-                                    Layout.preferredWidth: 180
-                                    Layout.minimumWidth: 120
-                                    text: row.label
-                                    font.pixelSize: Theme.typography.secondaryText
-                                    color: Theme.palette.textSecondary
-                                    elide: Text.ElideRight
-                                }
+                                    required property int index
+                                    required property string label
+                                    required property string value
+                                    required property string kind
+                                    required property string tone
+                                    required property bool copyable
 
-                                Rectangle {
-                                    visible: row.kind === "tag"
-                                    implicitWidth: tagText.implicitWidth + 2 * Theme.spacing.small
-                                    implicitHeight: 22
-                                    radius: height / 2
-                                    color: "transparent"
-                                    border.width: 1
-                                    border.color: root.toneColor(row.tone)
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 40
+                                    spacing: Theme.spacing.large
 
                                     LogosText {
-                                        id: tagText
-                                        anchors.centerIn: parent
-                                        text: row.value
+                                        Layout.preferredWidth: 180
+                                        Layout.minimumWidth: 120
+                                        text: row.label
                                         font.pixelSize: Theme.typography.secondaryText
-                                        color: root.toneColor(row.tone)
+                                        color: Theme.palette.textSecondary
+                                        elide: Text.ElideRight
                                     }
-                                }
 
-                                LogosText {
-                                    Layout.fillWidth: true
-                                    visible: row.kind !== "tag"
-                                    text: row.value
-                                    font.family: row.kind === "mono" ? "monospace"
-                                                                     : Theme.typography.publicSans
-                                    font.pixelSize: Theme.typography.secondaryText
-                                    color: Theme.palette.text
-                                    elide: Text.ElideMiddle
-                                }
+                                    Rectangle {
+                                        visible: row.kind === "tag"
+                                        implicitWidth: tagText.implicitWidth + 2 * Theme.spacing.small
+                                        implicitHeight: 22
+                                        radius: height / 2
+                                        color: "transparent"
+                                        border.width: 1
+                                        border.color: root.toneColor(row.tone)
 
-                                Item {
-                                    Layout.fillWidth: row.kind === "tag"
-                                }
+                                        LogosText {
+                                            id: tagText
+                                            anchors.centerIn: parent
+                                            text: row.value
+                                            font.pixelSize: Theme.typography.secondaryText
+                                            color: root.toneColor(row.tone)
+                                        }
+                                    }
 
-                                LogosCopyButton {
-                                    visible: row.copyable
-                                    Layout.alignment: Qt.AlignVCenter
-                                    value: row.value
-                                    size: 32
-                                    iconSize: 16
-                                    background: IconButtonBackground {}
+                                    LogosText {
+                                        Layout.fillWidth: true
+                                        visible: row.kind !== "tag"
+                                        text: row.value
+                                        font.family: row.kind === "mono" ? "monospace"
+                                                                         : Theme.typography.publicSans
+                                        font.pixelSize: Theme.typography.secondaryText
+                                        color: Theme.palette.text
+                                        elide: Text.ElideMiddle
+                                    }
+
+                                    Item {
+                                        Layout.fillWidth: row.kind === "tag"
+                                    }
+
+                                    LogosCopyButton {
+                                        visible: row.copyable
+                                        Layout.alignment: Qt.AlignVCenter
+                                        value: row.value
+                                        size: 32
+                                        iconSize: 16
+                                        background: IconButtonBackground {}
+                                    }
                                 }
                             }
                         }
                     }
+                }
+            }
+
+            // StackLayout stretches its children edge to edge: the wrapper is
+            // what gives the logs card the same inset as the info card.
+            Item {
+                LogsView {
+                    id: logsView
+                    anchors.fill: parent
+                    anchors.margins: Theme.spacing.large
+                    backend: root.backend
                 }
             }
         }
@@ -316,7 +355,7 @@ Popup {
 
             LogosText {
                 Layout.fillWidth: true
-                visible: !root.running
+                visible: !root.running && tabs.currentIndex === 0
                 text: "The node is stopped: these values are from its last run."
                 font.pixelSize: Theme.typography.secondaryText
                 color: Theme.palette.textSecondary
@@ -328,11 +367,24 @@ Popup {
             }
 
             LogosButton {
+                objectName: "restartOnboardingButton"
+                radius: Theme.spacing.radiusLarge
+                text: "Restart onboarding"
+                implicitHeight: 40
+                implicitWidth: 180
+                onClicked: {
+                    root.close()
+                    root.backend.restartOnboarding()
+                }
+            }
+
+            LogosButton {
                 radius: Theme.spacing.radiusLarge
                 text: "Refresh"
                 variant: LogosButton.Variant.Primary
                 implicitHeight: 40
                 implicitWidth: 130
+                visible: tabs.currentIndex === 0
                 enabled: root.running
                 onClicked: root.refresh()
             }

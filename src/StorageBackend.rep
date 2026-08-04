@@ -105,6 +105,10 @@ class StorageBackend
     // The whole payload of the module's debug call, as reported by the node.
     SIGNAL(debugInfoUpdated(QVariantMap info))
 
+    // New complete lines tailed from the node log file, streamed as they
+    // are appended.
+    SIGNAL(logLines(QStringList lines))
+
     // Errors
     SIGNAL(error(QString message))
 }
