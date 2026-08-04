@@ -389,8 +389,10 @@ void StorageBackend::logDebugInfo() {
 void StorageBackend::refreshNodeStatus() {
     auto result = m_logos->storage_module.debug();
 
+    // Polled every minute: a toast per failure would spam the user.
     if (!result.success) {
-        reportError("Failed to get debug info: " + result.getError());
+        qWarning() << "StorageBackend::refreshNodeStatus Failed to get debug info:"
+                   << result.getError();
         return;
     }
 

@@ -6,16 +6,17 @@ This guide provides an overview of the Logos Storage UI and how to use it.
 
 **Case 1.** The default settings suit you.
 
-In this case, you should use the `Guided` setup option. The node runs on the default configuration: TCP `8500` for data transfer and UDP `8090`
+In this case, you should use the `Guided` setup option. The node runs on the default configuration: TCP `8500` for data transfer and UDP `9090`
 for discovery. You will need to forward both ports in your router.
 
 **Case 2.** You need to manually configure the network settings or would like to modify other node configuration options.
 
 In this case, you should use the `Advanced` setup option. This will display a prepopulated configuration JSON which you can then manually edit to suit your needs. See the module's [API reference](https://logos-co.github.io/logos-storage-module/latest/api_reference.html) for a list of configuration options.
 
-Both options then ask you where downloaded files should be saved. Clicking `Continue` opens the dashboard and starts the node. The status
-indicator stays grey until AutoNAT decides whether other peers can reach you, then turns green if they can. If it turns orange, you will need
-to [troubleshoot](#troubleshooting) your connection. You can still use the app, but you will only be able to _download_ files from other nodes.
+Both options then ask you where downloaded files should be saved. Clicking `Continue` opens the dashboard and starts the node. Once it is
+running, a small dot next to the node status reports the AutoNAT verdict: grey and labelled `Unknown` while it has no answer yet, green and
+`Reachable` if other peers can reach you, orange and `Not reachable` otherwise. If it turns orange, you will need to
+[troubleshoot](#troubleshooting) your connection. You can still use the app, but you will only be able to _download_ files from other nodes.
 
 
 ## Sharing a File
@@ -41,7 +42,7 @@ the file from the node and interrupt its sharing.
 
 Logos Storage requires your node to be reachable from the internet and, to that end, you must open two ports on your router:
 
-1. **Discovery.** UDP, defaults to `8090`. Used for discovery and DHT operations.
+1. **Discovery.** UDP, defaults to `9090`. Used for discovery and DHT operations.
 2. **libp2p listen port.** TCP, defaults to `8500`. Used for data transfer and peer connections.
 
 Problems in not being able to share files are commonly related to either one (or both) of those ports not being open or available.
@@ -55,7 +56,7 @@ The node starts successfully but never connects to any peer.
 This is typically due to the discovery being unavailable - for instance, if another process is already occupying its port.
 
 **Fix:**
-Ensure that no process is using port `8090`, or change the default port value in the advanced configuration.
+Ensure that no process is using port `9090`, or change the default port value in the advanced configuration.
 
 ### Node is unreachable
 

@@ -108,6 +108,10 @@ Item {
         id: modeSelectorComponent
 
         ModeSelector {
+            // The guided path writes defaultConfigJson, which stays empty until
+            // the replica has synced.
+            backendReady: !!(d.backend && d.backend.defaultConfigJson)
+
             onCompleted: function (isGuide) {
                 if (isGuide) {
                     // Guided setup: the node runs on the default configuration.
