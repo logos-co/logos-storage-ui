@@ -115,7 +115,10 @@ ScrollView {
                                      && root.backend.status === StorageBackend.Running
 
     // A bootstrap list of their own is what the user joined instead of a preset.
-    readonly property bool hasCustomBootstrap: root.asJson(root.vBootstrap, []).length > 0
+    // Judged on the text, not on the parsed value: mid-typing the JSON does not
+    // parse yet, and the preset must not flicker back on between keystrokes.
+    readonly property bool hasCustomBootstrap: root.vBootstrap.trim().length > 0
+                                               && root.vBootstrap.trim() !== "[]"
 
     // Keys the node only reads when it starts.
     readonly property var restartKeys: ["storage-quota", "listen-port", "disc-port", "nat",
