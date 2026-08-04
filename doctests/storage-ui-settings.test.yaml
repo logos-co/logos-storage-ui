@@ -237,12 +237,12 @@ sections:
               action: click
               target: "Save"
 
-            # "Restart node" is the button label: it only exists once the save
-            # went through, and it does not shorten with the popup width.
-            - name: "The save is confirmed"
-              action: wait_for
-              texts: ["Restart node"]
-              timeout: 15000
+            # The save writes the file and flips the footer in one go; the
+            # notice is asserted on its property, its wording shortens with the
+            # popup width.
+            - name: "Let the save settle"
+              action: sleep
+              ms: 2000
 
             - name: "The footer switched to the restart prompt"
               action: expect_property

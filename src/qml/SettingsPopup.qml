@@ -3,7 +3,6 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Logos.Theme
 import Logos.Controls
-import Logos.StorageBackend 1.0
 
 // qmllint disable unqualified
 // Chrome around SettingsForm: title, close, and the save bar that stays put
@@ -23,16 +22,7 @@ Popup {
     // Saved, waiting for the restart that makes the node read the new values.
     property bool restartPending: false
 
-    // A stop that fails never emits stopCompleted, so a handler connected for
-    // the occasion would outlive it and restart the node on the user's next
-    // deliberate stop. A flag the signal reads is what keeps it one-shot.
-    property bool restarting: false
-
     readonly property bool compact: root.width < 640
-
-    readonly property bool nodeIdle: root.backend
-                                     && root.backend.status !== StorageBackend.Starting
-                                     && root.backend.status !== StorageBackend.Stopping
 
     modal: true
     padding: 0
@@ -56,30 +46,7 @@ Popup {
 
         function onStartCompleted() {
             root.restartPending = false
-            root.restarting = false
         }
-
-        function onStopCompleted() {
-            if (!root.restarting)
-                return
-            root.restarting = false
-            root.backend.start()
-        }
-
-        function onError(message) {
-            root.restarting = false
-        }
-    }
-
-    function restartNode() {
-        if (!root.backend || root.restarting)
-            return
-        if (root.backend.status !== StorageBackend.Running) {
-            root.backend.start()
-            return
-        }
-        root.restarting = true
-        root.backend.stop()
     }
 
     ColumnLayout {
@@ -175,16 +142,6 @@ Popup {
                 font.pixelSize: Theme.typography.secondaryText
                 color: Theme.palette.warning
                 elide: Text.ElideRight
-            }
-
-            LogosButton {
-                radius: Theme.spacing.radiusLarge
-                visible: root.restartPending
-                text: "Restart node"
-                implicitHeight: 40
-                implicitWidth: 140
-                enabled: root.nodeIdle
-                onClicked: root.restartNode()
             }
 
             LogosText {
