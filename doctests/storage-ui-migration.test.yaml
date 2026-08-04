@@ -313,4 +313,10 @@ sections:
           test "$(jq -r '."bootstrap-node"[0]' "$cfg")" = "spr:CiUIAhIhAn67-cPFkDpqyeTEjDPbhtN8NUxt9S-niBc5QRLyc2xrEgIDARpJCicAJQgCEiECfrv5w8WQOmrJ5MSMM9uG03w1TG31L6eIFzlBEvJzbGsQ3LWT0gYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDX2BuLjlWusHeQC-bI50ynRHSXfchFSSFfup2NFHB3dwIgLEUpNwVgcaP7Rj_GkClm3pmQ1KSqB1GeaKDbipsZJ3o"
           test "$(jq '."config-version"' "$cfg")" = "2"
 
-          echo "preserved OK: custom network + bootstrap kept, config-version stamped"
+          test "$(jq -r '."data-dir"' "$cfg")" = "/tmp/storage-ui-migration-data"
+          test "$(jq -r '."log-level"' "$cfg")" = "DEBUG"
+          test "$(jq -r '.nat' "$cfg")" = "none"
+          test "$(jq -r '."dht-mix-proxy"[0]' "$cfg")" = "spr:placeholder"
+          test "$(jq -r '."mix-pool-json"' "$cfg")" = "{}"
+
+          echo "preserved OK: custom network + bootstrap + user keys kept, config-version stamped"
