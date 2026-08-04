@@ -6,20 +6,21 @@ intro: |
   The Settings popup edits `~/.logos_storage/config.json` field by field. Each
   control maps to one config key, and `Save` writes the whole object back.
 
-  Two rules make the mapping non-obvious:
+  Three rules make the mapping non-obvious:
 
   1. A value the node reads as a byte count is entered in a friendlier unit. The
      storage quota field takes GiB and is written as `storage-quota` in bytes.
   2. Keys the popup shows without editing them — `data-dir`, `mix-enabled`,
-     `config-version` — and the JSON ones left untouched must survive a save
-     byte for byte. The form merges its values onto the config it loaded instead
-     of rebuilding one.
+     `config-version` — must survive a save untouched. The form merges its
+     values onto the config it loaded instead of rebuilding one.
+  3. The bootstrap list and the Mix values are edited as raw JSON. A list is
+     written back parsed, `mix-pool-json` stays the string the node expects.
 
   This test drives the popup through the QML inspector and asserts, for every
   editable setting, that the value lands on the right key with the right type,
   and that what was not edited is still there afterwards.
 
-what_you_build: "A Storage UI install whose node settings are edited from the UI, then verified on disk: log level, storage quota, listen port, discovery port, NAT and network all written to `config.json`, with the read-only keys preserved."
+what_you_build: "A Storage UI install whose node settings are edited from the UI, then verified on disk: log level, storage quota, listen port, discovery port, NAT, network, bootstrap list and Mix values all written to `config.json`, with the keys the popup does not edit preserved."
 
 what_you_learn:
   - Which config key each Settings control writes, and in which unit
@@ -202,6 +203,18 @@ sections:
               property: "vBootstrap"
               value: "[\"spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE\", \"spr:CiUIAhIhAn67-cPFkDpqyeTEjDPbhtN8NUxt9S-niBc5QRLyc2xrEgIDARpJCicAJQgCEiECfrv5w8WQOmrJ5MSMM9uG03w1TG31L6eIFzlBEvJzbGsQ3LWT0gYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDX2BuLjlWusHeQC-bI50ynRHSXfchFSSFfup2NFHB3dwIgLEUpNwVgcaP7Rj_GkClm3pmQ1KSqB1GeaKDbipsZJ3o\"]"
 
+            - name: "Replace the DHT mix proxies"
+              action: set_property
+              find_value: "settingsForm"
+              property: "vMixProxies"
+              value: "[\"spr:CiUIAhIhApIj9p6zJDRbw2NoCo-tj98Y760YbppRiEpGIE1yGaMzEgIDARpJCicAJQgCEiECkiP2nrMkNFvDY2gKj62P3xjvrRhumlGISkYgTXIZozMQvcz8wQYaCwoJBAWhF3WRAnVEGgsKCQQFoRd1kQJ1RCpGMEQCIFZB84O_nzPNuViqEGRL1vJTjHBJ-i5ZDgFL5XZxm4HAAiB8rbLHkUdFfWdiOmlencYVn0noSMRHzn4lJYoShuVzlw\"]"
+
+            - name: "Bump the Mix relay pool"
+              action: set_property
+              find_value: "settingsForm"
+              property: "vMixPool"
+              value: "{\"version\":2,\"relays\":[]}"
+
             - name: "The network preset is locked by the custom bootstrap"
               action: expect_property
               find_value: "networkSelect"
@@ -305,10 +318,21 @@ sections:
           test "$(jq -r '."data-dir"' "$cfg")" = "/tmp/storage-ui-settings-data"
           test "$(jq '."config-version"' "$cfg")" = "2"
           test "$(jq '."mix-enabled"' "$cfg")" = "true"
-          test "$(jq -r '."dht-mix-proxy"[0]' "$cfg")" = "spr:CiUIAhIhA11LamlswboRlyrpEXBubPQAr2WRmqjgWRC4JsvFptrCEgIDARpHCicAJQgCEiEDXUtqaWzBuhGXKukRcG5s9ACvZZGaqOBZELgmy8Wm2sIQnO-N0gYaCgoIBBiQTsgGH5AaCgoIBBiQTsgGH5AqRjBEAiAjgWii--TgYd2tPwyekCu4H3yDw-qngLo1SfbmDcL7SAIgE2o_HdzRO3MXyn3MtMMmPJtUdnhBS3uMJrxGy6sf6xY"
-          test "$(jq -r '."mix-pool-json"' "$cfg")" = '{"version":1,"relays":[]}'
 
-          echo "OK: data-dir, config-version and the untouched Mix keys are intact"
+          echo "OK: data-dir, config-version and mix-enabled are intact"
+
+      - title: "The Mix JSON fields are written back parsed"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+
+          test "$(jq '."dht-mix-proxy" | length' "$cfg")" = "1"
+          test "$(jq -r '."dht-mix-proxy"[0]' "$cfg")" = "spr:CiUIAhIhApIj9p6zJDRbw2NoCo-tj98Y760YbppRiEpGIE1yGaMzEgIDARpJCicAJQgCEiECkiP2nrMkNFvDY2gKj62P3xjvrRhumlGISkYgTXIZozMQvcz8wQYaCwoJBAWhF3WRAnVEGgsKCQQFoRd1kQJ1RCpGMEQCIFZB84O_nzPNuViqEGRL1vJTjHBJ-i5ZDgFL5XZxm4HAAiB8rbLHkUdFfWdiOmlencYVn0noSMRHzn4lJYoShuVzlw"
+          test "$(jq '."dht-mix-proxy" | type' "$cfg")" = '"array"'
+
+          test "$(jq -r '."mix-pool-json"' "$cfg")" = '{"version":2,"relays":[]}'
+          test "$(jq '."mix-pool-json" | type' "$cfg")" = '"string"'
+
+          echo "OK: the proxy list is an array, the relay pool stays a string"
 
   - title: "Reopening the popup shows the saved values"
     step: true
@@ -428,6 +452,18 @@ sections:
               property: "text"
               value: "[\n  \"spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE\",\n  \"spr:CiUIAhIhAn67-cPFkDpqyeTEjDPbhtN8NUxt9S-niBc5QRLyc2xrEgIDARpJCicAJQgCEiECfrv5w8WQOmrJ5MSMM9uG03w1TG31L6eIFzlBEvJzbGsQ3LWT0gYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDX2BuLjlWusHeQC-bI50ynRHSXfchFSSFfup2NFHB3dwIgLEUpNwVgcaP7Rj_GkClm3pmQ1KSqB1GeaKDbipsZJ3o\"\n]"
 
+            - name: "The mix proxies are shown back as indented JSON"
+              action: expect_property
+              find_value: "mixProxiesField"
+              property: "text"
+              value: "[\n  \"spr:CiUIAhIhApIj9p6zJDRbw2NoCo-tj98Y760YbppRiEpGIE1yGaMzEgIDARpJCicAJQgCEiECkiP2nrMkNFvDY2gKj62P3xjvrRhumlGISkYgTXIZozMQvcz8wQYaCwoJBAWhF3WRAnVEGgsKCQQFoRd1kQJ1RCpGMEQCIFZB84O_nzPNuViqEGRL1vJTjHBJ-i5ZDgFL5XZxm4HAAiB8rbLHkUdFfWdiOmlencYVn0noSMRHzn4lJYoShuVzlw\"\n]"
+
+            - name: "The relay pool is shown back as the raw string"
+              action: expect_property
+              find_value: "mixPoolField"
+              property: "text"
+              value: "{\"version\":2,\"relays\":[]}"
+
             - name: "Nothing is pending, so Save is disabled"
               action: expect_property
               find_value: "saveButton"
@@ -443,5 +479,6 @@ sections:
           test "$(jq -r '.nat' "$cfg")" = "extip:203.0.113.7"
           test "$(jq -r '.network' "$cfg")" = "logos.dev"
           test "$(jq '."bootstrap-node" | length' "$cfg")" = "2"
+          test "$(jq -r '."mix-pool-json"' "$cfg")" = '{"version":2,"relays":[]}'
 
           echo "round trip OK: the popup reloads what it saved"
