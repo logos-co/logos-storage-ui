@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Dialogs
 import QtQuick.Layouts
+import QtCore
 import Qt.labs.folderlistmodel
 import Logos.Theme
 import Logos.Controls
@@ -26,6 +27,45 @@ LogosFrame {
 
     // Two 40px icon buttons, the gap between them and the pill's own padding.
     readonly property int actionsColumnWidth: 40 * 2 + Theme.spacing.medium * 3
+
+    property var addedDates: ({})
+
+    Settings {
+        id: addedDatesStore
+        category: "ManifestAddedDates"
+        property string entries: "{}"
+    }
+
+    function loadAddedDates() {
+        try {
+            root.addedDates = JSON.parse(addedDatesStore.entries)
+        } catch (e) {
+            root.addedDates = {}
+        }
+    }
+
+    function recordAdded(cid) {
+        if (!cid || root.addedDates[cid])
+            return
+        var d = Object.assign({}, root.addedDates)
+        d[cid] = new Date().toISOString()
+        root.addedDates = d
+        addedDatesStore.entries = JSON.stringify(d)
+    }
+
+    function forgetAdded(cid) {
+        if (!cid || !root.addedDates[cid])
+            return
+        var d = Object.assign({}, root.addedDates)
+        delete d[cid]
+        root.addedDates = d
+        addedDatesStore.entries = JSON.stringify(d)
+    }
+
+    function formatAdded(cid) {
+        var iso = root.addedDates[cid]
+        return iso ? Qt.formatDateTime(new Date(iso), "dd MMM yyyy") : "-"
+    }
 
     // A manifest is "downloaded" when a file with its name sits in the download
     // folder; otherwise it's only "fetched" (manifest present, no local file).
@@ -87,7 +127,28 @@ LogosFrame {
     // real manifests until the fetch resolves (success refreshes the list and
     // prunes the row; failure switches it to "error" until dismissed).
     property var pending: []
-    property var rows: root.pending.concat(root.manifests)
+    // Sorted by the column the user picked, newest first by default. Fetches in
+    // progress stay on top: they are what the user is waiting for.
+    property string sortRole: "added"
+    property int sortOrder: Qt.DescendingOrder
+
+    property var rows: {
+        const dir = root.sortOrder === Qt.AscendingOrder ? 1 : -1
+        const dates = root.addedDates
+        const list = root.manifests.slice().sort(function (a, b) {
+            let r
+            if (root.sortRole === "datasetSize")
+                r = (parseInt(a.datasetSize) || 0) - (parseInt(b.datasetSize) || 0)
+            else if (root.sortRole === "added")
+                r = (dates[a.cid] || "").localeCompare(dates[b.cid] || "")
+            else
+                r = (a.filename || "").localeCompare(b.filename || "")
+            if (r === 0)
+                r = (a.cid || "").localeCompare(b.cid || "")
+            return r * dir
+        })
+        return root.pending.concat(list)
+    }
 
     // LogosTable reads its row through the delegate's `model`, which a plain JS
     // array does not populate — the rows are mirrored into a ListModel.
@@ -105,13 +166,18 @@ LogosFrame {
                                  "mimetype": r.mimetype || "",
                                  "datasetSize": String(r.datasetSize || 0),
                                  "status": r.status || "",
-                                 "error": r.error || ""
+                                 "error": r.error || "",
+                                 "added": root.formatAdded(r.cid || "")
                              })
         }
     }
 
     onRowsChanged: root.rebuildRows()
-    Component.onCompleted: root.rebuildRows()
+
+    Component.onCompleted: {
+        root.loadAddedDates()
+        root.rebuildRows()
+    }
 
     function addPending(cid) {
         for (var i = 0; i < root.pending.length; i++)
@@ -162,13 +228,19 @@ LogosFrame {
     //         "mimetype": "image/jpg",
     //         "size": 12222
     //     }]
+
+    // The badged icons claim a type: anything the node does not name as image,
+    // video or document gets the plain sheet rather than a wrong badge.
     function mimetypeIcon(mimetype) {
-        var m = (mimetype || "").toLowerCase()
+        const m = (mimetype || "").toLowerCase()
         if (m.indexOf("video/") === 0)
             return "assets/videos.svg"
         if (m.indexOf("image/") === 0)
             return "assets/images.svg"
-        return "assets/documents.svg"
+        if (m === "application/pdf" || m.indexOf("text/") === 0
+                || m.indexOf("document") >= 0 || m.indexOf("word") >= 0)
+            return "assets/documents.svg"
+        return "assets/file.svg"
     }
 
     implicitWidth: 1200
@@ -189,6 +261,7 @@ LogosFrame {
 
             function onRemoveStarted(cid) {
                 root.markDeleting(cid)
+                root.forgetAdded(cid)
             }
 
             function onRemoveFailed(cid, error) {
@@ -197,6 +270,11 @@ LogosFrame {
 
             function onManifestFetchStarted(cid) {
                 root.addPending(cid)
+                root.recordAdded(cid)
+            }
+
+            function onUploadCompleted(cid) {
+                root.recordAdded(cid)
             }
 
             function onManifestFetchFailed(cid, error) {
@@ -238,6 +316,13 @@ LogosFrame {
                 model: rowsModel
                 rowHeight: 72
                 emptyText: "No manifests yet"
+                sortRole: root.sortRole
+                sortOrder: root.sortOrder
+
+                onSortRequested: function (role, order) {
+                    root.sortRole = role
+                    root.sortOrder = order
+                }
 
                 emptyDelegate: Component {
                     ColumnLayout {
@@ -261,12 +346,16 @@ LogosFrame {
 
                 columns: [
                     LogosTableColumn {
-                        title: "CID"
-                        role: "cid"
+                        title: "Manifest"
+                        role: "filename"
+                        sortable: true
                         minWidth: 240
                         fillWidth: true
                         cellDelegate: Component {
                             Item {
+                                id: manifestCell
+                                readonly property bool rowDeleting: rowItem && root.deleting[rowItem.cid] === true
+
                                 Image {
                                     id: typeIcon
                                     anchors.left: parent.left
@@ -298,24 +387,59 @@ LogosFrame {
                                     height: 32
                                 }
 
-                                LogosText {
+                                Column {
+                                    // Anchored to the icon, hidden or not: the
+                                    // text starts at the same place on every row.
                                     anchors.left: typeIcon.right
                                     anchors.leftMargin: Theme.spacing.medium
                                     anchors.right: copyBtn.left
                                     anchors.rightMargin: Theme.spacing.medium
                                     anchors.verticalCenter: parent.verticalCenter
-                                    text: rowItem ? rowItem.cid : ""
-                                    color: Theme.palette.text
-                                    font.pixelSize: Theme.typography.secondaryText
-                                    elide: Text.ElideRight
+                                    spacing: 2
 
-                                    HoverHandler {
-                                        id: cidHover
+                                    LogosText {
+                                        width: parent.width
+                                        text: {
+                                            if (!rowItem)
+                                                return ""
+                                            if (rowItem.status === "fetching")
+                                                return "Fetching..."
+                                            if (rowItem.status === "error")
+                                                return rowItem.error || "Failed"
+                                            return manifestCell.rowDeleting ? "Deleting..."
+                                                                            : (rowItem.filename || "Untitled")
+                                        }
+                                        color: rowItem && rowItem.status === "error" ? Theme.palette.error
+                                                                                     : Theme.palette.text
+                                        font.pixelSize: Theme.typography.primaryText
+                                        font.weight: Theme.typography.weightBold
+                                        elide: Text.ElideRight
+
+                                        HoverHandler {
+                                            id: statusHover
+                                        }
+
+                                        LogosToolTip {
+                                            text: rowItem ? (rowItem.error || "") : ""
+                                            visible: rowItem && rowItem.status === "error" && statusHover.hovered
+                                        }
                                     }
 
-                                    LogosToolTip {
+                                    LogosText {
+                                        width: parent.width
                                         text: rowItem ? rowItem.cid : ""
-                                        visible: cidHover.hovered
+                                        color: Theme.palette.textSecondary
+                                        font.pixelSize: Theme.typography.secondaryText
+                                        elide: Text.ElideMiddle
+
+                                        HoverHandler {
+                                            id: cidHover
+                                        }
+
+                                        LogosToolTip {
+                                            text: rowItem ? rowItem.cid : ""
+                                            visible: cidHover.hovered
+                                        }
                                     }
                                 }
 
@@ -323,51 +447,12 @@ LogosFrame {
                                     id: copyBtn
                                     anchors.right: parent.right
                                     anchors.verticalCenter: parent.verticalCenter
+                                    visible: rowItem && !rowItem.status
                                     value: rowItem ? rowItem.cid : ""
                                     // Match the download / delete buttons on the row.
                                     size: 40
                                     iconSize: 20
                                     background: IconButtonBackground {}
-                                }
-                            }
-                        }
-                    },
-                    LogosTableColumn {
-                        title: "Filename"
-                        role: "filename"
-                        minWidth: 140
-                        preferredWidth: 140
-                        cellDelegate: Component {
-                            Item {
-                                id: filenameCell
-                                readonly property bool rowDeleting: rowItem && root.deleting[rowItem.cid] === true
-
-                                LogosText {
-                                    id: statusLabel
-                                    anchors.fill: parent
-                                    verticalAlignment: Text.AlignVCenter
-                                    text: {
-                                        if (!rowItem)
-                                            return ""
-                                        if (rowItem.status === "fetching")
-                                            return "Fetching..."
-                                        if (rowItem.status === "error")
-                                            return rowItem.error || "Failed"
-                                        return filenameCell.rowDeleting ? "Deleting..." : (rowItem.filename || "")
-                                    }
-                                    color: rowItem && rowItem.status === "error" ? Theme.palette.error
-                                                                                 : Theme.palette.text
-                                    font.pixelSize: Theme.typography.secondaryText
-                                    elide: Text.ElideRight
-
-                                    HoverHandler {
-                                        id: statusHover
-                                    }
-
-                                    LogosToolTip {
-                                        text: rowItem ? (rowItem.error || "") : ""
-                                        visible: rowItem && rowItem.status === "error" && statusHover.hovered
-                                    }
                                 }
                             }
                         }
@@ -393,6 +478,7 @@ LogosFrame {
                     LogosTableColumn {
                         title: "Size"
                         role: "datasetSize"
+                        sortable: true
                         minWidth: 80
                         preferredWidth: 80
                         cellDelegate: Component {
@@ -404,6 +490,25 @@ LogosFrame {
                                                          parseInt(rowItem.datasetSize))) : ""
                                     color: Theme.palette.text
                                     font.pixelSize: Theme.typography.secondaryText
+                                }
+                            }
+                        }
+                    },
+                    LogosTableColumn {
+                        title: "Date added"
+                        role: "added"
+                        sortable: true
+                        minWidth: 120
+                        preferredWidth: 120
+                        cellDelegate: Component {
+                            Item {
+                                LogosText {
+                                    anchors.fill: parent
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: rowItem ? (rowItem.status ? "-" : rowItem.added) : ""
+                                    color: Theme.palette.text
+                                    font.pixelSize: Theme.typography.secondaryText
+                                    elide: Text.ElideRight
                                 }
                             }
                         }

@@ -162,6 +162,7 @@ qt_add_qml_module(appqml
         assets/alpha.png
         assets/close-circle-line.svg
         assets/documents.svg
+        assets/file.svg
         assets/images.svg
         assets/videos.svg
         assets/download-2-fill.svg
