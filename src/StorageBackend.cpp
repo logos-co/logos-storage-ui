@@ -590,8 +590,11 @@ void StorageBackend::downloadManifests() {
 
     LogosResult result = m_logos->storage_module.manifests();
 
+    // A refresh, not a user action: the module call times out after a second
+    // and a busy node is enough to miss it.
     if (!result.success) {
-        reportError("Failed to download manifests: " + result.getError());
+        qWarning() << "StorageBackend::downloadManifests Failed to list manifests:"
+                   << result.getError();
         return;
     }
 

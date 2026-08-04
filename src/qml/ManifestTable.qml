@@ -68,7 +68,7 @@ LogosFrame {
     }
 
     // A manifest is "downloaded" when a file with its name sits in the download
-    // folder; otherwise it's only "fetched" (manifest present, no local file).
+    // folder: the download button then has nothing left to do.
     property var downloadedNames: ({})
 
     FolderListModel {
@@ -90,11 +90,6 @@ LogosFrame {
 
     function isDownloaded(item) {
         return !!(item && item.filename && root.downloadedNames[item.filename])
-    }
-
-    function openDownloaded(item) {
-        Qt.openUrlExternally(root.downloadFolderPath.replace(/\/$/, "")
-                             + "/" + encodeURIComponent(item.filename))
     }
 
     function markDeleting(cid) {
@@ -289,6 +284,7 @@ LogosFrame {
             function onDownloadCompleted(cid) {
                 root.isDownloading = false
                 root.downloadingCid = ""
+                root.rebuildDownloaded()
             }
 
             function onError(message) {
@@ -298,11 +294,41 @@ LogosFrame {
         }
 
         // ── Title row ─────────────────────────────────────────────────────────
-        LogosText {
+        RowLayout {
             Layout.fillWidth: true
-            text: "Manifests"
-            font.pixelSize: Theme.typography.panelTitleText
-            color: Theme.palette.text
+            spacing: Theme.spacing.medium
+
+            LogosText {
+                Layout.fillWidth: true
+                text: "Manifests"
+                font.pixelSize: Theme.typography.panelTitleText
+                color: Theme.palette.text
+            }
+
+            LogosIcon {
+                objectName: "openFolderButton"
+                Layout.alignment: Qt.AlignVCenter
+                Layout.preferredWidth: 20
+                Layout.preferredHeight: 20
+                visible: root.downloadFolderPath.length > 0
+                source: Qt.resolvedUrl("assets/external-link-line.svg")
+                color: Theme.palette.textTertiary
+
+                HoverHandler {
+                    id: openFolderHover
+                }
+
+                LogosToolTip {
+                    text: "Open the download folder"
+                    visible: openFolderHover.hovered
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: Qt.openUrlExternally(root.downloadFolderPath)
+                }
+            }
         }
 
         Item {
@@ -542,20 +568,24 @@ LogosFrame {
                                         readonly property bool rowDownloaded: root.isDownloaded(rowItem)
 
                                         LogosIconButton {
-                                            objectName: "openButton"
-                                            visible: actionsRow.rowDownloaded
-                                            iconSource: Qt.resolvedUrl("assets/external-link-line.svg")
-                                            background: IconButtonBackground {}
-                                            onClicked: root.openDownloaded(rowItem)
-                                        }
-
-                                        LogosIconButton {
                                             objectName: "downloadButton"
-                                            visible: !actionsRow.rowDownloaded
                                             iconSource: Qt.resolvedUrl("assets/download-2-fill.svg")
+                                            // Green once a copy sits in the
+                                            // download folder. Still clickable:
+                                            // downloading again is legitimate.
+                                            iconColor: actionsRow.rowDownloaded ? Theme.palette.success
+                                                                                : Theme.palette.textTertiary
                                             background: IconButtonBackground {}
                                             enabled: root.running && !root.isDownloading
                                                      && !actionsCell.rowDeleting
+
+                                            LogosToolTip {
+                                                text: actionsRow.rowDownloaded
+                                                      ? "Already in the download folder — click to download again"
+                                                      : "Download"
+                                                visible: parent.hovered
+                                            }
+
                                             onClicked: {
                                                 const dest = root.downloadFolderPath.replace(/\/$/, "") + "/" + (rowItem.filename || rowItem.cid || "download")
                                                 root.downloadRequested()

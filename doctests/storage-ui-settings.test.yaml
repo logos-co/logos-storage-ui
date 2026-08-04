@@ -111,10 +111,6 @@ sections:
       The app is launched headless, the Settings popup is opened from the gear on
       the Node card, and each control is driven through the QML inspector.
 
-      Combo boxes are driven through the form's own properties. Writing
-      `currentIndex` would move what the control displays without telling the
-      form, since the form only listens to an actual click on an item.
-
       The external IP field only exists once the NAT mode is `extip`, so the mode
       is selected before the address is typed.
     steps:
@@ -130,9 +126,6 @@ sections:
               texts: ["Manage node", "Total space available"]
               timeout: 60000
 
-            # Deliberately not a wait for "Running": the popup reads and writes
-            # config.json directly, so the node state is irrelevant here. This
-            # only lets the rewrite start() does settle before we edit.
             - name: "Let the startup config rewrite settle"
               action: sleep
               ms: 3000
@@ -149,8 +142,6 @@ sections:
               text: |
                 The popup opens on the values read from `config.json`.
 
-            # load() reads the config over an async logos.watch(): the labels are
-            # painted before the values land.
             - name: "Wait for the config to land in the form"
               action: sleep
               ms: 4000
@@ -221,8 +212,6 @@ sections:
               property: "enabled"
               value: false
 
-            # The wording shortens on a narrow popup, so assert the notice is
-            # shown rather than the sentence it renders.
             - name: "The form announces the edits need a restart"
               action: expect_property
               find_value: "unsavedNotice"
@@ -237,9 +226,6 @@ sections:
               action: click
               target: "Save"
 
-            # The save writes the file and flips the footer in one go; the
-            # notice is asserted on its property, its wording shortens with the
-            # popup width.
             - name: "Let the save settle"
               action: sleep
               ms: 2000
@@ -364,15 +350,11 @@ sections:
               action: click_object
               find_value: "settingsButton"
 
-            # A closed Popup keeps its items in the tree, so a text match alone
-            # does not prove it opened.
             - name: "The popup is open again"
               action: wait_for
               texts: ["Log level", "Storage quota"]
               timeout: 15000
 
-            # load() reads the config over an async logos.watch(): the labels are
-            # painted before the values land.
             - name: "Wait for the config to land in the form"
               action: sleep
               ms: 4000
@@ -404,8 +386,6 @@ sections:
               property: "text"
               value: "9191"
 
-            # Three readings of the same setting, from the form down to the
-            # widget: whichever fails first says where the value is lost.
             - name: "The form holds the loaded log level"
               action: expect_property
               find_value: "settingsForm"
