@@ -89,7 +89,7 @@ void StorageBackend::init(QString configJson) {
     qDebug() << "StorageBackend::initStorage called";
 
     m_config = QJsonDocument::fromJson(configJson.toUtf8());
-    if (m_config.isNull()) {
+    if (!m_config.isObject()) {
         reportError("Failed to create the storage: invalid JSON config:" + configJson);
         emit initCompleted(false, "Failed to create the storage, invalid json config");
         return;
