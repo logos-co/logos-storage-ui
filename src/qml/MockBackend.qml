@@ -7,14 +7,24 @@ QtObject {
     property int status: 0
     property string debugLogs: "Hello!"
     property bool mixRunning: false
-    property string defaultConfigJson: "{}"
     property string natReachability: "Unknown"
+    property string uiVersion: "0.0.0"
+    property string defaultConfigJson: JSON.stringify({
+                                                          "config-version": 2,
+                                                          "data-dir": "/home/user/.logos_storage/data",
+                                                          "listen-port": 8500,
+                                                          "disc-port": 9090,
+                                                          "mix-enabled": true,
+                                                          "dht-mix-proxy": ["spr:mock"],
+                                                          "mix-pool-json": "{\"version\":1,\"relays\":[]}"
+                                                      })
 
     signal ready
     signal startCompleted
     signal startFailed(string error)
     signal error(string message)
     signal peersUpdated(int count)
+    signal debugInfoUpdated(var info)
     signal uploadStarted(real totalBytes)
     signal uploadChunk(real len)
     signal uploadCompleted(string cid)
@@ -51,7 +61,35 @@ QtObject {
     function remove(cid) {
         removeStarted(cid)
     }
-    function logDebugInfo() {}
+    function logDebugInfo() {
+        debugInfoUpdated({
+                             "id": "16Uiu2HAmMockPeerIdForTheDesignPreview",
+                             "addrs": ["/ip4/127.0.0.1/tcp/8500"],
+                             "providerAddresses": ["/ip4/127.0.0.1/tcp/8500"],
+                             "discoveryAddresses": ["/ip4/127.0.0.1/udp/9090"],
+                             "spr": "spr:mock",
+                             "nat": {
+                                 "reachability": "Reachable",
+                                 "portMapping": "upnp",
+                                 "relayRunning": false,
+                                 "clientMode": false
+                             },
+                             "storage": {
+                                 "version": "2.0.1",
+                                 "revision": "0000000"
+                             },
+                             "table": {
+                                 "nodes": [{
+                                         "seen": true
+                                     }, {
+                                         "seen": false
+                                     }]
+                             },
+                             "connections": [{
+                                     "direct": true
+                                 }]
+                         })
+    }
     function logPeerId() {}
     function logDataDir() {}
     function logSpr() {}
@@ -65,5 +103,17 @@ QtObject {
     }
     function configJson() {
         return "{}"
+    }
+    function getUserConfig() {
+        return JSON.stringify({
+                                  "config-version": 2,
+                                  "data-dir": "/home/user/.logos_storage/data",
+                                  "log-level": "info",
+                                  "listen-port": 8500,
+                                  "disc-port": 9090,
+                                  "mix-enabled": true,
+                                  "dht-mix-proxy": ["spr:mock"],
+                                  "mix-pool-json": "{\"version\":1,\"relays\":[]}"
+                              })
     }
 }

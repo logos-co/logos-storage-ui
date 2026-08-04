@@ -31,6 +31,7 @@ StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
     setStatus(Destroyed);
     setNatReachability("Unknown");
     setDefaultConfigJson(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
+    setUiVersion(STORAGE_UI_VERSION);
 
     // Disable system proxy detection — it crashes in Nix/some Linux environments
     QNetworkProxyFactory::setUseSystemConfiguration(false);
@@ -384,6 +385,8 @@ void StorageBackend::logDebugInfo() {
 
     QVariantMap map = result.getMap();
     debug(QString::fromUtf8(QJsonDocument::fromVariant(map).toJson(QJsonDocument::Indented)));
+
+    emit debugInfoUpdated(map);
 }
 
 void StorageBackend::refreshNodeStatus() {

@@ -137,6 +137,10 @@ qt_add_qml_module(appqml
         JsonEditor.qml
         SettingsPopup.qml
         NatDrawer.qml
+        SettingsForm.qml
+        SettingRow.qml
+        SettingsComboBox.qml
+        DebugPopup.qml
         ManifestTable.qml
         NodeWidget.qml
         Widgets.qml
@@ -168,6 +172,7 @@ qt_add_qml_module(appqml
         assets/global-line.svg
         assets/folder-upload-line.svg
         assets/delete-bin-2-line.svg
+        assets/debug.svg
         BottomTitle.qml
         DownloadFolder.qml
 )

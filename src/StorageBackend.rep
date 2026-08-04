@@ -14,6 +14,7 @@ class StorageBackend
     PROP(QString debugLogs READONLY)
     PROP(StorageStatus status READONLY)
     PROP(QString defaultConfigJson READONLY)
+    PROP(QString uiVersion READONLY)
 
     // AutoNAT reachability reported by the node: "Reachable", "NotReachable"
     // or "Unknown" while AutoNAT has no verdict yet.
@@ -100,6 +101,9 @@ class StorageBackend
     // Network / Onboarding
     SIGNAL(onboardingRestarted())
     SIGNAL(peersUpdated(int count))
+
+    // The whole payload of the module's debug call, as reported by the node.
+    SIGNAL(debugInfoUpdated(QVariantMap info))
 
     // Errors
     SIGNAL(error(QString message))
