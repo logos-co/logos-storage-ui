@@ -475,24 +475,6 @@ void StorageBackend::exists(QString cid) {
     debug("Does " + cid + " exists ? " + QVariant(result.getValue<bool>()).toString());
 }
 
-void StorageBackend::deleteDownloadedFile(QUrl path) {
-    qDebug() << "StorageBackend::deleteDownloadedFile called with path=" << path;
-
-    if (!path.isLocalFile()) {
-        reportError("Not a local file: " + path.toString());
-        return;
-    }
-
-    QFile file(path.toLocalFile());
-    if (!file.exists()) {
-        return;
-    }
-
-    if (!file.remove()) {
-        reportError("Failed to delete " + path.toLocalFile() + ": " + file.errorString());
-    }
-}
-
 void StorageBackend::remove(QString cid) {
     qDebug() << "StorageBackend::remove called with cid=" << cid;
 
@@ -609,7 +591,7 @@ void StorageBackend::downloadManifests() {
     LogosResult result = m_logos->storage_module.manifests();
 
     // A refresh, not a user action: the module call times out after a second
-    // and a busy node is enough to miss it. The next event refreshes the list.
+    // and a busy node is enough to miss it.
     if (!result.success) {
         qWarning() << "StorageBackend::downloadManifests Failed to list manifests:"
                    << result.getError();
