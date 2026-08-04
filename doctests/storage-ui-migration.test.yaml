@@ -258,7 +258,11 @@ sections:
           test "$(jq 'has("network")' "$cfg")" = "false"
           test "$(jq '."config-version"' "$cfg")" = "2"
 
-          echo "migration OK: single legacy bootstrap-node removed, config-version stamped"
+          test "$(jq '."mix-enabled"' "$cfg")" = "true"
+          test "$(jq '."dht-mix-proxy" | length > 0' "$cfg")" = "true"
+          test "$(jq '."mix-pool-json" != ""' "$cfg")" = "true"
+
+          echo "migration OK: single legacy bootstrap-node removed, mix defaults filled, config-version stamped"
 
   - title: "A config with custom user data is preserved and versioned"
     step: true
