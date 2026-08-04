@@ -25,6 +25,10 @@ Item {
         id: d
         readonly property var backend: typeof logos !== "undefined" && logos ? logos.module(mod) : null
         readonly property string mod: "storage_ui"
+
+        // A stop that fails never emits stopCompleted, so a handler connected
+        // for the occasion would outlive it and hijack the user's next stop.
+        property bool awaitingOnboardingRestart: false
     }
 
     Connections {
@@ -53,16 +57,20 @@ Item {
 
         // If there is any error, display it in a toast view
         function onError(message) {
+            d.awaitingOnboardingRestart = false
             errorToast.show("Error", message)
         }
 
         function onOnboardingRestarted() {
-            function handleStopped() {
-                d.backend.onStopCompleted.disconnect(handleStopped)
-                stackView.replace(modeSelectorComponent, StackView.Immediate)
-            }
-            d.backend.onStopCompleted.connect(handleStopped)
+            d.awaitingOnboardingRestart = true
             d.backend.stop()
+        }
+
+        function onStopCompleted() {
+            if (!d.awaitingOnboardingRestart)
+                return
+            d.awaitingOnboardingRestart = false
+            stackView.replace(modeSelectorComponent, StackView.Immediate)
         }
     }
 
@@ -108,9 +116,7 @@ Item {
         id: modeSelectorComponent
 
         ModeSelector {
-            // The guided path writes defaultConfigJson, which stays empty until
-            // the replica has synced.
-            backendReady: !!(d.backend && d.backend.defaultConfigJson)
+            backend: d.backend
 
             onCompleted: function (isGuide) {
                 if (isGuide) {

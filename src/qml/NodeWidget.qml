@@ -59,7 +59,16 @@ LogosFrame {
 
     property string downloadFolderPath: ""
 
+    // Mix is always configured; private queries default on when the node runs.
+    // The toggle only flips them live, no reconfigure.
+    property bool privateQueries: true
+
     signal folderPathChanged(string path)
+
+    function setPrivateQueries(enabled) {
+        root.privateQueries = enabled
+        root.backend.togglePrivateQueries(enabled)
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -118,6 +127,23 @@ LogosFrame {
                         }
 
                         LogosIcon {
+                            objectName: "debugButton"
+                            Layout.alignment: Qt.AlignVCenter
+                            Layout.rightMargin: Theme.spacing.small
+                            Layout.preferredWidth: 24
+                            Layout.preferredHeight: 24
+                            source: Qt.resolvedUrl("assets/debug.svg")
+                            color: Theme.palette.textTertiary
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: debugPopup.open()
+                            }
+                        }
+
+                        LogosIcon {
+                            objectName: "settingsButton"
                             Layout.alignment: Qt.AlignVCenter
                             Layout.rightMargin: Theme.spacing.small
                             Layout.preferredWidth: 24
@@ -209,7 +235,6 @@ LogosFrame {
                 LogosIcon {
                     visible: statusRow.showsNat
                     Layout.alignment: Qt.AlignVCenter
-                    Layout.leftMargin: -Theme.spacing.small
                     Layout.preferredWidth: 16
                     Layout.preferredHeight: 16
                     source: Qt.resolvedUrl("assets/question-line.svg")
@@ -230,16 +255,10 @@ LogosFrame {
             LogosSwitch {
                 id: mixSwitch
                 text: "Mix"
-                // Mix is always configured; private queries default on when the
-                // node runs. The toggle only flips them live, no reconfigure.
-                property bool privateQueriesEnabled: true
-                checked: mixSwitch.privateQueriesEnabled
+                checked: root.privateQueries
                 enabled: root.effectiveStatus === StorageBackend.Running
                 Layout.alignment: Qt.AlignVCenter
-                onToggled: {
-                    mixSwitch.privateQueriesEnabled = checked
-                    root.backend.togglePrivateQueries(checked)
-                }
+                onToggled: root.setPrivateQueries(checked)
             }
 
             Connections {
@@ -247,7 +266,7 @@ LogosFrame {
                 function onStartCompleted() {
                     // The node re-enables private queries on every (re)start. If
                     // the user turned them off, re-apply that choice once it's up.
-                    if (root.backend.mixRunning && !mixSwitch.privateQueriesEnabled)
+                    if (root.backend.mixRunning && !root.privateQueries)
                         root.backend.togglePrivateQueries(false)
                 }
             }
@@ -278,7 +297,20 @@ LogosFrame {
             id: settingsPopup
             backend: root.backend
             downloadFolderPath: root.downloadFolderPath
+            privateQueries: root.privateQueries
             onFolderPathChanged: function(path) { root.folderPathChanged(path) }
+            onPrivateQueriesToggled: function(enabled) { root.setPrivateQueries(enabled) }
+        }
+
+        DebugPopup {
+            id: debugPopup
+            backend: root.backend
+            running: root.effectiveStatus === StorageBackend.Running
+        }
+
+        Shortcut {
+            sequence: "Ctrl+D"
+            onActivated: debugPopup.open()
         }
 
         NatDrawer {

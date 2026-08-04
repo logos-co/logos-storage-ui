@@ -1,0 +1,484 @@
+name: "Editing the Node Settings: Every Field Reaches config.json"
+output: storage-ui-settings.md
+release: ""
+
+intro: |
+  The Settings popup edits `~/.logos_storage/config.json` field by field. Each
+  control maps to one config key, and `Save` writes the whole object back.
+
+  Three rules make the mapping non-obvious:
+
+  1. A value the node reads as a byte count is entered in a friendlier unit. The
+     storage quota field takes GiB and is written as `storage-quota` in bytes.
+  2. Keys the popup shows without editing them — `data-dir`, `mix-enabled`,
+     `config-version` — must survive a save untouched. The form merges its
+     values onto the config it loaded instead of rebuilding one.
+  3. The bootstrap list and the Mix values are edited as raw JSON. A list is
+     written back parsed, `mix-pool-json` stays the string the node expects.
+
+  This test drives the popup through the QML inspector and asserts, for every
+  editable setting, that the value lands on the right key with the right type,
+  and that what was not edited is still there afterwards.
+
+what_you_build: "A Storage UI install whose node settings are edited from the UI, then verified on disk: log level, storage quota, listen port, discovery port, NAT, network, bootstrap list and Mix values all written to `config.json`, with the keys the popup does not edit preserved."
+
+what_you_learn:
+  - Which config key each Settings control writes, and in which unit
+  - How the storage quota is converted from GiB to a byte count for the node
+  - How `nat` is assembled from the mode selector and the external IP field
+  - How a save preserves the keys the form does not expose
+  - How to drive a QML popup — text fields and combo boxes — from a headless test
+
+prerequisites:
+  - |
+    **Nix** with flakes enabled. Install from [nixos.org](https://nixos.org/download.html), then enable flakes:
+
+    ```bash
+    mkdir -p ~/.config/nix
+    echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
+    ```
+
+    Verify: `nix flake --help >/dev/null 2>&1 && echo "Flakes enabled"`
+  - "**A Linux machine.** The app runs headless via `QT_QPA_PLATFORM=offscreen`, so no display is required. The returning-user state is seeded through the Linux QSettings ini file (`~/.config/Logos/LogosStandalone.conf`)."
+  - "**`jq`** on your `PATH` — used to assert the saved config. Verify: `jq --version`"
+
+sections:
+  - title: "Build the qt-mcp test driver"
+    step: true
+    text: |
+      [`logos-qt-mcp`](https://github.com/logos-co/logos-qt-mcp) is the harness the
+      doc-test uses to connect to the app's QML inspector and drive it. Build it
+      once and link it as `./result-mcp`.
+    steps:
+      - title: "Build logos-qt-mcp"
+        run: "nix build 'github:logos-co/logos-qt-mcp' -o result-mcp"
+        check_file: "result-mcp"
+
+  - title: "Seed a returning user with a known config"
+    step: true
+    text: |
+      The popup edits an existing config, so we start from one whose every value
+      differs from what the test will type. Anything still holding its seeded
+      value after the save is a field that did not reach the file.
+
+      Onboarding is marked complete so the app opens the dashboard directly.
+    steps:
+      - title: "Reset state and write the starting config"
+        run: |
+          rm -rf /tmp/storage-ui-settings-data
+          mkdir -p /tmp/storage-ui-settings-data
+
+          mkdir -p "$HOME/.config/Logos"
+          cat > "$HOME/.config/Logos/LogosStandalone.conf" <<'EOF'
+          [Storage]
+          onboardingCompleted=true
+          EOF
+
+          mkdir -p "$HOME/.logos_storage"
+          cat > "$HOME/.logos_storage/config.json" <<'EOF'
+          {
+            "config-version": 2,
+            "data-dir": "/tmp/storage-ui-settings-data",
+            "log-level": "info",
+            "listen-port": 8500,
+            "disc-port": 9090,
+            "mix-enabled": true,
+            "dht-mix-proxy": [
+              "spr:CiUIAhIhA11LamlswboRlyrpEXBubPQAr2WRmqjgWRC4JsvFptrCEgIDARpHCicAJQgCEiEDXUtqaWzBuhGXKukRcG5s9ACvZZGaqOBZELgmy8Wm2sIQnO-N0gYaCgoIBBiQTsgGH5AaCgoIBBiQTsgGH5AqRjBEAiAjgWii--TgYd2tPwyekCu4H3yDw-qngLo1SfbmDcL7SAIgE2o_HdzRO3MXyn3MtMMmPJtUdnhBS3uMJrxGy6sf6xY"
+            ],
+            "mix-pool-json": "{\"version\":1,\"relays\":[]}"
+          }
+          EOF
+        check_file: "/tmp/storage-ui-settings-data"
+
+      - title: "Confirm the starting values"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+
+          test "$(jq -r '."log-level"' "$cfg")" = "info"
+          test "$(jq '."listen-port"' "$cfg")" = "8500"
+          test "$(jq '."disc-port"' "$cfg")" = "9090"
+          test "$(jq 'has("nat")' "$cfg")" = "false"
+          test "$(jq 'has("storage-quota")' "$cfg")" = "false"
+          test "$(jq 'has("network")' "$cfg")" = "false"
+          test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
+
+          echo "starting config in place"
+
+  - title: "Edit every setting from the UI and save"
+    step: true
+    text: |
+      The app is launched headless, the Settings popup is opened from the gear on
+      the Node card, and each control is driven through the QML inspector.
+
+      Combo boxes are driven through the form's own properties. Writing
+      `currentIndex` would move what the control displays without telling the
+      form, since the form only listens to an actual click on an item.
+
+      The external IP field only exists once the NAT mode is `extip`, so the mode
+      is selected before the address is typed.
+    steps:
+      - title: "Open Settings, edit each field, then Save"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "Dashboard opens"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 60000
+
+            # Deliberately not a wait for "Running": the popup reads and writes
+            # config.json directly, so the node state is irrelevant here. This
+            # only lets the rewrite start() does settle before we edit.
+            - name: "Let the startup config rewrite settle"
+              action: sleep
+              ms: 3000
+
+            - name: "Open the Settings popup"
+              action: click_object
+              find_value: "settingsButton"
+
+            - name: "The popup is open"
+              action: wait_for
+              texts: ["Settings", "Log level", "Storage quota"]
+              timeout: 5000
+              screenshot: "storage-ui-settings-open.png"
+              text: |
+                The popup opens on the values read from `config.json`.
+
+            # load() reads the config over an async logos.watch(): the labels are
+            # painted before the values land.
+            - name: "Wait for the config to land in the form"
+              action: sleep
+              ms: 4000
+
+            - name: "Select the TRACE log level"
+              action: set_property
+              find_value: "settingsForm"
+              property: "vLogLevel"
+              value: "TRACE"
+
+            - name: "Set the storage quota to 8 GiB"
+              action: set_text
+              find_by: "objectName"
+              find_value: "storageQuotaField"
+              value: "8"
+
+            - name: "Set the listen port"
+              action: set_text
+              find_by: "objectName"
+              find_value: "listenPortField"
+              value: "8600"
+
+            - name: "Set the discovery port"
+              action: set_text
+              find_by: "objectName"
+              find_value: "discPortField"
+              value: "9191"
+
+            - name: "Switch NAT to extip"
+              action: set_property
+              find_value: "settingsForm"
+              property: "vNatMode"
+              value: "extip"
+
+            - name: "Type the external IP"
+              action: set_text
+              find_by: "objectName"
+              find_value: "natExtIpField"
+              value: "203.0.113.7"
+
+            - name: "Select the logos.dev network"
+              action: set_property
+              find_value: "settingsForm"
+              property: "vNetwork"
+              value: "logos.dev"
+
+            - name: "Type the bootstrap list as raw JSON"
+              action: set_property
+              find_value: "settingsForm"
+              property: "vBootstrap"
+              value: "[\"spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE\", \"spr:CiUIAhIhAn67-cPFkDpqyeTEjDPbhtN8NUxt9S-niBc5QRLyc2xrEgIDARpJCicAJQgCEiECfrv5w8WQOmrJ5MSMM9uG03w1TG31L6eIFzlBEvJzbGsQ3LWT0gYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDX2BuLjlWusHeQC-bI50ynRHSXfchFSSFfup2NFHB3dwIgLEUpNwVgcaP7Rj_GkClm3pmQ1KSqB1GeaKDbipsZJ3o\"]"
+
+            - name: "Replace the DHT mix proxies"
+              action: set_property
+              find_value: "settingsForm"
+              property: "vMixProxies"
+              value: "[\"spr:CiUIAhIhApIj9p6zJDRbw2NoCo-tj98Y760YbppRiEpGIE1yGaMzEgIDARpJCicAJQgCEiECkiP2nrMkNFvDY2gKj62P3xjvrRhumlGISkYgTXIZozMQvcz8wQYaCwoJBAWhF3WRAnVEGgsKCQQFoRd1kQJ1RCpGMEQCIFZB84O_nzPNuViqEGRL1vJTjHBJ-i5ZDgFL5XZxm4HAAiB8rbLHkUdFfWdiOmlencYVn0noSMRHzn4lJYoShuVzlw\"]"
+
+            - name: "Bump the Mix relay pool"
+              action: set_property
+              find_value: "settingsForm"
+              property: "vMixPool"
+              value: "{\"version\":2,\"relays\":[]}"
+
+            - name: "The network preset is locked by the custom bootstrap"
+              action: expect_property
+              find_value: "networkSelect"
+              property: "enabled"
+              value: false
+
+            # The wording shortens on a narrow popup, so assert the notice is
+            # shown rather than the sentence it renders.
+            - name: "The form announces the edits need a restart"
+              action: expect_property
+              find_value: "unsavedNotice"
+              property: "visible"
+              value: true
+              screenshot: "storage-ui-settings-dirty.png"
+              text: |
+                Every field edited here is only read when the node starts, so the
+                footer says so before the save rather than tagging each row.
+
+            - name: "Save"
+              action: click
+              target: "Save"
+
+            # "Restart node" is the button label: it only exists once the save
+            # went through, and it does not shorten with the popup width.
+            - name: "The save is confirmed"
+              action: wait_for
+              texts: ["Restart node"]
+              timeout: 15000
+
+            - name: "The footer switched to the restart prompt"
+              action: expect_property
+              find_value: "restartPendingNotice"
+              property: "visible"
+              value: true
+
+            - name: "The unsaved notice is gone"
+              action: expect_property
+              find_value: "unsavedNotice"
+              property: "visible"
+              value: false
+              screenshot: "storage-ui-settings-saved.png"
+              text: |
+                The footer switches to the restart prompt: the file is written,
+                the running node still holds the previous values.
+
+            - name: "Let the write reach disk"
+              action: sleep
+              ms: 3000
+
+  - title: "Verify every setting reached the config file"
+    step: true
+    text: |
+      Each editable control has one key to check. The quota is the only value that
+      is not written as typed: 8 GiB becomes `8 * 1024^3` bytes, because the node
+      reads `storage-quota` as a plain byte count over the JSON config path.
+    steps:
+      - title: "Log level, ports and network"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+          echo "saved config:"
+          jq . "$cfg"
+
+          test "$(jq -r '."log-level"' "$cfg")" = "trace"
+          test "$(jq '."listen-port"' "$cfg")" = "8600"
+          test "$(jq '."disc-port"' "$cfg")" = "9191"
+          test "$(jq -r '.network' "$cfg")" = "logos.dev"
+
+          echo "OK: log-level, listen-port, disc-port, network"
+
+      - title: "The storage quota is written in bytes"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+
+          test "$(jq '."storage-quota"' "$cfg")" = "8589934592"
+          test "$(jq '."storage-quota" | type' "$cfg")" = '"number"'
+
+          echo "OK: storage-quota is 8 GiB expressed in bytes"
+
+      - title: "The bootstrap records are written as a list"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+
+          test "$(jq '."bootstrap-node" | length' "$cfg")" = "2"
+          test "$(jq -r '."bootstrap-node"[0]' "$cfg")" = "spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE"
+          test "$(jq -r '."bootstrap-node"[1]' "$cfg")" = "spr:CiUIAhIhAn67-cPFkDpqyeTEjDPbhtN8NUxt9S-niBc5QRLyc2xrEgIDARpJCicAJQgCEiECfrv5w8WQOmrJ5MSMM9uG03w1TG31L6eIFzlBEvJzbGsQ3LWT0gYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDX2BuLjlWusHeQC-bI50ynRHSXfchFSSFfup2NFHB3dwIgLEUpNwVgcaP7Rj_GkClm3pmQ1KSqB1GeaKDbipsZJ3o"
+
+          echo "OK: bootstrap-node holds one entry per line"
+
+      - title: "The NAT mode and the external IP are joined into one value"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+
+          test "$(jq -r '.nat' "$cfg")" = "extip:203.0.113.7"
+
+          echo "OK: nat"
+
+      - title: "The keys left alone survived the save"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+
+          test "$(jq -r '."data-dir"' "$cfg")" = "/tmp/storage-ui-settings-data"
+          test "$(jq '."config-version"' "$cfg")" = "2"
+          test "$(jq '."mix-enabled"' "$cfg")" = "true"
+
+          echo "OK: data-dir, config-version and mix-enabled are intact"
+
+      - title: "The Mix JSON fields are written back parsed"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+
+          test "$(jq '."dht-mix-proxy" | length' "$cfg")" = "1"
+          test "$(jq -r '."dht-mix-proxy"[0]' "$cfg")" = "spr:CiUIAhIhApIj9p6zJDRbw2NoCo-tj98Y760YbppRiEpGIE1yGaMzEgIDARpJCicAJQgCEiECkiP2nrMkNFvDY2gKj62P3xjvrRhumlGISkYgTXIZozMQvcz8wQYaCwoJBAWhF3WRAnVEGgsKCQQFoRd1kQJ1RCpGMEQCIFZB84O_nzPNuViqEGRL1vJTjHBJ-i5ZDgFL5XZxm4HAAiB8rbLHkUdFfWdiOmlencYVn0noSMRHzn4lJYoShuVzlw"
+          test "$(jq '."dht-mix-proxy" | type' "$cfg")" = '"array"'
+
+          test "$(jq -r '."mix-pool-json"' "$cfg")" = '{"version":2,"relays":[]}'
+          test "$(jq '."mix-pool-json" | type' "$cfg")" = '"string"'
+
+          echo "OK: the proxy list is an array, the relay pool stays a string"
+
+  - title: "Reopening the popup shows the saved values"
+    step: true
+    text: |
+      The popup reads the file every time it opens. Relaunching the app and
+      reopening it is what proves the round trip: the values displayed come from
+      the config that was just written, not from state left in memory.
+
+      With nothing edited, `Save` is disabled — the form compares what it would
+      write against what it loaded.
+    steps:
+      - title: "Relaunch and reopen Settings"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "Dashboard opens"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 60000
+
+            - name: "Let the backend settle"
+              action: sleep
+              ms: 3000
+
+            - name: "Open the Settings popup"
+              action: click_object
+              find_value: "settingsButton"
+
+            # A closed Popup keeps its items in the tree, so a text match alone
+            # does not prove it opened.
+            - name: "The popup is open again"
+              action: wait_for
+              texts: ["Log level", "Storage quota"]
+              timeout: 15000
+
+            # load() reads the config over an async logos.watch(): the labels are
+            # painted before the values land.
+            - name: "Wait for the config to land in the form"
+              action: sleep
+              ms: 4000
+
+            - name: "The form was populated from the file"
+              action: expect_property
+              find_value: "dataDirField"
+              property: "text"
+              value: "/tmp/storage-ui-settings-data"
+              screenshot: "storage-ui-settings-reopened-form.png"
+              text: |
+                The whole form comes from one `applyConfig()` pass over the file.
+
+            - name: "The quota is shown back in GiB"
+              action: expect_property
+              find_value: "storageQuotaField"
+              property: "text"
+              value: "8"
+
+            - name: "The listen port is shown"
+              action: expect_property
+              find_value: "listenPortField"
+              property: "text"
+              value: "8600"
+
+            - name: "The discovery port is shown"
+              action: expect_property
+              find_value: "discPortField"
+              property: "text"
+              value: "9191"
+
+            # Three readings of the same setting, from the form down to the
+            # widget: whichever fails first says where the value is lost.
+            - name: "The form holds the loaded log level"
+              action: expect_property
+              find_value: "settingsForm"
+              property: "vLogLevel"
+              value: "TRACE"
+
+            - name: "The log level reached the combo"
+              action: expect_property
+              find_value: "logLevelSelect"
+              property: "value"
+              value: "TRACE"
+
+            - name: "The log level is shown back"
+              action: expect_property
+              find_value: "logLevelSelect"
+              property: "currentIndex"
+              value: 0
+
+            - name: "The NAT mode is shown back"
+              action: expect_property
+              find_value: "natSelect"
+              property: "currentIndex"
+              value: 1
+
+            - name: "The network is shown back"
+              action: expect_property
+              find_value: "networkSelect"
+              property: "currentIndex"
+              value: 1
+
+            - name: "The external IP is split back out of nat"
+              action: expect_property
+              find_value: "natExtIpField"
+              property: "text"
+              value: "203.0.113.7"
+              screenshot: "storage-ui-settings-reopened.png"
+              text: |
+                `extip:203.0.113.7` is split back into the mode selector and the
+                address field, so a save that changes nothing writes the same value.
+
+            - name: "The bootstrap list is shown back as indented JSON"
+              action: expect_property
+              find_value: "bootstrapField"
+              property: "text"
+              value: "[\n  \"spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE\",\n  \"spr:CiUIAhIhAn67-cPFkDpqyeTEjDPbhtN8NUxt9S-niBc5QRLyc2xrEgIDARpJCicAJQgCEiECfrv5w8WQOmrJ5MSMM9uG03w1TG31L6eIFzlBEvJzbGsQ3LWT0gYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDX2BuLjlWusHeQC-bI50ynRHSXfchFSSFfup2NFHB3dwIgLEUpNwVgcaP7Rj_GkClm3pmQ1KSqB1GeaKDbipsZJ3o\"\n]"
+
+            - name: "The mix proxies are shown back as indented JSON"
+              action: expect_property
+              find_value: "mixProxiesField"
+              property: "text"
+              value: "[\n  \"spr:CiUIAhIhApIj9p6zJDRbw2NoCo-tj98Y760YbppRiEpGIE1yGaMzEgIDARpJCicAJQgCEiECkiP2nrMkNFvDY2gKj62P3xjvrRhumlGISkYgTXIZozMQvcz8wQYaCwoJBAWhF3WRAnVEGgsKCQQFoRd1kQJ1RCpGMEQCIFZB84O_nzPNuViqEGRL1vJTjHBJ-i5ZDgFL5XZxm4HAAiB8rbLHkUdFfWdiOmlencYVn0noSMRHzn4lJYoShuVzlw\"\n]"
+
+            - name: "The relay pool is shown back as the raw string"
+              action: expect_property
+              find_value: "mixPoolField"
+              property: "text"
+              value: "{\"version\":2,\"relays\":[]}"
+
+            - name: "Nothing is pending, so Save is disabled"
+              action: expect_property
+              find_value: "saveButton"
+              property: "enabled"
+              value: false
+
+      - title: "The config is unchanged by reopening"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+
+          test "$(jq -r '."log-level"' "$cfg")" = "trace"
+          test "$(jq '."storage-quota"' "$cfg")" = "8589934592"
+          test "$(jq -r '.nat' "$cfg")" = "extip:203.0.113.7"
+          test "$(jq -r '.network' "$cfg")" = "logos.dev"
+          test "$(jq '."bootstrap-node" | length' "$cfg")" = "2"
+          test "$(jq -r '."mix-pool-json"' "$cfg")" = '{"version":2,"relays":[]}'
+
+          echo "round trip OK: the popup reloads what it saved"

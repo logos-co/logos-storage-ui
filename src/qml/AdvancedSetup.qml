@@ -14,6 +14,7 @@ OnBoardingLayout {
     signal completed
 
     OnBoardingContainer {
+        backend: root.backend
         spacing: Theme.spacing.medium
 
         Column {
@@ -26,18 +27,25 @@ OnBoardingLayout {
             }
 
             LogosText {
-                text: "Edit the JSON configuration below, than click Validate. "
+                text: "Review the node configuration below, then click Validate."
                 font.pixelSize: Theme.typography.panelTitleText
             }
         }
 
-        JsonEditor {
-            id: jsonEditor
+        SettingsForm {
+            id: form
             objectName: "configEditor"
+
             Layout.fillWidth: true
+            // Bounded like the editor it replaces: the container is centred and
+            // has no height of its own, so filling would push past the frame.
             Layout.fillHeight: false
-            Layout.preferredHeight: 250
-            Component.onCompleted: jsonEditor.load(root.backend.defaultConfigJson || "{}")
+            Layout.preferredHeight: 350
+
+            backend: root.backend
+            onboarding: true
+
+            Component.onCompleted: form.load()
         }
 
         RowLayout {
@@ -61,12 +69,12 @@ OnBoardingLayout {
                 radius: Theme.spacing.radiusLarge
                 text: "Validate"
                 variant: LogosButton.Variant.Primary
-                enabled: jsonEditor.isValid
+                enabled: form.valid
                 trailingIcon.source: LogosIcons.arrowRight
                 trailingIcon.color: Theme.palette.text
                 trailingIcon.brightness: 1.0
-                                onClicked: {
-                    root.backend.saveUserConfig(jsonEditor.text)
+                onClicked: {
+                    form.save()
                     root.completed()
                 }
             }

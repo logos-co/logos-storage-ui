@@ -19,7 +19,6 @@ LogosFrame {
     property var backend: MockBackend
     property bool running: false
     property var manifests: []
-    property bool panelOpen: false
     property bool isDownloading: false
     property string downloadingCid: ""
     property string downloadFolderPath: ""
@@ -175,11 +174,6 @@ LogosFrame {
     implicitWidth: 1200
     implicitHeight: 400
 
-    Shortcut {
-        sequence: "Ctrl+D"
-        onActivated: root.panelOpen = !root.panelOpen
-    }
-
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacing.small
@@ -226,32 +220,11 @@ LogosFrame {
         }
 
         // ── Title row ─────────────────────────────────────────────────────────
-        RowLayout {
+        LogosText {
             Layout.fillWidth: true
-
-            LogosText {
-                text: root.panelOpen ? "Debug" : "Manifests"
-                font.pixelSize: Theme.typography.panelTitleText
-                color: Theme.palette.text
-            }
-
-            Item {
-                Layout.fillWidth: true
-            }
-
-            LogosIcon {
-                source: Qt.resolvedUrl("assets/close-circle-line.svg")
-                color: Theme.palette.text
-                Layout.preferredWidth: 23
-                Layout.preferredHeight: 23
-                visible: root.panelOpen
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.panelOpen = false
-                }
-            }
+            text: "Manifests"
+            font.pixelSize: Theme.typography.panelTitleText
+            color: Theme.palette.text
         }
 
         Item {
@@ -262,7 +235,6 @@ LogosFrame {
             LogosTable {
                 id: manifestList
                 anchors.fill: parent
-                visible: !root.panelOpen
                 model: rowsModel
                 rowHeight: 72
                 emptyText: "No manifests yet"
@@ -539,12 +511,6 @@ LogosFrame {
                         }
                     }
                 ]
-            }
-
-            DebugPanel {
-                backend: root.backend
-                running: root.running
-                isOpen: panelOpen
             }
         }
     }
