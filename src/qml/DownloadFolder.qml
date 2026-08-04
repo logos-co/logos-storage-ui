@@ -34,7 +34,7 @@ OnBoardingLayout {
 
         OnBoardingProgress {
             Layout.fillWidth: true
-            currentStep: 3
+            currentStep: 1
             Layout.topMargin: Theme.spacing.small
         }
 
@@ -56,7 +56,7 @@ OnBoardingLayout {
                 }
 
                 LogosText {
-                    text: "4 / 5"
+                    text: "2 / 2"
                     font.pixelSize: Theme.typography.primaryText
                     color: Theme.palette.primary
                     font.family: Theme.typography.mono

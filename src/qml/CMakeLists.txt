@@ -110,21 +110,15 @@ qt_add_qml_module(appqml
         ../StorageBackend.h
     QML_FILES
         StorageView.qml
-        OnBoarding.qml
         Main.qml
-        StartNode.qml
         LogosStorageLayout.qml
-        PortForwarding.qml
         ErrorToast.qml
         HealthIndicator.qml
         ModeSelector.qml
         AdvancedSetup.qml
         DotIcon.qml
-        NodeStatusIcon.qml
         GuideIcon.qml
         AdvancedIcon.qml
-        UpnpIcon.qml
-        PortIcon.qml
         StorageIcon.qml
         PlayIcon.qml
         StopIcon.qml
@@ -142,6 +136,7 @@ qt_add_qml_module(appqml
         PeersWidget.qml
         JsonEditor.qml
         SettingsPopup.qml
+        NatDrawer.qml
         ManifestTable.qml
         NodeWidget.qml
         Widgets.qml
@@ -168,6 +163,7 @@ qt_add_qml_module(appqml
         assets/external-link-line.svg
         assets/node-tree.svg
         assets/settings-5-line.svg
+        assets/question-line.svg
         assets/hard-drive-2-line.svg
         assets/global-line.svg
         assets/folder-upload-line.svg

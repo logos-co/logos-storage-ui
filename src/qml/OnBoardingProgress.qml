@@ -6,7 +6,7 @@ RowLayout {
     spacing: Theme.spacing.tiny
 
     property int currentStep: 0
-    property int totalSteps: 5
+    property int totalSteps: 2
 
     Repeater {
         model: totalSteps

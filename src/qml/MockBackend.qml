@@ -6,16 +6,14 @@ QtObject {
     readonly property bool isMock: true
     property int status: 0
     property string debugLogs: "Hello!"
-    property int defaultListenPort: 8500
     property bool mixRunning: false
+    property string defaultConfigJson: "{}"
+    property string natReachability: "Unknown"
 
     signal ready
     signal startCompleted
     signal startFailed(string error)
     signal error(string message)
-    signal natExtConfigCompleted
-    signal nodeIsUp
-    signal nodeIsntUp(string reason)
     signal peersUpdated(int count)
     signal uploadStarted(real totalBytes)
     signal uploadChunk(real len)
@@ -39,8 +37,11 @@ QtObject {
         status = 0
     }
     function destroy() {}
-    function checkNodeIsUp() {}
     function fetchWidgetsData() {}
+    function refreshNodeStatus() {
+        natReachability = "Reachable"
+        peersUpdated(3)
+    }
     function uploadFile(url) {}
     function downloadFile(cid, url, totalBytes) {}
     function downloadManifest(cid) {
@@ -57,13 +58,8 @@ QtObject {
     function logVersion() {}
     function restartOnboarding() {}
     function saveUserConfig(json) {}
-    function saveCurrentConfig() {}
     function loadUserConfig() {}
     function reloadIfChanged(json) {}
-    function enableUpnpConfig() {}
-    function enableNatExtConfig(tcpPort) {
-        natExtConfigCompleted()
-    }
     function togglePrivateQueries(enabled) {
         return false
     }

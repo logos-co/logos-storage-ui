@@ -13,8 +13,11 @@ class StorageBackend
 
     PROP(QString debugLogs READONLY)
     PROP(StorageStatus status READONLY)
-    PROP(int defaultListenPort READONLY)
     PROP(QString defaultConfigJson READONLY)
+
+    // AutoNAT reachability reported by the node: "Reachable", "NotReachable"
+    // or "Unknown" while AutoNAT has no verdict yet.
+    PROP(QString natReachability READONLY)
 
     // True when the running node was initialised with mix-enabled. Reflects the
     // config the node currently runs with, not the persisted one.
@@ -40,16 +43,12 @@ class StorageBackend
 
     // Config
     SLOT(void saveUserConfig(QString configJson))
-    SLOT(void saveCurrentConfig())
     SLOT(void loadUserConfig())
     SLOT(QString getUserConfig())
     SLOT(void reloadIfChanged(QString configJson))
     SLOT(QString configJson())
 
-    // Network / Onboarding
-    SLOT(void enableUpnpConfig())
-    SLOT(void enableNatExtConfig(int tcpPort))
-    SLOT(void checkNodeIsUp())
+    // Onboarding
     SLOT(void restartOnboarding())
 
     // Mix
@@ -60,6 +59,10 @@ class StorageBackend
 
     // Widgets / Debug
     SLOT(void fetchWidgetsData())
+
+    // Refresh peers and NAT reachability from the node debug info.
+    SLOT(void refreshNodeStatus())
+
     SLOT(void logDebugInfo())
     SLOT(void logDataDir())
     SLOT(void logVersion())
@@ -96,9 +99,6 @@ class StorageBackend
 
     // Network / Onboarding
     SIGNAL(onboardingRestarted())
-    SIGNAL(natExtConfigCompleted())
-    SIGNAL(nodeIsUp())
-    SIGNAL(nodeIsntUp(QString reason))
     SIGNAL(peersUpdated(int count))
 
     // Errors

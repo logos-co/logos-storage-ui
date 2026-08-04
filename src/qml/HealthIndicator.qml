@@ -5,9 +5,12 @@ QtObject {
     id: root
 
     property var backend: MockBackend
-    property bool nodeIsUp: false
     property bool blinkOn: true
     readonly property int checkIntervalMs: 60000
+
+    // AutoNAT verdict on the running node: "Reachable", "NotReachable" or
+    // "Unknown" while it has no answer yet.
+    readonly property string reachability: root.backend ? root.backend.natReachability : "Unknown"
 
     // 600 ms blink toggle
     property Timer blinkTimer: Timer {
@@ -17,7 +20,7 @@ QtObject {
         onTriggered: root.blinkOn = !root.blinkOn
     }
 
-    // Reachability check while running
+    // Peers and reachability refresh while running
     property Timer checkTimer: Timer {
         interval: root.checkIntervalMs
         repeat: true
@@ -25,25 +28,7 @@ QtObject {
         triggeredOnStart: true
         onTriggered: function () {
             if (root.backend) {
-                root.backend.checkNodeIsUp()
-            }
-        }
-    }
-
-    property Connections connections: Connections {
-        target: root.backend
-
-        function onNodeIsUp() {
-            root.nodeIsUp = true
-        }
-
-        function onNodeIsntUp(r) {
-            root.nodeIsUp = false
-        }
-
-        function onStatusChanged() {
-            if (!root.backend || root.backend.status !== StorageBackend.Running) {
-                root.nodeIsUp = false
+                root.backend.refreshNodeStatus()
             }
         }
     }

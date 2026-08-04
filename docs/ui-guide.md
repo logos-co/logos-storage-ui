@@ -4,24 +4,19 @@ This guide provides an overview of the Logos Storage UI and how to use it.
 
 ## Onboarding 
 
-**Case 1.** You are behind a NAT, but your node supports UPnP or NAT-PMP.
+**Case 1.** The default settings suit you.
 
-In this case, you should use the `Guided` setup option followed by the `UPnP` option, and Logos storage will use that to configure
-the network automatically for you.
+In this case, you should use the `Guided` setup option. The node runs on the default configuration: TCP `8500` for data transfer and UDP `9090`
+for discovery. You will need to forward both ports in your router.
 
-**Case 2.** You are behind a NAT with no UPnP or NAT-PMP support, but you can set up port forwarding rules manually.
-
-In this case, you should use the `Guided` setup option followed by the `Port Forwarding` option. Logos storage requires one TCP and one UDP
-port. The onboarding UI will ask you for which TCP port to use, whereas the UDP port is fixed at 8090. You will need to forward both of
-them in your router. In case you cannot forward UDP/8090, see Case 3.
-
-**Case 3.** You need to manually configure the network settings or would like to modify other node configuration options.
+**Case 2.** You need to manually configure the network settings or would like to modify other node configuration options.
 
 In this case, you should use the `Advanced` setup option. This will display a prepopulated configuration JSON which you can then manually edit to suit your needs. See the module's [API reference](https://logos-co.github.io/logos-storage-module/latest/api_reference.html) for a list of configuration options.
 
-After selecting the appropriate option and clicking `Continue`, the connectivity checker will kick in. If the node is reachable, you should
-see a message saying "your node is up and reachable". If the node is not reachable, you will need to [troubleshoot](#troubleshooting) your connection.
-Alternatively, you can choose to continue anyway, but you will only be able to _download_ files from other nodes.
+Both options then ask you where downloaded files should be saved. Clicking `Continue` opens the dashboard and starts the node. Once it is
+running, a small dot next to the node status reports the AutoNAT verdict: grey and labelled `Unknown` while it has no answer yet, green and
+`Reachable` if other peers can reach you, orange and `Not reachable` otherwise. If it turns orange, you will need to
+[troubleshoot](#troubleshooting) your connection. You can still use the app, but you will only be able to _download_ files from other nodes.
 
 
 ## Sharing a File
@@ -47,7 +42,7 @@ the file from the node and interrupt its sharing.
 
 Logos Storage requires your node to be reachable from the internet and, to that end, you must open two ports on your router:
 
-1. **Discovery.** UDP, defaults to `8090`. Used for discovery and DHT operations.
+1. **Discovery.** UDP, defaults to `9090`. Used for discovery and DHT operations.
 2. **libp2p listen port.** TCP, defaults to `8500`. Used for data transfer and peer connections.
 
 Problems in not being able to share files are commonly related to either one (or both) of those ports not being open or available.
@@ -61,18 +56,20 @@ The node starts successfully but never connects to any peer.
 This is typically due to the discovery being unavailable - for instance, if another process is already occupying its port.
 
 **Fix:**
-Ensure that no process is using port `8090`, or change the default port value in the advanced configuration.
+Ensure that no process is using port `9090`, or change the default port value in the advanced configuration.
 
-### UPnP not working
+### Node is unreachable
 
 **Symptom:**
-You selected UPnP during setup but the node remains unreachable.
+The node starts and connects to peers, but the status indicator turns orange.
 
 **Cause:**
-UPnP relies on your router supporting and enabling the UPnP protocol. Many routers have it disabled by default for security reasons.
+AutoNAT could not open a connection back to your node: the TCP listen port is not reachable from the internet, usually because it is not
+forwarded on your router.
 
 **Fix:**
-Make sure UPnP is enabled on your router or switch to port forwarding config.
+Forward the TCP listen port (defaults to `8500`) to the machine running the node, or change it in the advanced configuration to a port you
+can forward.
 
 ### Manual port forwarding
 

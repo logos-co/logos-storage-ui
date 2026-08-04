@@ -10,6 +10,7 @@ OnBoardingLayout {
     signal completed(bool isGuide)
 
     property int selectedMode: 0
+    property bool backendReady: true
 
     OnBoardingContainer {
 
@@ -84,6 +85,7 @@ OnBoardingLayout {
 
             LogosButton {
                 radius: Theme.spacing.radiusLarge
+                enabled: root.backendReady
                 text: "Continue"
                 variant: LogosButton.Variant.Primary
                 trailingIcon.source: LogosIcons.arrowRight

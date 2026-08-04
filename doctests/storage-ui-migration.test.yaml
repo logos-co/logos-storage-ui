@@ -15,7 +15,8 @@ intro: |
   This test ensures a legacy config is migrated correctly:
     1. the legacy `bootstrap-node` list is removed without adding a `network` field
     2. the Mix configuration is filled
-    3. a version is added to the config
+    3. the `nat` field is dropped when the node no longer accepts its value
+    4. a version is added to the config
 
 what_you_build: "Storage UI returning-user install with a legacy, unversioned config; on startup it is migrated forward — legacy bootstrap stripped, Mix defaults filled, and the config stamped with the current `config-version`."
 
@@ -104,7 +105,7 @@ sections:
       marked complete, the app skips the wizard, loads the config, runs the
       migration, and starts the node.
     steps:
-      - title: "Launch and wait for Running"
+      - title: "Launch and wait for the node to start"
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
@@ -119,13 +120,14 @@ sections:
                 Because onboarding was already completed, the app displays the
                 dashboard directly.
 
-            - name: "Node reaches Running on the migrated config"
+            - name: "The node runs on the migrated config"
               action: wait_for
-              texts: ["Running"]
+              texts: ["Stop"]
               timeout: 60000
               screenshot: "storage-ui-migration-running.png"
               text: |
-                The node starts on the migrated config and reaches Running.
+                The node starts on the migrated config: the action button now
+                offers to stop it.
 
   - title: "Verify the config was migrated"
     step: true
@@ -136,6 +138,10 @@ sections:
 
       The Mix configuration is also filled with default values when it is missing,
       to make sure that the user has a ready to use Mix setup.
+
+      The `nat` field is dropped when it holds a value the node no longer accepts.
+      It only takes `auto` or `extip:<IP>`, and it refuses to start on anything
+      else, so the seeded `none` would keep the node down.
 
       Finally the config is stamped with the current `config-version`, so a later
       startup recognises it as up to date and skips the migration.
@@ -151,6 +157,16 @@ sections:
           test "$(jq '."config-version"' "$cfg")" = "2"
 
           echo "migration OK: legacy bootstrap-node removed, no network preset added, config-version stamped"
+
+      - title: "The obsolete nat value was dropped"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+
+          # The node only accepts "auto" or "extip:<IP>": the seeded "none" is gone
+          # and the node runs on its own default.
+          test "$(jq 'has("nat")' "$cfg")" = "false"
+
+          echo "nat OK: obsolete value removed"
 
       - title: "The Mix configuration is present"
         run: |
@@ -185,9 +201,9 @@ sections:
               action: wait_for
               texts: ["Manage node", "Total space available"]
               timeout: 60000
-            - name: "Node reaches Running again"
+            - name: "The node runs again"
               action: wait_for
-              texts: ["Running"]
+              texts: ["Stop"]
               timeout: 60000
             - name: "Stop the node"
               action: click
@@ -199,9 +215,9 @@ sections:
             - name: "Start the node again"
               action: click
               target: "Start"
-            - name: "Node reaches Running after restart"
+            - name: "The node runs after restart"
               action: wait_for
-              texts: ["Running"]
+              texts: ["Stop"]
               timeout: 30000
 
       - title: "The config file is unchanged"
@@ -269,8 +285,9 @@ sections:
     text: |
       Migration must not clobber a user who set their own network and bootstrap
       list. A non-legacy `bootstrap-node` is an intentional override, so it is
-      kept as-is along with the `network` field; the config is only stamped with
-      the current `config-version`.
+      kept as-is along with the `network` field. A `nat` set to `extip:` is a
+      value the node still accepts, so it survives too. The config is only
+      stamped with the current `config-version`.
     steps:
       - title: "Seed a config with a custom network and bootstrap"
         run: |
@@ -280,7 +297,7 @@ sections:
             "log-level": "DEBUG",
             "listen-port": 8500,
             "disc-port": 8090,
-            "nat": "none",
+            "nat": "extip:203.0.113.5",
             "network": "logos.dev",
             "bootstrap-node": [
               "spr:CiUIAhIhAn67-cPFkDpqyeTEjDPbhtN8NUxt9S-niBc5QRLyc2xrEgIDARpJCicAJQgCEiECfrv5w8WQOmrJ5MSMM9uG03w1TG31L6eIFzlBEvJzbGsQ3LWT0gYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDX2BuLjlWusHeQC-bI50ynRHSXfchFSSFfup2NFHB3dwIgLEUpNwVgcaP7Rj_GkClm3pmQ1KSqB1GeaKDbipsZJ3o"
@@ -315,7 +332,7 @@ sections:
 
           test "$(jq -r '."data-dir"' "$cfg")" = "/tmp/storage-ui-migration-data"
           test "$(jq -r '."log-level"' "$cfg")" = "DEBUG"
-          test "$(jq -r '.nat' "$cfg")" = "none"
+          test "$(jq -r '.nat' "$cfg")" = "extip:203.0.113.5"
           test "$(jq -r '."dht-mix-proxy"[0]' "$cfg")" = "spr:placeholder"
           test "$(jq -r '."mix-pool-json"' "$cfg")" = "{}"
 

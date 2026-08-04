@@ -10,14 +10,10 @@ import Logos.StorageBackend 1.0
 // If the storage replica is valid (logos.viewModuleReadyChanged) and onboarding
 // is already complete, the onboarding screen is immediately replaced by the
 // storageComponent.
-// Onboarding offers two choices:
-//   1. UPnP            : the user proceeds directly to the startNodeComponent.
-//   2. Port forwarding : the user selects a TCP port before proceeding
-//  to the startNodeComponent.
-// The startNodeComponent waits for the node to start and verifies that
-// it is reachable. If the node is unreachable, the user is prompted to
-// edit the configuration. Once reachable, clicking "Next" marks
-// onboarding as complete.
+// Onboarding offers two choices, both ending on the download folder step,
+// which marks onboarding as complete and hands over to the storageComponent:
+//   1. Guided   : the node runs on the default configuration.
+//   2. Advanced : the user reviews the node configuration first.
 Item {
     id: root
     implicitWidth: 800
@@ -112,29 +108,17 @@ Item {
         id: modeSelectorComponent
 
         ModeSelector {
+            // The guided path writes defaultConfigJson, which stays empty until
+            // the replica has synced.
+            backendReady: !!(d.backend && d.backend.defaultConfigJson)
+
             onCompleted: function (isGuide) {
                 if (isGuide) {
-                    stackView.push(onboardingComponent)
+                    // Guided setup: the node runs on the default configuration.
+                    d.backend.saveUserConfig(d.backend.defaultConfigJson)
+                    stackView.push(downloadFolderComponent)
                 } else {
                     stackView.push(advancedSetupComponent)
-                }
-            }
-        }
-    }
-
-    Component {
-        id: onboardingComponent
-
-        OnBoarding {
-            backend: d.backend
-
-            onBack: stackView.pop()
-
-            onCompleted: function (upnpEnabled) {
-                if (upnpEnabled) {
-                    stackView.push(startNodeComponent)
-                } else {
-                    stackView.push(portForwardingComponent)
                 }
             }
         }
@@ -166,7 +150,7 @@ Item {
         id: downloadFolderComponent
 
         DownloadFolder {
-            backend: root.backend
+            backend: d.backend
 
             onBack: {
                 stackView.pop()
@@ -175,40 +159,6 @@ Item {
             onNext: {
                 settings.onboardingCompleted = true
                 stackView.replace(storageComponent, StackView.Immediate)
-            }
-        }
-    }
-
-    Component {
-        id: startNodeComponent
-
-        StartNode {
-            backend: d.backend
-
-            onBack: {
-                stackView.pop()
-            }
-
-            onNext: {
-                //settings.onboardingCompleted = true
-                stackView.push(downloadFolderComponent)
-            }
-        }
-    }
-
-    Component {
-        id: portForwardingComponent
-
-        PortForwarding {
-            backend: d.backend
-            loading: false
-
-            onBack: {
-                stackView.pop()
-            }
-
-            onCompleted: function () {
-                stackView.push(startNodeComponent)
             }
         }
     }
