@@ -56,58 +56,6 @@ void StorageBackend::reportError(const QString& message) {
     emit error(message);
 }
 
-void StorageBackend::startLogTail() {
-    m_logFile.close();
-    m_logFile.setFileName(m_logPath);
-    m_logOffset = 0;
-    m_logPartial.clear();
-
-    if (!m_logPoll) {
-        m_logPoll = new QTimer(this);
-        m_logPoll->setInterval(500);
-        connect(m_logPoll, &QTimer::timeout, this, &StorageBackend::readLogTail);
-    }
-    m_logPoll->start();
-}
-
-void StorageBackend::stopLogTail() {
-    if (m_logPoll) {
-        m_logPoll->stop();
-    }
-    readLogTail();
-    m_logFile.close();
-}
-
-void StorageBackend::readLogTail() {
-    if (!m_logFile.isOpen() && !m_logFile.open(QIODevice::ReadOnly)) {
-        return;
-    }
-
-    qint64 size = m_logFile.size();
-    if (size < m_logOffset) {  // the node truncated the file on restart
-        m_logOffset = 0;
-        m_logPartial.clear();
-    }
-    if (size == m_logOffset) {
-        return;
-    }
-
-    m_logFile.seek(m_logOffset);
-    m_logPartial += QString::fromUtf8(m_logFile.readAll());
-    m_logOffset = m_logFile.pos();
-
-    QStringList lines;
-    int nl;
-    while ((nl = m_logPartial.indexOf('\n')) >= 0) {
-        lines.append(m_logPartial.left(nl));
-        m_logPartial.remove(0, nl + 1);
-    }
-
-    if (!lines.isEmpty()) {
-        emit logLines(lines);
-    }
-}
-
 static int seenPeerCount(const QVariantList& nodes) {
     int count = 0;
     for (const QVariant& node : nodes) {
@@ -148,12 +96,6 @@ void StorageBackend::init(QString configJson) {
 
     QJsonObject moduleConfig = m_config.object();
     moduleConfig.remove("config-version");
-
-    m_logPath = moduleConfig.value("log-file").toString();
-    if (m_logPath.isEmpty()) {
-        m_logPath = DEFAULT_LOG_FILE_PATH;
-        moduleConfig["log-file"] = m_logPath;
-    }
 
     bool result = m_logos->storage_module.init(
         QString::fromUtf8(QJsonDocument(moduleConfig).toJson(QJsonDocument::Compact)));
@@ -211,7 +153,6 @@ void StorageBackend::init(QString configJson) {
                 reportError("Failed to stop Storage module:" + message);
             } else {
                 debug("Storage module stopped.");
-                stopLogTail();
                 QTimer::singleShot(0, this, [this]() {
                     LogosResult destroyResult = m_logos->storage_module.destroy();
                     if (!destroyResult.success) {
@@ -375,10 +316,6 @@ void StorageBackend::start() {
 
     setStatus(Starting);
     debug("Starting Storage module...");
-
-    // Before the command, not on the success event: a node that fails to start
-    // writes the reason to the same file, and truncates it on the next start.
-    startLogTail();
 
     auto result = m_logos->storage_module.start();
 

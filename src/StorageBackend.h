@@ -16,7 +16,6 @@ static const int RET_PROGRESS = 3;
 static const QString APP_HOME = QDir::homePath() + "/.logos_storage";
 static const QString DEFAULT_DATA_DIR = APP_HOME + "/data";
 static const QString USER_CONFIG_PATH = APP_HOME + "/config.json";
-static const QString DEFAULT_LOG_FILE_PATH = APP_HOME + "/storage.log";
 
 static const int DEFAULT_LISTEN_PORT = 8500;
 static const int DEFAULT_DISC_PORT = 9090;
@@ -229,13 +228,6 @@ class StorageBackend : public StorageBackendSimpleSource {
     // Emit error(message)
     void reportError(const QString& message);
 
-    // Poll the node log file for appended content and stream complete lines
-    // via logLines(). The file is truncated on each node start, which
-    // readLogTail() detects to reset its offset.
-    void startLogTail();
-    void stopLogTail();
-    void readLogTail();
-
     // Logos related variables
     LogosAPI* m_logosAPI;
     LogosModules* m_logos;
@@ -245,12 +237,4 @@ class StorageBackend : public StorageBackendSimpleSource {
     // Internal configuration object. It can be updated by
     // upnp or port forwarning methods.
     QJsonDocument m_config;
-
-    // Log file tailing state. m_logPath is the effective log-file the node
-    // was configured with (the user's if set, otherwise the forced default).
-    QString m_logPath;
-    QFile m_logFile;
-    qint64 m_logOffset = 0;
-    QString m_logPartial;
-    QTimer* m_logPoll = nullptr;
 };

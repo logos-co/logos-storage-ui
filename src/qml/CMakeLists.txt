@@ -142,7 +142,6 @@ qt_add_qml_module(appqml
         SettingsComboBox.qml
         SettingsFieldBackground.qml
         DebugPopup.qml
-        LogsView.qml
         ManifestTable.qml
         NodeWidget.qml
         Widgets.qml
