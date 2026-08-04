@@ -139,6 +139,7 @@ class StorageBackend : public StorageBackendSimpleSource {
 
     void exists(QString cid) override;
     void remove(QString cid) override;
+    void deleteDownloadedFile(QUrl path) override;
 
     // Fetch a cid in background
     void fetch(QString cid) override;

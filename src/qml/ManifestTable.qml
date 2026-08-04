@@ -92,9 +92,13 @@ LogosFrame {
         return !!(item && item.filename && root.downloadedNames[item.filename])
     }
 
+    function downloadedUrl(item) {
+        return root.downloadFolderPath.replace(/\/$/, "")
+                + "/" + encodeURIComponent(item.filename)
+    }
+
     function openDownloaded(item) {
-        Qt.openUrlExternally(root.downloadFolderPath.replace(/\/$/, "")
-                             + "/" + encodeURIComponent(item.filename))
+        Qt.openUrlExternally(root.downloadedUrl(item))
     }
 
     function markDeleting(cid) {
@@ -575,9 +579,14 @@ LogosFrame {
                                             enabled: root.running && !actionsCell.rowDeleting
                                                      && !actionsCell.rowDownloading
                                             onClicked: {
-                                                if (rowItem.cid.length > 0) {
-                                                    root.backend.remove(rowItem.cid)
-                                                }
+                                                if (rowItem.cid.length === 0)
+                                                    return
+                                                // The local copy goes with the
+                                                // manifest it came from.
+                                                if (actionsRow.rowDownloaded)
+                                                    root.backend.deleteDownloadedFile(
+                                                                root.downloadedUrl(rowItem))
+                                                root.backend.remove(rowItem.cid)
                                             }
                                         }
                                     }

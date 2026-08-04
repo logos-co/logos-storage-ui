@@ -37,6 +37,9 @@ class StorageBackend
     SLOT(void downloadManifests())
     SLOT(void exists(QString cid))
     SLOT(void remove(QString cid))
+
+    // Delete the copy the user downloaded, not the manifest.
+    SLOT(void deleteDownloadedFile(QUrl path))
     SLOT(void fetch(QString cid))
 
     // Space

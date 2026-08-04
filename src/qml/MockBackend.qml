@@ -61,6 +61,7 @@ QtObject {
     function remove(cid) {
         removeStarted(cid)
     }
+    function deleteDownloadedFile(path) {}
     function logDebugInfo() {
         debugInfoUpdated({
                              "id": "16Uiu2HAmMockPeerIdForTheDesignPreview",
