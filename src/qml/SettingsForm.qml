@@ -122,7 +122,8 @@ ScrollView {
 
     // Keys the node only reads when it starts.
     readonly property var restartKeys: ["storage-quota", "listen-port", "disc-port", "nat",
-                                        "network", "bootstrap-node"]
+                                        "network", "bootstrap-node", "dht-mix-proxy",
+                                        "mix-pool-json"]
 
     clip: true
     contentWidth: availableWidth

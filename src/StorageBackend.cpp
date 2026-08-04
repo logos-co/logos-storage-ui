@@ -192,7 +192,6 @@ void StorageBackend::init(QString configJson) {
 
                 debug("Storage module started.");
 
-                startLogTail();
                 StorageBackend::fetchWidgetsData();
 
                 emit startCompleted();
@@ -376,6 +375,10 @@ void StorageBackend::start() {
 
     setStatus(Starting);
     debug("Starting Storage module...");
+
+    // Before the command, not on the success event: a node that fails to start
+    // writes the reason to the same file, and truncates it on the next start.
+    startLogTail();
 
     auto result = m_logos->storage_module.start();
 
