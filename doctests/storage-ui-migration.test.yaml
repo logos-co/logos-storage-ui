@@ -105,7 +105,7 @@ sections:
       marked complete, the app skips the wizard, loads the config, runs the
       migration, and starts the node.
     steps:
-      - title: "Launch and wait for Running"
+      - title: "Launch and wait for the node to start"
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
@@ -120,13 +120,14 @@ sections:
                 Because onboarding was already completed, the app displays the
                 dashboard directly.
 
-            - name: "Node reaches Running on the migrated config"
+            - name: "The node runs on the migrated config"
               action: wait_for
-              texts: ["Running"]
+              texts: ["Stop"]
               timeout: 60000
               screenshot: "storage-ui-migration-running.png"
               text: |
-                The node starts on the migrated config and reaches Running.
+                The node starts on the migrated config: the action button now
+                offers to stop it.
 
   - title: "Verify the config was migrated"
     step: true
@@ -200,9 +201,9 @@ sections:
               action: wait_for
               texts: ["Manage node", "Total space available"]
               timeout: 60000
-            - name: "Node reaches Running again"
+            - name: "The node runs again"
               action: wait_for
-              texts: ["Running"]
+              texts: ["Stop"]
               timeout: 60000
             - name: "Stop the node"
               action: click
@@ -214,9 +215,9 @@ sections:
             - name: "Start the node again"
               action: click
               target: "Start"
-            - name: "Node reaches Running after restart"
+            - name: "The node runs after restart"
               action: wait_for
-              texts: ["Running"]
+              texts: ["Stop"]
               timeout: 30000
 
       - title: "The config file is unchanged"
