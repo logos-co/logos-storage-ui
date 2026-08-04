@@ -320,3 +320,52 @@ sections:
           test "$(jq -r '."mix-pool-json"' "$cfg")" = "{}"
 
           echo "preserved OK: custom network + bootstrap + user keys kept, config-version stamped"
+
+  - title: "A config already at version 1 only gets the Mix migration"
+    step: true
+    text: |
+      Migrations are not replayed: a config stamped `config-version` 1 has already
+      been through the bootstrap removal, so its `bootstrap-node` list is left
+      alone even though it holds a shipped default. Only the version 1 to 2 step
+      runs, filling the Mix configuration.
+    steps:
+      - title: "Seed a version 1 config with a legacy bootstrap node and no Mix"
+        run: |
+          cat > "$HOME/.logos_storage/config.json" <<'EOF'
+          {
+            "config-version": 1,
+            "data-dir": "/tmp/storage-ui-migration-data",
+            "log-level": "DEBUG",
+            "listen-port": 8500,
+            "disc-port": 8090,
+            "nat": "none",
+            "bootstrap-node": [
+              "spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE"
+            ]
+          }
+          EOF
+
+      - title: "Relaunch the app"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "Dashboard opens"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 60000
+
+      - title: "The bootstrap node is kept and only Mix was filled"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+
+          test "$(jq '."bootstrap-node" | length' "$cfg")" = "1"
+          test "$(jq '."config-version"' "$cfg")" = "2"
+
+          test "$(jq '."mix-enabled"' "$cfg")" = "true"
+          test "$(jq '."dht-mix-proxy" | length > 0' "$cfg")" = "true"
+          test "$(jq '."mix-pool-json" != ""' "$cfg")" = "true"
+
+          echo "version 1 OK: bootstrap-node untouched, mix defaults filled, config-version stamped"
