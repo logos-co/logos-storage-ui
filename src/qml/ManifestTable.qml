@@ -28,9 +28,6 @@ LogosFrame {
     // Two 40px icon buttons, the gap between them and the pill's own padding.
     readonly property int actionsColumnWidth: 40 * 2 + Theme.spacing.medium * 3
 
-    // The node reports no timestamp on a manifest, so the date is stamped here,
-    // the first time this install sees the CID, and persisted. Anything already
-    // in the list when the feature landed stays undated and shows "-".
     property var addedDates: ({})
 
     Settings {
@@ -52,6 +49,15 @@ LogosFrame {
             return
         var d = Object.assign({}, root.addedDates)
         d[cid] = new Date().toISOString()
+        root.addedDates = d
+        addedDatesStore.entries = JSON.stringify(d)
+    }
+
+    function forgetAdded(cid) {
+        if (!cid || !root.addedDates[cid])
+            return
+        var d = Object.assign({}, root.addedDates)
+        delete d[cid]
         root.addedDates = d
         addedDatesStore.entries = JSON.stringify(d)
     }
@@ -137,6 +143,8 @@ LogosFrame {
                 r = (dates[a.cid] || "").localeCompare(dates[b.cid] || "")
             else
                 r = (a.filename || "").localeCompare(b.filename || "")
+            if (r === 0)
+                r = (a.cid || "").localeCompare(b.cid || "")
             return r * dir
         })
         return root.pending.concat(list)
@@ -253,6 +261,7 @@ LogosFrame {
 
             function onRemoveStarted(cid) {
                 root.markDeleting(cid)
+                root.forgetAdded(cid)
             }
 
             function onRemoveFailed(cid, error) {
