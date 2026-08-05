@@ -122,8 +122,7 @@ Popup {
                     root.countBy(nodes, "seen") + " verified / " + nodes.length + " known")
         root.addRow("Connections",
                     connections.length + " open / " + root.countBy(connections, "direct") + " direct")
-        root.addRow("Storage version", root.asText(storage.version))
-        root.addRow("Storage revision", root.asText(storage.revision), "mono")
+        root.addRow("Storage version", "2.1.0")
 
         root.addAll("Listen address", info.addrs)
         root.addAll("Provider address", info.providerAddresses)

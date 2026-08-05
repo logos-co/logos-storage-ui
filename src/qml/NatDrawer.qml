@@ -92,7 +92,7 @@ LogosDrawer {
                 }, {
                     "color": Theme.palette.warning,
                     "label": "Not reachable",
-                    "body": "Your router turns incoming connections away, so others reach you through a relay: another node that takes their connection and forwards it to you. You can still share everything, it is just slower. To get direct connections, enable UPnP or automatic port forwarding in your router settings."
+                    "body": "Your router turns incoming connections away, so others reach you through a relay: another node that takes their connection and forwards it to you. You can still share everything, it is just slower. To get direct connections, enable automatic port forwarding in your router settings."
                 }, {
                     "color": Theme.palette.textMuted,
                     "label": "Unknown",
