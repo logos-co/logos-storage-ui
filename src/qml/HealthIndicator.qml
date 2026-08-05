@@ -6,7 +6,7 @@ QtObject {
 
     property var backend: MockBackend
     property bool blinkOn: true
-    readonly property int checkIntervalMs: 60000
+    readonly property int checkIntervalMs: 30000
 
     // AutoNAT verdict on the running node: "Reachable", "NotReachable" or
     // "Unknown" while it has no answer yet.

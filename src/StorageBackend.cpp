@@ -704,6 +704,7 @@ QJsonDocument StorageBackend::defaultConfig() {
     // Define defaults here to make it visible on the UI
     obj["listen-port"] = DEFAULT_LISTEN_PORT;
     obj["disc-port"] = DEFAULT_DISC_PORT;
+    obj["nat-schedule-interval"] = DEFAULT_NAT_SCHEDULE_INTERVAL;
 
     obj["mix-enabled"] = true;
     obj["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
@@ -745,6 +746,10 @@ QJsonObject StorageBackend::migrateV1toV2(QJsonObject obj) {
     if (obj.value("mix-pool-json").toString().isEmpty()) {
         obj["mix-pool-json"] = QString::fromUtf8(
             QJsonDocument::fromJson(MIX_POOL_JSON.toUtf8()).toJson(QJsonDocument::Compact));
+    }
+
+    if (obj.value("nat-schedule-interval").toString().isEmpty()) {
+        obj["nat-schedule-interval"] = DEFAULT_NAT_SCHEDULE_INTERVAL;
     }
 
     const QString nat = obj.value("nat").toString();

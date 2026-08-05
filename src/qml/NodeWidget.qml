@@ -282,8 +282,10 @@ LogosFrame {
                 bottomPadding: 0
                 Layout.alignment: Qt.AlignVCenter
                 background: CardButtonBackground {}
-                enabled: root.backend && (root.effectiveStatus === StorageBackend.Running
-                                          || root.effectiveStatus === StorageBackend.Destroyed)
+                // Anything but a transition: a failed start leaves the node
+                // Stopped, and the user has to be able to try again.
+                enabled: root.backend && root.effectiveStatus !== StorageBackend.Starting
+                         && root.effectiveStatus !== StorageBackend.Stopping
                 onClicked: {
                     if (!root.backend)
                         return

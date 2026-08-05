@@ -10,6 +10,7 @@ name: storage-ui Doc-Tests
 # Specs:
 #   storage-ui-migration.test.yaml: Verify a legacy, unversioned config is migrated forward and stamped with `config-version` on startup.
 #   storage-ui-settings.test.yaml: Verify every Settings field is written to its config.json key on save, and that the read-only keys survive.
+#   storage-ui-app.test.yaml: Walk both onboarding paths, then upload, fetch, download and delete from the dashboard.
 
 on:
   pull_request:
@@ -30,6 +31,7 @@ jobs:
         spec:
           - storage-ui-migration
           - storage-ui-settings
+          - storage-ui-app
 
     runs-on: ubuntu-latest
     timeout-minutes: 180
