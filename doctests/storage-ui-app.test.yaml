@@ -75,8 +75,8 @@ sections:
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
-          # build_timeout: 7200
-          # launch_timeout: 1800
+          build_timeout: 7200
+          launch_timeout: 1800
           tests:
             - name: "The app opens on the onboarding wizard"
               action: wait_for
@@ -187,8 +187,8 @@ sections:
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
-          # build_timeout: 7200
-          # launch_timeout: 1800
+          build_timeout: 7200
+          launch_timeout: 1800
           tests:
             - name: "The app opens on the onboarding wizard"
               action: wait_for
@@ -215,11 +215,6 @@ sections:
               text: |
                 The configuration is split into sections, each with a title and a help text.
 
-
-
-
-
-
             - name: "Move the discovery port"
               action: set_text
               find_by: "objectName"
@@ -232,7 +227,7 @@ sections:
               find_value: "natIntervalField"
               value: "30s"
               text: |
-                A verdict takes several rounds that agree, so at the migrated
+                A verdict takes several rounds that agree, so at the shipped
                 default of one minute nothing reachable happens inside a test
                 window. The node reads this at startup, like the ports.
 
@@ -258,7 +253,6 @@ sections:
               value: "{\"version\":1,\"relays\":[{\"peerId\":\"16Uiu2HAmVkKbPiweAgwiqjWkhptDUApzEM2w7jEjpRWB3zpQe9ZU\",\"multiAddr\":\"/ip4/207.154.209.37/tcp/8080\",\"mixPubKey\":\"2922d84ffd5a2d0dc8206034390ec38972a64402188c265b92a2045d0559775a\",\"libp2pPubKey\":\"03fdf45710525ead310a3a0c22514a96763b801110cc7bf4a516399073f5efea53\"},{\"peerId\":\"16Uiu2HAm52kdvfTWTrkGhkvGQX8dp8FfRcaPc6UgTzLFHsSLVQCi\",\"multiAddr\":\"/ip4/64.226.112.135/tcp/8080\",\"mixPubKey\":\"d91c44f0aebb26a2d78f83d31c805ce478a86c7b35d9b44e10a8ae6f6c30ba00\",\"libp2pPubKey\":\"028eb5c6e0341fc97e0d0b38a6372c5d18082bf56b0e55bd6ebf9a77af84014293\"},{\"peerId\":\"16Uiu2HAm1cXZXgyw47PM7xL1FFiNVQuntihVevNFK5Fy18uZU62c\",\"multiAddr\":\"/ip4/134.122.88.240/tcp/8080\",\"mixPubKey\":\"7eccd26d9decc8c8f236788313f2d76247614a005ff85808b0e6b473e435514a\",\"libp2pPubKey\":\"025bedfde77ba3af28d848d130038bc4e6808e17ece17a35992323e331661a3a89\"},{\"peerId\":\"16Uiu2HAm8y4UgDx9L5FVBPPgpoA36sdydWkewuLVgM4rnvnMtg1T\",\"multiAddr\":\"/ip4/134.209.249.241/tcp/8080\",\"mixPubKey\":\"fdb59c1dc2eb066f697b69d58866579dfb50586b161e8c604becfe177c8eb147\",\"libp2pPubKey\":\"02c9325fa9d36b017ccbf2011055988913678d00e5f33a4eefc2264296f97173ae\"}]}"
               text: |
                 Private DHT lookups travel through these relays.
-
 
             - name: "Validate the configuration"
               action: call_method
