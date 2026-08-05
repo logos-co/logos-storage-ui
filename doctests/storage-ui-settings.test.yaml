@@ -119,6 +119,11 @@ sections:
               text: |
                 The popup opens on the values read from `config.json`.
 
+            - name: "The config lands in the form"
+              action: wait_for
+              texts: ["/tmp/storage-ui-settings-data"]
+              timeout: 5000
+
             - name: "Select the TRACE log level"
               action: set_property
               find_value: "settingsForm"
@@ -353,6 +358,11 @@ sections:
               action: wait_for
               texts: ["Log level", "Storage quota"]
               timeout: 1000
+
+            - name: "The config lands in the form"
+              action: wait_for
+              texts: ["/tmp/storage-ui-settings-data"]
+              timeout: 5000
 
             - name: "The form was populated from the file"
               action: expect_property
