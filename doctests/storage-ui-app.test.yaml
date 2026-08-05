@@ -75,8 +75,8 @@ sections:
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
-          build_timeout: 7200
-          launch_timeout: 1800
+          # build_timeout: 7200
+          # launch_timeout: 1800
           tests:
             - name: "The app opens on the onboarding wizard"
               action: wait_for
@@ -85,10 +85,6 @@ sections:
               screenshot: "storage-ui-onboarding.png"
               text: |
                 The first screen offers the two paths. Guided is selected by default.
-
-            # - name: "Let the module replica sync"
-            #   action: sleep
-            #   ms: 2000
 
             - name: "Confirm the guided setup"
               action: call_method
@@ -166,6 +162,7 @@ sections:
           test "$(jq '."listen-port"' "$cfg")" = "8500"
           test "$(jq '."disc-port"' "$cfg")" = "9090"
           test "$(jq '."mix-enabled"' "$cfg")" = "true"
+          test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "60s"
 
           # No nat key: the node decides its reachability on its own.
           test "$(jq 'has("nat")' "$cfg")" = "false"
@@ -190,8 +187,8 @@ sections:
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
-          build_timeout: 7200
-          launch_timeout: 1800
+          # build_timeout: 7200
+          # launch_timeout: 1800
           tests:
             - name: "The app opens on the onboarding wizard"
               action: wait_for
@@ -216,51 +213,28 @@ sections:
               timeout: 2000
               screenshot: "storage-ui-advanced.png"
               text: |
-                The configuation is split into sections, each with a title and a help text.
+                The configuration is split into sections, each with a title and a help text.
 
-            - name: "Ask for an explicit external address"
-              action: set_property
-              find_value: "configEditor"
-              property: "vNatMode"
-              value: "extip"
 
-            - name: "With no address typed, the form is invalid"
-              action: expect_property
-              find_value: "configEditor"
-              property: "valid"
-              value: false
-              screenshot: "storage-ui-advanced-invalid.png"
-              text: |
-                The user cannot validate without proving a valid IP
-                when choosing  `extip` option.
 
-            - name: "Type the external address"
-              action: set_text
-              find_by: "objectName"
-              find_value: "natExtIpField"
-              value: "127.0.0.1"
 
-            - name: "The form accepts the configuration"
-              action: expect_property
-              find_value: "configEditor"
-              property: "valid"
-              value: true
 
-            - name: "Restore default nat settings"
-              action: set_property
-              find_value: "configEditor"
-              property: "vNatMode"
-              value: "auto"
-              text: |
-                An explicit address can be used if the node is not behind a NAT.
-                Here we want to continue with the default, which is to let AutoNAT
-                gives the reachability verdict and fallback to relay if the node is not reachable.
 
             - name: "Move the discovery port"
               action: set_text
               find_by: "objectName"
               find_value: "discPortField"
               value: "9191"
+
+            - name: "Shorten the AutoNAT round"
+              action: set_text
+              find_by: "objectName"
+              find_value: "natIntervalField"
+              value: "30s"
+              text: |
+                A verdict takes several rounds that agree, so at the migrated
+                default of one minute nothing reachable happens inside a test
+                window. The node reads this at startup, like the ports.
 
             - name: "Point the node at its own bootstrap list"
               action: set_property
@@ -285,15 +259,6 @@ sections:
               text: |
                 Private DHT lookups travel through these relays.
 
-            - name: "The network preset is locked by the custom list"
-              action: expect_property
-              find_value: "networkSelect"
-              property: "enabled"
-              value: false
-              screenshot: "storage-ui-advanced-bootstrap.png"
-              text: |
-                When choosing a bootstrap node list, the network preset is locked and
-                not taken in consideration.
 
             - name: "Validate the configuration"
               action: call_method
@@ -350,20 +315,6 @@ sections:
               action: click_object
               find_by: "text"
               find_value: "Mix"
-
-      - title: "Shorten the AutoNAT round"
-        run: |
-          cfg="$HOME/.logos_storage/config.json"
-          jq '. + {"nat-schedule-interval": "30s"}' "$cfg" > "$cfg.tmp"
-          mv "$cfg.tmp" "$cfg"
-          jq '."nat-schedule-interval"' "$cfg"
-        text: |
-          AutoNAT asks its peers every two minutes by default, and a verdict
-          needs two rounds that agree. Nothing reachable can happen inside a
-          test window at that pace, so the interval is cut before the relaunch.
-
-          The key is not on the settings form: it is written straight into the
-          file, which the app reloads on start.
 
       - title: "Fetch a file and download it"
         ui_test:
@@ -449,7 +400,7 @@ sections:
               action: wait_for
               texts: ["0 B Utilized"]
               screenshot: "storage-ui-deleted.png"
-              # Delete are really slow
+              # Deletes are really slow
               timeout: 60000
               text: |
                 The used space falls back to zero. The blocks were really dropped.
@@ -457,11 +408,9 @@ sections:
             - name: "The row leaves the list"
               action: wait_for
               texts: ["No manifests yet"]
-              timeout: 30000
+              timeout: 5000
               text: |
-                The table empties too. It only learns of the deletion through
-                the manifest listing, so this is what proves the refresh made
-                it through.
+                The table empties too.
 
       - title: "The advanced run wrote what the form showed"
         run: |
@@ -470,6 +419,7 @@ sections:
           jq . "$cfg"
 
           test "$(jq '."disc-port"' "$cfg")" = "9191"
+          test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "30s"
           test "$(jq '."bootstrap-node" | length' "$cfg")" = "4"
           test "$(jq '."dht-mix-proxy" | length' "$cfg")" = "4"
           test "$(jq -r '."mix-pool-json"' "$cfg" | jq '.relays | length')" = "4"

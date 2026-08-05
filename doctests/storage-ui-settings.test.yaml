@@ -157,11 +157,35 @@ sections:
               property: "vNatMode"
               value: "extip"
 
+            - name: "With no address typed, the form is invalid"
+              action: expect_property
+              find_value: "settingsForm"
+              property: "valid"
+              value: false
+
+            - name: "Save is refused while it is"
+              action: expect_property
+              find_value: "saveButton"
+              property: "enabled"
+              value: false
+
             - name: "Type the external IP"
               action: set_text
               find_by: "objectName"
               find_value: "natExtIpField"
               value: "203.0.113.7"
+
+            - name: "Slow the AutoNAT rounds down"
+              action: set_text
+              find_by: "objectName"
+              find_value: "natIntervalField"
+              value: "5m"
+
+            - name: "The form accepts the address"
+              action: expect_property
+              find_value: "settingsForm"
+              property: "valid"
+              value: true
 
             - name: "Select the logos.dev network"
               action: set_property
@@ -269,6 +293,14 @@ sections:
           test "$(jq -r '."bootstrap-node"[1]' "$cfg")" = "spr:CiUIAhIhAn67-cPFkDpqyeTEjDPbhtN8NUxt9S-niBc5QRLyc2xrEgIDARpJCicAJQgCEiECfrv5w8WQOmrJ5MSMM9uG03w1TG31L6eIFzlBEvJzbGsQ3LWT0gYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDX2BuLjlWusHeQC-bI50ynRHSXfchFSSFfup2NFHB3dwIgLEUpNwVgcaP7Rj_GkClm3pmQ1KSqB1GeaKDbipsZJ3o"
 
           echo "OK: bootstrap-node holds one entry per line"
+
+      - title: "The AutoNAT interval is written as typed"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+
+          test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "5m"
+
+          echo "OK: nat-schedule-interval"
 
       - title: "The NAT mode and the external IP are joined into one value"
         run: |
@@ -394,6 +426,12 @@ sections:
               find_value: "networkSelect"
               property: "currentIndex"
               value: 1
+
+            - name: "The AutoNAT interval is shown back"
+              action: expect_property
+              find_value: "natIntervalField"
+              property: "text"
+              value: "5m"
 
             - name: "The external IP is split back out of nat"
               action: expect_property

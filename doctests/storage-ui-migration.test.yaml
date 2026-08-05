@@ -1,4 +1,4 @@
-name: "Migrating a Legacy Storage UI Config: Config versioning and fforward migration"
+name: "Migrating a Legacy Storage UI Config: Config versioning and forward migration"
 output: storage-ui-migration.md
 release: ""
 
@@ -22,7 +22,7 @@ what_you_build: "Storage UI using a legacy config and migrating it forward on st
 
 what_you_learn:
   - How the UI versions the user config and migrates it forward from `config-version` 0 to the current version on startup
-  - How to simulate a completed omnoarding so the app loads the existing config instead of showing onboarding
+  - How to simulate a completed onboarding so the app loads the existing config instead of showing onboarding
   - How to assert the on-disk config was migrated and stamped after the app ran
 
 prerequisites:
@@ -149,6 +149,14 @@ sections:
           test "$(jq '."config-version"' "$cfg")" = "2"
 
           echo "migration OK: legacy bootstrap-node removed, no network preset added, config-version stamped"
+
+      - title: "The AutoNAT interval was filled in"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+
+          test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "60s"
+
+          echo "interval OK: the migration filled the missing key"
 
       - title: "The obsolete nat value was dropped"
         run: |
