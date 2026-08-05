@@ -21,6 +21,10 @@ static const int DEFAULT_LISTEN_PORT = 8500;
 static const int DEFAULT_DISC_PORT = 9090;
 static const int DEFAULT_CHUNK_SIZE = 1024 * 64;
 
+// AutoNAT rounds every two minutes is the node's own default, and a verdict
+// takes several rounds: too slow for a user watching the dashboard.
+static const QString DEFAULT_NAT_SCHEDULE_INTERVAL = "60s";
+
 // Config schema version
 // Increment it and add migrateVXtoVY methods when the config schema changes.
 static const int CURRENT_CONFIG_VERSION = 2;

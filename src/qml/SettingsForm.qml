@@ -41,7 +41,10 @@ ScrollView {
 
     // An extip mode with no usable address would silently drop the nat key.
     readonly property bool natExtIpValid: /^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/.test(root.vNatExtIp)
+    readonly property bool natIntervalValid: root.vNatInterval.length === 0
+                                            || /^\d+(ms|s|m|h)$/.test(root.vNatInterval)
     readonly property bool valid: (root.vNatMode !== "extip" || root.natExtIpValid)
+                                 && root.natIntervalValid
                                  && root.isJson(root.vBootstrap)
                                  && root.isJson(root.vMixProxies)
                                  && root.isJson(root.vMixPool)
@@ -59,6 +62,7 @@ ScrollView {
     property string vDiscPort: ""
     property string vNatMode: "auto"
     property string vNatExtIp: ""
+    property string vNatInterval: ""
     property string vNetwork: ""
     // JSON edited as it sits in the config, not split into records.
     property string vBootstrap: ""
@@ -123,7 +127,7 @@ ScrollView {
     // Keys the node only reads when it starts.
     readonly property var restartKeys: ["storage-quota", "listen-port", "disc-port", "nat",
                                         "network", "bootstrap-node", "dht-mix-proxy",
-                                        "mix-pool-json"]
+                                        "mix-pool-json", "nat-schedule-interval"]
 
     clip: true
     contentWidth: availableWidth
@@ -176,6 +180,7 @@ ScrollView {
         root.vListenPort = cfg["listen-port"] !== undefined ? String(cfg["listen-port"]) : ""
         root.vDiscPort = cfg["disc-port"] !== undefined ? String(cfg["disc-port"]) : ""
         root.vNetwork = cfg["network"] || ""
+        root.vNatInterval = cfg["nat-schedule-interval"] || ""
         root.vBootstrap = root.toJsonText(cfg["bootstrap-node"])
 
         const nat = cfg["nat"] || "auto"
@@ -251,6 +256,8 @@ ScrollView {
             put("storage-quota", root.loadedQuota === undefined ? "" : root.loadedQuota)
         else
             put("storage-quota", root.giBToBytes(root.vQuotaGiB))
+
+        put("nat-schedule-interval", root.vNatInterval)
         put("network", root.vNetwork)
 
         putJson("bootstrap-node", root.vBootstrap)
@@ -601,6 +608,21 @@ ScrollView {
                             regularExpression: /^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){0,3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)?$/
                         }
                         onTextChanged: root.vNatExtIp = text
+                    }
+                }
+
+                SettingRow {
+                    title: "AutoNAT interval"
+                    description: "How often the node asks its peers whether it is reachable."
+
+                    SField {
+                        objectName: "natIntervalField"
+                        text: root.vNatInterval
+                        placeholderText: "60s"
+                        validator: RegularExpressionValidator {
+                            regularExpression: /^\d+(ms|s|m|h)?$/
+                        }
+                        onTextChanged: root.vNatInterval = text
                     }
                 }
 
