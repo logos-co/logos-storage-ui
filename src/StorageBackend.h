@@ -21,6 +21,10 @@ static const int DEFAULT_LISTEN_PORT = 8500;
 static const int DEFAULT_DISC_PORT = 9090;
 static const int DEFAULT_CHUNK_SIZE = 1024 * 64;
 
+// Retry configuration for manifest.
+static const int MANIFEST_LIST_RETRIES = 2;
+static const int MANIFEST_LIST_RETRY_MS = 1000;
+
 // Config schema version
 // Increment it and add migrateVXtoVY methods when the config schema changes.
 static const int CURRENT_CONFIG_VERSION = 2;
@@ -237,4 +241,6 @@ class StorageBackend : public StorageBackendSimpleSource {
     // Internal configuration object. It can be updated by
     // upnp or port forwarning methods.
     QJsonDocument m_config;
+
+    int m_manifestListAttempts = 0;
 };
