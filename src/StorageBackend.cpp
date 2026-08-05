@@ -590,25 +590,14 @@ void StorageBackend::downloadManifests() {
 
     LogosResult result = m_logos->storage_module.manifests();
 
-    // Retry before bothering the user: a timeout here is usually a busy node,
-    // and this call is the only thing that refreshes the table — a deleted
-    // manifest stays listed as "Deleting..." until it lands.
+    // A refresh, not a user action: the module call times out after a second
+    // and a busy node is enough to miss it.
     if (!result.success) {
         qWarning() << "StorageBackend::downloadManifests Failed to list manifests:"
                    << result.getError();
-
-        if (m_manifestListAttempts < MANIFEST_LIST_RETRIES) {
-            m_manifestListAttempts++;
-            QTimer::singleShot(MANIFEST_LIST_RETRY_MS, this, &StorageBackend::downloadManifests);
-            return;
-        }
-
-        m_manifestListAttempts = 0;
-        reportError("Failed to list the manifests: " + result.getError());
         return;
     }
 
-    m_manifestListAttempts = 0;
     emit manifestsUpdated(result.getList());
 }
 
