@@ -1,4 +1,4 @@
-name: "Migrating a Legacy Storage UI Config: Config Versioning and Forward Migration"
+name: "Migrating a Legacy Storage UI Config: Config versioning and fforward migration"
 output: storage-ui-migration.md
 release: ""
 
@@ -15,15 +15,14 @@ intro: |
   This test ensures a legacy config is migrated correctly:
     1. the legacy `bootstrap-node` list is removed without adding a `network` field
     2. the Mix configuration is filled
-    3. the `nat` field is dropped when the node no longer accepts its value
+    3. the `nat` old values are dropped
     4. a version is added to the config
 
-what_you_build: "Storage UI returning-user install with a legacy, unversioned config; on startup it is migrated forward — legacy bootstrap stripped, Mix defaults filled, and the config stamped with the current `config-version`."
+what_you_build: "Storage UI using a legacy config and migrating it forward on startup."
 
 what_you_learn:
   - How the UI versions the user config and migrates it forward from `config-version` 0 to the current version on startup
-  - How to simulate a returning user (onboarding already completed) so the app loads the existing config instead of showing onboarding
-  - How to drive a headless Qt/QML app with logos-qt-mcp
+  - How to simulate a completed omnoarding so the app loads the existing config instead of showing onboarding
   - How to assert the on-disk config was migrated and stamped after the app ran
 
 prerequisites:
@@ -54,11 +53,8 @@ sections:
   - title: "Setup a legacy config"
     step: true
     text: |
-      We simulate someone who onboarded on an old build:
+      We simulate someone who onboarded on an old build.
 
-      1. Reset any existing state
-      2. Mark onboarding completed in settings
-      3. Write legacy bootstrap list configuration
     steps:
       - title: "Reset state and write the legacy config"
         run: |
@@ -92,7 +88,7 @@ sections:
           EOF
         check_file: "/tmp/storage-ui-migration-data"
 
-      - title: "Confirm the configuration is migrated in the config file"
+      - title: "Confirm the configuration exists in the config file"
         run: |
           test "$(jq 'has("network")' "$HOME/.logos_storage/config.json")" = "false"
           test "$(jq 'has("bootstrap-node")' "$HOME/.logos_storage/config.json")" = "true"
@@ -101,21 +97,19 @@ sections:
   - title: "Launch the app and let it migrate"
     step: true
     text: |
-      Launch the standalone app with `nix run`. Because onboarding is already
-      marked complete, the app skips the wizard, loads the config, runs the
-      migration, and starts the node.
+      Launch the standalone app with `nix run`.
     steps:
       - title: "Launch and wait for the node to start"
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
-          build_timeout: 7200
-          launch_timeout: 1800
+          # build_timeout: 7200
+          # launch_timeout: 1800
           tests:
             - name: "Dashboard opens"
               action: wait_for
               texts: ["Manage node", "Total space available"]
-              timeout: 60000
+              timeout: 5000
               text: |
                 Because onboarding was already completed, the app displays the
                 dashboard directly.
@@ -123,7 +117,7 @@ sections:
             - name: "The node runs on the migrated config"
               action: wait_for
               texts: ["Stop"]
-              timeout: 60000
+              timeout: 5000
               screenshot: "storage-ui-migration-running.png"
               text: |
                 The node starts on the migrated config: the action button now
@@ -136,12 +130,10 @@ sections:
       legacy `bootstrap-node` is gone and that no `network` field was added — the
       module drives the network from here.
 
-      The Mix configuration is also filled with default values when it is missing,
-      to make sure that the user has a ready to use Mix setup.
+      The Mix configuration is also filled with default values when it is missing.
 
       The `nat` field is dropped when it holds a value the node no longer accepts.
-      It only takes `auto` or `extip:<IP>`, and it refuses to start on anything
-      else, so the seeded `none` would keep the node down.
+      It only takes `auto` or `extip:<IP>`.
 
       Finally the config is stamped with the current `config-version`, so a later
       startup recognises it as up to date and skips the migration.
@@ -194,31 +186,36 @@ sections:
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
-          build_timeout: 7200
-          launch_timeout: 1800
+          # build_timeout: 7200
+          # launch_timeout: 1800
           tests:
             - name: "Dashboard opens"
               action: wait_for
               texts: ["Manage node", "Total space available"]
-              timeout: 60000
+              timeout: 5000
+
             - name: "The node runs again"
               action: wait_for
               texts: ["Stop"]
-              timeout: 60000
+              timeout: 5000
+
             - name: "Stop the node"
               action: click
               target: "Stop"
+
             - name: "Node reports Stopped"
               action: wait_for
               texts: ["Stopped"]
-              timeout: 30000
+              timeout: 5000
+
             - name: "Start the node again"
               action: click
               target: "Start"
+
             - name: "The node runs after restart"
               action: wait_for
               texts: ["Stop"]
-              timeout: 30000
+              timeout: 5000
 
       - title: "The config file is unchanged"
         run: |
@@ -258,13 +255,13 @@ sections:
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
-          build_timeout: 7200
-          launch_timeout: 1800
+          # build_timeout: 7200
+          # launch_timeout: 1800
           tests:
             - name: "Dashboard opens"
               action: wait_for
               texts: ["Manage node", "Total space available"]
-              timeout: 60000
+              timeout: 5000
 
       - title: "The single legacy bootstrap node was removed and the config is versioned"
         run: |
@@ -283,11 +280,9 @@ sections:
   - title: "A config with custom user data is preserved and versioned"
     step: true
     text: |
-      Migration must not clobber a user who set their own network and bootstrap
-      list. A non-legacy `bootstrap-node` is an intentional override, so it is
-      kept as-is along with the `network` field. A `nat` set to `extip:` is a
-      value the node still accepts, so it survives too. The config is only
-      stamped with the current `config-version`.
+      Migration should not affect the custom values of a user config.
+      Here we pass a custom `network` and a custom `bootstrap-node``.
+      The migration should preserve them and only stamp the `config-version` field.
     steps:
       - title: "Seed a config with a custom network and bootstrap"
         run: |
@@ -304,7 +299,7 @@ sections:
             ],
             "mix-enabled": true,
             "dht-mix-proxy": [
-              "spr:placeholder"
+              "spr:CiUIAhIhAn67-cPFkDpqyeTEjDPbhtN8NUxt9S-niBc5QRLyc2xrEgIDARpJCicAJQgCEiECfrv5w8WQOmrJ5MSMM9uG03w1TG31L6eIFzlBEvJzbGsQ3LWT0gYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDX2BuLjlWusHeQC-bI50ynRHSXfchFSSFfup2NFHB3dwIgLEUpNwVgcaP7Rj_GkClm3pmQ1KSqB1GeaKDbipsZJ3o"
             ],
             "mix-pool-json": "{}"
           }
@@ -314,13 +309,13 @@ sections:
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
-          build_timeout: 7200
-          launch_timeout: 1800
+          # build_timeout: 7200
+          # launch_timeout: 1800
           tests:
             - name: "Dashboard opens"
               action: wait_for
               texts: ["Manage node", "Total space available"]
-              timeout: 60000
+              timeout: 5000
 
       - title: "The custom network and bootstrap are kept, the config is versioned"
         run: |
@@ -333,7 +328,7 @@ sections:
           test "$(jq -r '."data-dir"' "$cfg")" = "/tmp/storage-ui-migration-data"
           test "$(jq -r '."log-level"' "$cfg")" = "DEBUG"
           test "$(jq -r '.nat' "$cfg")" = "extip:203.0.113.5"
-          test "$(jq -r '."dht-mix-proxy"[0]' "$cfg")" = "spr:placeholder"
+          test "$(jq -r '."dht-mix-proxy"[0]' "$cfg")" = "spr:CiUIAhIhAn67-cPFkDpqyeTEjDPbhtN8NUxt9S-niBc5QRLyc2xrEgIDARpJCicAJQgCEiECfrv5w8WQOmrJ5MSMM9uG03w1TG31L6eIFzlBEvJzbGsQ3LWT0gYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDX2BuLjlWusHeQC-bI50ynRHSXfchFSSFfup2NFHB3dwIgLEUpNwVgcaP7Rj_GkClm3pmQ1KSqB1GeaKDbipsZJ3o"
           test "$(jq -r '."mix-pool-json"' "$cfg")" = "{}"
 
           echo "preserved OK: custom network + bootstrap + user keys kept, config-version stamped"
@@ -341,10 +336,8 @@ sections:
   - title: "A config already at version 1 only gets the Mix migration"
     step: true
     text: |
-      Migrations are not replayed: a config stamped `config-version` 1 has already
-      been through the bootstrap removal, so its `bootstrap-node` list is left
-      alone even though it holds a shipped default. Only the version 1 to 2 step
-      runs, filling the Mix configuration.
+      Migrations are not replayed: after the config was migrated to version 1,
+      the first migration will not be replayed. Only the Mix migration is applied, and the config is stamped with version 2.
     steps:
       - title: "Seed a version 1 config with a legacy bootstrap node and no Mix"
         run: |
@@ -366,13 +359,13 @@ sections:
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
-          build_timeout: 7200
-          launch_timeout: 1800
+          # build_timeout: 7200
+          # launch_timeout: 1800
           tests:
             - name: "Dashboard opens"
               action: wait_for
               texts: ["Manage node", "Total space available"]
-              timeout: 60000
+              timeout: 5000
 
       - title: "The bootstrap node is kept and only Mix was filled"
         run: |

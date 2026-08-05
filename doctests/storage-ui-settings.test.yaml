@@ -1,32 +1,19 @@
-name: "Editing the Node Settings: Every Field Reaches config.json"
+name: "Editing the Node Settings popup writes to config.json"
 output: storage-ui-settings.md
 release: ""
 
 intro: |
-  The Settings popup edits `~/.logos_storage/config.json` field by field. Each
-  control maps to one config key, and `Save` writes the whole object back.
-
-  Three rules make the mapping non-obvious:
-
-  1. A value the node reads as a byte count is entered in a friendlier unit. The
-     storage quota field takes GiB and is written as `storage-quota` in bytes.
-  2. Keys the popup shows without editing them — `data-dir`, `mix-enabled`,
-     `config-version` — must survive a save untouched. The form merges its
-     values onto the config it loaded instead of rebuilding one.
-  3. The bootstrap list and the Mix values are edited as raw JSON. A list is
-     written back parsed, `mix-pool-json` stays the string the node expects.
+  The Settings popup edits `~/.logos_storage/config.json` field by field.
 
   This test drives the popup through the QML inspector and asserts, for every
   editable setting, that the value lands on the right key with the right type,
   and that what was not edited is still there afterwards.
 
-what_you_build: "A Storage UI install whose node settings are edited from the UI, then verified on disk: log level, storage quota, listen port, discovery port, NAT, network, bootstrap list and Mix values all written to `config.json`, with the keys the popup does not edit preserved."
+what_you_build: "A Storage UI install whose node settings are edited from the UI, then verified on disk."
 
 what_you_learn:
   - Which config key each Settings control writes, and in which unit
-  - How the storage quota is converted from GiB to a byte count for the node
   - How `nat` is assembled from the mode selector and the external IP field
-  - How a save preserves the keys the form does not expose
   - How to drive a QML popup — text fields and combo boxes — from a headless test
 
 prerequisites:
@@ -54,14 +41,11 @@ sections:
         run: "nix build 'github:logos-co/logos-qt-mcp' -o result-mcp"
         check_file: "result-mcp"
 
-  - title: "Seed a returning user with a known config"
+  - title: "Open the default config and confirm its values"
     step: true
     text: |
-      The popup edits an existing config, so we start from one whose every value
-      differs from what the test will type. Anything still holding its seeded
-      value after the save is a field that did not reach the file.
-
-      Onboarding is marked complete so the app opens the dashboard directly.
+      The popup edits an existing config, so we will create a default
+      config file and confirm its values before we start editing.
     steps:
       - title: "Reset state and write the starting config"
         run: |
@@ -110,9 +94,6 @@ sections:
     text: |
       The app is launched headless, the Settings popup is opened from the gear on
       the Node card, and each control is driven through the QML inspector.
-
-      The external IP field only exists once the NAT mode is `extip`, so the mode
-      is selected before the address is typed.
     steps:
       - title: "Open Settings, edit each field, then Save"
         ui_test:
@@ -124,11 +105,11 @@ sections:
             - name: "Dashboard opens"
               action: wait_for
               texts: ["Manage node", "Total space available"]
-              timeout: 60000
+              timeout: 5000
 
-            - name: "Let the startup config rewrite settle"
-              action: sleep
-              ms: 3000
+            # - name: "Let the startup config rewrite settle"
+            #   action: sleep
+            #   ms: 3000
 
             - name: "Open the Settings popup"
               action: click_object
@@ -142,9 +123,9 @@ sections:
               text: |
                 The popup opens on the values read from `config.json`.
 
-            - name: "Wait for the config to land in the form"
-              action: sleep
-              ms: 4000
+            # - name: "Wait for the config to land in the form"
+            #   action: sleep
+            #   ms: 1000
 
             - name: "Select the TRACE log level"
               action: set_property
@@ -219,8 +200,8 @@ sections:
               value: true
               screenshot: "storage-ui-settings-dirty.png"
               text: |
-                Every field edited here is only read when the node starts, so the
-                footer says so before the save rather than tagging each row.
+                Most of the settings requires a node restart to take effect so
+                a message appears in the footer. The `Save` button is enabled.
 
             - name: "Save"
               action: click
@@ -228,7 +209,7 @@ sections:
 
             - name: "Let the save settle"
               action: sleep
-              ms: 2000
+              ms: 1000
 
             - name: "The footer switched to the restart prompt"
               action: expect_property
@@ -243,12 +224,12 @@ sections:
               value: false
               screenshot: "storage-ui-settings-saved.png"
               text: |
-                The footer switches to the restart prompt: the file is written,
-                the running node still holds the previous values.
+                The notice is gone, but the running node still holds the previous values
+                and needs a restart to apply values.
 
             - name: "Let the write reach disk"
               action: sleep
-              ms: 3000
+              ms: 1000
 
   - title: "Verify every setting reached the config file"
     step: true
@@ -327,24 +308,22 @@ sections:
       reopening it is what proves the round trip: the values displayed come from
       the config that was just written, not from state left in memory.
 
-      With nothing edited, `Save` is disabled — the form compares what it would
-      write against what it loaded.
     steps:
       - title: "Relaunch and reopen Settings"
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
-          build_timeout: 7200
-          launch_timeout: 1800
+          # build_timeout: 7200
+          # launch_timeout: 1800
           tests:
             - name: "Dashboard opens"
               action: wait_for
               texts: ["Manage node", "Total space available"]
-              timeout: 60000
+              timeout: 5000
 
-            - name: "Let the backend settle"
-              action: sleep
-              ms: 3000
+            # - name: "Let the backend settle"
+            #   action: sleep
+            #   ms: 1000
 
             - name: "Open the Settings popup"
               action: click_object
@@ -353,11 +332,11 @@ sections:
             - name: "The popup is open again"
               action: wait_for
               texts: ["Log level", "Storage quota"]
-              timeout: 15000
+              timeout: 1000
 
-            - name: "Wait for the config to land in the form"
-              action: sleep
-              ms: 4000
+            # - name: "Wait for the config to land in the form"
+            #   action: sleep
+            #   ms: 4000
 
             - name: "The form was populated from the file"
               action: expect_property
@@ -366,7 +345,7 @@ sections:
               value: "/tmp/storage-ui-settings-data"
               screenshot: "storage-ui-settings-reopened-form.png"
               text: |
-                The whole form comes from one `applyConfig()` pass over the file.
+                The data dir is not editable, but it is shown in the form.
 
             - name: "The quota is shown back in GiB"
               action: expect_property

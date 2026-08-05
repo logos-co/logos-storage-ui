@@ -1,0 +1,482 @@
+name: "Driving the Storage UI: Guided and Advanced Onboarding, Upload and Download"
+output: storage-ui-app.md
+release: ""
+
+intro: |
+  The app ships two ways to configure a node on first run, and this doc-test
+  walks both.
+
+  **Guided** takes the defaults and starts the node: two clicks, no
+  configuration. It is what most users see.
+
+  **Advanced** opens the same settings form the app uses later, so the user can
+  review every value before the first start.
+
+  The app is launched headless (`QT_QPA_PLATFORM=offscreen`) and driven through
+  the QML inspector via [`logos-qt-mcp`](https://github.com/logos-co/logos-qt-mcp).
+
+what_you_build: "A first run through each onboarding path, ending on a running node that uploads a file, fetches a manifest by CID, downloads it back and deletes it."
+
+what_you_learn:
+  - How the guided path writes the default configuration and starts the node without asking anything
+  - How the advanced path opens the configuration form, validates it and starts the node with a custom configuration
+  - How private DHT queries are toggled from the dashboard
+
+prerequisites:
+  - |
+    **Nix** with flakes enabled. Install from [nixos.org](https://nixos.org/download.html), then enable flakes:
+
+    ```bash
+    mkdir -p ~/.config/nix
+    echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
+    ```
+
+    Verify: `nix flake --help >/dev/null 2>&1 && echo "Flakes enabled"`
+  - "**A Linux machine.** The app runs headless via `QT_QPA_PLATFORM=offscreen`, so no display is required. The onboarding state is stored in the Linux QSettings ini file (`~/.config/Logos/LogosStandalone.conf`)."
+
+sections:
+  - title: "Build the qt-mcp test driver"
+    step: true
+    text: |
+      [`logos-qt-mcp`](https://github.com/logos-co/logos-qt-mcp) is the harness the
+      doc-test uses to connect to the app's QML inspector and drive it. Build it
+      once and link it as `./result-mcp`.
+    steps:
+      - title: "Build logos-qt-mcp"
+        run: "nix build 'github:logos-co/logos-qt-mcp' -o result-mcp"
+        check_file: "result-mcp"
+
+  - title: "Create a file to upload"
+    step: true
+    text: |
+      The dashboard's upload widget opens a native file picker, which cannot be driven headlessly.
+      Instead we put a file on disk and later hand its path straight to the QML `FileDialog`
+    steps:
+      - title: "Write the upload sample"
+        run: 'printf "hello from the storage UI doctest\n" > /tmp/storage-ui-upload.txt'
+        check_file: "/tmp/storage-ui-upload.txt"
+
+  - title: "Guided onboarding"
+    step: true
+    text: |
+      Guided is the default choice: clicking `Continue`
+      writes the default configuration and moves straight to the folder step.
+    steps:
+      - title: "Reset the app state"
+        run: |
+          rm -f "$HOME/.config/Logos/LogosStandalone.conf"
+          rm -f "$HOME/.logos_storage/config.json"
+          rm -rf "$HOME/.logos_storage/data"
+          rm -f "$HOME/storage-ui-upload.txt"
+          mkdir -p "$HOME/.logos_storage"
+          echo "state reset"
+
+      - title: "Launch the app"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "The app opens on the onboarding wizard"
+              action: wait_for
+              texts: ["Guided", "Advanced"]
+              timeout: 60000
+              screenshot: "storage-ui-onboarding.png"
+              text: |
+                The first screen offers the two paths. Guided is selected by default.
+
+            # - name: "Let the module replica sync"
+            #   action: sleep
+            #   ms: 2000
+
+            - name: "Confirm the guided setup"
+              action: call_method
+              find_by: "text"
+              find_value: "Continue"
+              method: "clicked"
+
+            - name: "Onboarding reaches the folder step"
+              action: wait_for
+              texts: ["Select Drives"]
+              timeout: 15000
+              screenshot: "storage-ui-select-drives.png"
+              text: |
+                Select the download folder. The default is the user's home directory, which is what this run uses.
+
+            - name: "Finish onboarding"
+              action: call_method
+              find_by: "objectName"
+              find_value: "downloadFolderContinue"
+              method: "clicked"
+
+            - name: "The dashboard opens"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 5000
+
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 5000
+              screenshot: "storage-ui-dashboard.png"
+              text: |
+                The node started on the default configuration. The dot next to
+                the status reports what AutoNAT concluded: grey and `Unknown`
+                until it has an answer, green and `Reachable` if other peers can
+                reach you, orange and `Not reachable` otherwise.
+
+            - name: "Hand the file to the upload dialog"
+              action: set_property
+              find_by: "objectName"
+              find_value: "uploadDialog"
+              property: "selectedFile"
+              value: "file:///tmp/storage-ui-upload.txt"
+
+            - name: "Fire the dialog's accepted signal"
+              action: call_method
+              find_by: "objectName"
+              find_value: "uploadDialog"
+              method: "accepted"
+
+            - name: "The upload completes and the file joins the manifest list"
+              action: wait_for
+              texts: ["storage-ui-upload.txt"]
+              timeout: 5000
+              screenshot: "storage-ui-uploaded.png"
+              text: |
+                The manifest row carries the filename and, under it, the CID to share.
+
+            - name: "Stop the node"
+              action: click
+              target: "Stop"
+
+            - name: "The node reports Stopped"
+              action: wait_for
+              texts: ["Stopped"]
+              timeout: 5000
+
+      - title: "The guided run wrote the default configuration"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+          echo "config written by onboarding:"
+          jq . "$cfg"
+
+          test "$(jq '."config-version"' "$cfg")" = "2"
+          test "$(jq '."listen-port"' "$cfg")" = "8500"
+          test "$(jq '."disc-port"' "$cfg")" = "9090"
+          test "$(jq '."mix-enabled"' "$cfg")" = "true"
+
+          # No nat key: the node decides its reachability on its own.
+          test "$(jq 'has("nat")' "$cfg")" = "false"
+
+          echo "guided OK: defaults written, no nat key"
+
+  - title: "Advanced onboarding"
+    step: true
+    text: |
+      The advanced path opens the settings form on the defaults and allows
+      the user to edit them before starting the node.
+    steps:
+      - title: "Reset the app state"
+        run: |
+          rm -f "$HOME/.config/Logos/LogosStandalone.conf"
+          rm -f "$HOME/.logos_storage/config.json"
+          rm -rf "$HOME/.logos_storage/data"
+          rm -f "$HOME/farewell-to-westphalia-foss-edition.pdf"
+          echo "state reset"
+
+      - title: "Launch the app"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "The app opens on the onboarding wizard"
+              action: wait_for
+              texts: ["Guided", "Advanced"]
+              timeout: 5000
+
+            - name: "Choose the advanced setup"
+              action: call_method
+              find_by: "objectName"
+              find_value: "advancedCard"
+              method: "cardSelected"
+
+            - name: "Continue to the configuration"
+              action: call_method
+              find_by: "text"
+              find_value: "Continue"
+              method: "clicked"
+
+            - name: "The configuration form opens"
+              action: wait_for
+              texts: ["Advanced Configuration", "Log level", "Storage quota"]
+              timeout: 2000
+              screenshot: "storage-ui-advanced.png"
+              text: |
+                The configuation is split into sections, each with a title and a help text.
+
+            - name: "Ask for an explicit external address"
+              action: set_property
+              find_value: "configEditor"
+              property: "vNatMode"
+              value: "extip"
+
+            - name: "With no address typed, the form is invalid"
+              action: expect_property
+              find_value: "configEditor"
+              property: "valid"
+              value: false
+              screenshot: "storage-ui-advanced-invalid.png"
+              text: |
+                The user cannot validate without proving a valid IP
+                when choosing  `extip` option.
+
+            - name: "Type the external address"
+              action: set_text
+              find_by: "objectName"
+              find_value: "natExtIpField"
+              value: "127.0.0.1"
+
+            - name: "The form accepts the configuration"
+              action: expect_property
+              find_value: "configEditor"
+              property: "valid"
+              value: true
+
+            - name: "Restore default nat settings"
+              action: set_property
+              find_value: "configEditor"
+              property: "vNatMode"
+              value: "auto"
+              text: |
+                An explicit address can be used if the node is not behind a NAT.
+                Here we want to continue with the default, which is to let AutoNAT
+                gives the reachability verdict and fallback to relay if the node is not reachable.
+
+            - name: "Move the discovery port"
+              action: set_text
+              find_by: "objectName"
+              find_value: "discPortField"
+              value: "9191"
+
+            - name: "Point the node at its own bootstrap list"
+              action: set_property
+              find_value: "configEditor"
+              property: "vBootstrap"
+              value: "[\"spr:CiUIAhIhA_30VxBSXq0xCjoMIlFKlnY7gBEQzHv0pRY5kHP17-pTEgIDARpICicAJQgCEiED_fRXEFJerTEKOgwiUUqWdjuAERDMe_SlFjmQc_Xv6lMQrJLE0wYaCgoIBM-a0SUGH5AaCwoJBM-a0SWRAh-aKkYwRAIgHGe5zrUfxBfg0bY-rf0WOaYkci1mvYnwmgMKeXRVo68CIHjJUGqlj5jwNklm_BuIdz5_kHpLYH4tfiADtZx3Xmnu\", \"spr:CiUIAhIhAo61xuA0H8l-DQs4pjcsXRgIK_VrDlW9br-ad6-EAUKTEgIDARpICicAJQgCEiECjrXG4DQfyX4NCzimNyxdGAgr9WsOVb1uv5p3r4QBQpMQrJLE0wYaCgoIBEDicIcGH5AaCwoJBEDicIeRAh-aKkcwRQIhAIpb9JvG6OiphjL9gb1awcrGX8f-_j_qRcYkce5U6moLAiBjBF_uAtD5G6m_E_-TVHA-yV0klnYmrtCeyzm18KE9DA\", \"spr:CiUIAhIhAlvt_ed7o68o2EjRMAOLxOaAjhfs4Xo1mSMj4zFmGjqJEgIDARpICicAJQgCEiECW-3953ujryjYSNEwA4vE5oCOF-zhejWZIyPjMWYaOokQrJLE0wYaCgoIBIZ6WPAGH5AaCwoJBIZ6WPCRAh-aKkcwRQIhAPR-rNdpKYHhVb-jW7rEFMvlILBgWn9TTCAPOhCxCSf9AiAa4yqBS1U-a1BfYKzFCQ86wh2LLTxtwLgXKekMmuHxsg\", \"spr:CiUIAhIhAskyX6nTawF8y_IBEFWYiRNnjQDl8zpO78ImQpb5cXOuEgIDARpICicAJQgCEiECyTJfqdNrAXzL8gEQVZiJE2eNAOXzOk7vwiZClvlxc64QrJLE0wYaCgoIBIbR-fEGH5AaCwoJBIbR-fGRAh-aKkYwRAIgdbClsN6hpvfQRFopGJPN9-1P6fmrbv6sN0LNwSDs8xICIG_NXwQVb8IiGB5qMuREF6p-SjCWSKTFllWZFBmJHYmW\"]"
+              text: |
+                A network preset can be picked from the list, or a custom bootstrap list can be pasted.
+                We decided to paste a custom list here, to use an up-to-date one.
+
+            - name: "Replace the Mix proxies"
+              action: set_property
+              find_value: "configEditor"
+              property: "vMixProxies"
+              value: "[\"spr:CiUIAhIhA_30VxBSXq0xCjoMIlFKlnY7gBEQzHv0pRY5kHP17-pTEgIDARo7CicAJQgCEiED_fRXEFJerTEKOgwiUUqWdjuAERDMe_SlFjmQc_Xv6lMQl4nE0wYaCgoIBM-a0SUGH5AqRjBEAiAqH3RfY85YEUtyqBcFzGvDdQ8vV3g6teXDzocPeCWWKgIgGHFpJyc2-wxEaDQ5a5kIKgNOKxXqtF35dCfDQTKvgjg\", \"spr:CiUIAhIhAo61xuA0H8l-DQs4pjcsXRgIK_VrDlW9br-ad6-EAUKTEgIDARo7CicAJQgCEiECjrXG4DQfyX4NCzimNyxdGAgr9WsOVb1uv5p3r4QBQpMQ0ZHE0wYaCgoIBEDicIcGH5AqRjBEAiAUDfpZJRvZ2QjNHZV3fRQ3Hz4NaMlf-reFir93l9JJJQIgYXzXn0Kuw1I5H4G9M2hrV0B7ufspkiTySJEXqbjc2TI\", \"spr:CiUIAhIhAlvt_ed7o68o2EjRMAOLxOaAjhfs4Xo1mSMj4zFmGjqJEgIDARo7CicAJQgCEiECW-3953ujryjYSNEwA4vE5oCOF-zhejWZIyPjMWYaOokQ0ZHE0wYaCgoIBIZ6WPAGH5AqRzBFAiEA0CDBW5lpQ1IHZvh17-0aHS0YBrLVRrYlHDNVNnzrxiACIHrxDmdsrDKM2gFnU67yGXq0ukUMLMyVoUv7NmMbAh1V\", \"spr:CiUIAhIhAskyX6nTawF8y_IBEFWYiRNnjQDl8zpO78ImQpb5cXOuEgIDARo7CicAJQgCEiECyTJfqdNrAXzL8gEQVZiJE2eNAOXzOk7vwiZClvlxc64Q0pHE0wYaCgoIBIbR-fEGH5AqRzBFAiEAovgkG6R4aF6vdwB2t8tI8S0BAHey8O6AgZr-RpfITxUCIDEV4e4P_Vhf8h_gHi4AyE5T-gDJWvsMnPhbGFITcOQm\"]"
+
+            - name: "Replace the Mix relay pool"
+              action: set_property
+              find_value: "configEditor"
+              property: "vMixPool"
+              value: "{\"version\":1,\"relays\":[{\"peerId\":\"16Uiu2HAmVkKbPiweAgwiqjWkhptDUApzEM2w7jEjpRWB3zpQe9ZU\",\"multiAddr\":\"/ip4/207.154.209.37/tcp/8080\",\"mixPubKey\":\"2922d84ffd5a2d0dc8206034390ec38972a64402188c265b92a2045d0559775a\",\"libp2pPubKey\":\"03fdf45710525ead310a3a0c22514a96763b801110cc7bf4a516399073f5efea53\"},{\"peerId\":\"16Uiu2HAm52kdvfTWTrkGhkvGQX8dp8FfRcaPc6UgTzLFHsSLVQCi\",\"multiAddr\":\"/ip4/64.226.112.135/tcp/8080\",\"mixPubKey\":\"d91c44f0aebb26a2d78f83d31c805ce478a86c7b35d9b44e10a8ae6f6c30ba00\",\"libp2pPubKey\":\"028eb5c6e0341fc97e0d0b38a6372c5d18082bf56b0e55bd6ebf9a77af84014293\"},{\"peerId\":\"16Uiu2HAm1cXZXgyw47PM7xL1FFiNVQuntihVevNFK5Fy18uZU62c\",\"multiAddr\":\"/ip4/134.122.88.240/tcp/8080\",\"mixPubKey\":\"7eccd26d9decc8c8f236788313f2d76247614a005ff85808b0e6b473e435514a\",\"libp2pPubKey\":\"025bedfde77ba3af28d848d130038bc4e6808e17ece17a35992323e331661a3a89\"},{\"peerId\":\"16Uiu2HAm8y4UgDx9L5FVBPPgpoA36sdydWkewuLVgM4rnvnMtg1T\",\"multiAddr\":\"/ip4/134.209.249.241/tcp/8080\",\"mixPubKey\":\"fdb59c1dc2eb066f697b69d58866579dfb50586b161e8c604becfe177c8eb147\",\"libp2pPubKey\":\"02c9325fa9d36b017ccbf2011055988913678d00e5f33a4eefc2264296f97173ae\"}]}"
+              text: |
+                Private DHT lookups travel through these relays.
+
+            - name: "The network preset is locked by the custom list"
+              action: expect_property
+              find_value: "networkSelect"
+              property: "enabled"
+              value: false
+              screenshot: "storage-ui-advanced-bootstrap.png"
+              text: |
+                When choosing a bootstrap node list, the network preset is locked and
+                not taken in consideration.
+
+            - name: "Validate the configuration"
+              action: call_method
+              find_by: "text"
+              find_value: "Validate"
+              method: "clicked"
+
+            - name: "Onboarding reaches the folder step"
+              action: wait_for
+              texts: ["Select Drives"]
+              timeout: 5000
+
+            - name: "Finish onboarding"
+              action: call_method
+              find_by: "objectName"
+              find_value: "downloadFolderContinue"
+              method: "clicked"
+
+            - name: "The dashboard opens"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 5000
+
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 5000
+
+            - name: "Private DHT queries are on by default"
+              action: expect_property
+              find_by: "text"
+              find_value: "Mix"
+              property: "checked"
+              value: true
+              text: |
+                DHT provider lookups are routed through the Mix protocol, which
+                makes them much harder to trace back to you. It is on by default
+                when enabling Mix.
+
+            - name: "Turn private queries off"
+              action: click_object
+              find_by: "text"
+              find_value: "Mix"
+
+            - name: "The switch reports them off"
+              action: expect_property
+              find_by: "text"
+              find_value: "Mix"
+              property: "checked"
+              value: false
+              screenshot: "storage-ui-mix-disabled.png"
+
+            - name: "Turn them back on"
+              action: click_object
+              find_by: "text"
+              find_value: "Mix"
+
+      - title: "Shorten the AutoNAT round"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+          jq '. + {"nat-schedule-interval": "30s"}' "$cfg" > "$cfg.tmp"
+          mv "$cfg.tmp" "$cfg"
+          jq '."nat-schedule-interval"' "$cfg"
+        text: |
+          AutoNAT asks its peers every two minutes by default, and a verdict
+          needs two rounds that agree. Nothing reachable can happen inside a
+          test window at that pace, so the interval is cut before the relaunch.
+
+          The key is not on the settings form: it is written straight into the
+          file, which the app reloads on start.
+
+      - title: "Fetch a file and download it"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          tests:
+            - name: "The dashboard opens on the saved configuration"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 5000
+
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 5000
+
+            - name: "Let AutoNAT reach a verdict and create a relay if needed"
+              action: sleep
+              ms: 40000
+
+            - name: "Paste a CID into Fetch Manifest"
+              action: set_property
+              find_by: "placeholderText"
+              find_value: "CID"
+              property: "text"
+              value: "zDvZRwzkzrrYB6sS1rRpRLt4gBhc1pWoyTSjkfszfmj1seaYYLCZ"
+              text: |
+                Fetch the file manifest which contains the metadata.
+
+            - name: "Fetch the manifest"
+              action: call_method
+              find_by: "text"
+              find_value: "Fetch"
+              method: "clicked"
+
+            - name: "The manifest arrives in the list"
+              action: wait_for
+              texts: ["farewell-to-westphalia-foss-edition.pdf"]
+              timeout: 60000
+
+            - name: "Download the file"
+              # The manifest table sits below the fold in the headless
+              # window, so a synthesized click would land outside it.
+              action: call_method
+              find_by: "objectName"
+              find_value: "downloadButton"
+              method: "clicked"
+
+            - name: "The download widget reports it complete"
+              action: wait_for
+              texts: ["Complete"]
+              timeout: 60000
+              screenshot: "storage-ui-downloaded.png"
+              text: |
+                The download icon turns green once a copy sits in the download
+                folder. It stays clickable: the user can download it again.
+
+            - title: "The downloaded file exists on disk"
+              text: |
+                The file is in the user's home directory, which was the default download folder.
+                The size is checked to make sure it is complete.
+              run: |
+                if [ "$(uname)" = "Darwin" ]; then
+                  size=$(stat -f%z "$HOME/farewell-to-westphalia-foss-edition.pdf")
+                else
+                  size=$(stat -c%s "$HOME/farewell-to-westphalia-foss-edition.pdf")
+                fi
+                if [ "$size" -ne 2276462 ]; then
+                  echo "size mismatch: $size"
+                  exit 1
+                fi
+                echo "download OK: $size bytes, still on disk after the delete"
+
+            - name: "Delete the manifest"
+              # The manifest table sits below the fold in the headless
+              # window, so a synthesized click would land outside it.
+              action: call_method
+              find_by: "objectName"
+              find_value: "deleteButton"
+              method: "clicked"
+
+            - name: "The storage frees up"
+              action: wait_for
+              texts: ["0 B Utilized"]
+              screenshot: "storage-ui-deleted.png"
+              # Delete are really slow
+              timeout: 60000
+              text: |
+                The used space falls back to zero. The blocks were really dropped.
+
+            - name: "The row leaves the list"
+              action: wait_for
+              texts: ["No manifests yet"]
+              timeout: 30000
+              text: |
+                The table empties too. It only learns of the deletion through
+                the manifest listing, so this is what proves the refresh made
+                it through.
+
+      - title: "The advanced run wrote what the form showed"
+        run: |
+          cfg="$HOME/.logos_storage/config.json"
+          echo "config written by onboarding:"
+          jq . "$cfg"
+
+          test "$(jq '."disc-port"' "$cfg")" = "9191"
+          test "$(jq '."bootstrap-node" | length' "$cfg")" = "4"
+          test "$(jq '."dht-mix-proxy" | length' "$cfg")" = "4"
+          test "$(jq -r '."mix-pool-json"' "$cfg" | jq '.relays | length')" = "4"
+
+          # No preset was picked, and "auto" carries no key: not every module
+          # version accepts it spelled out.
+          test "$(jq 'has("network")' "$cfg")" = "false"
+          test "$(jq 'has("nat")' "$cfg")" = "false"
+
+          echo "advanced OK: the edited port and the bootstrap list landed"
