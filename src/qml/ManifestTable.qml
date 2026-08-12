@@ -310,7 +310,9 @@ LogosFrame {
                 Layout.alignment: Qt.AlignVCenter
                 Layout.preferredWidth: 20
                 Layout.preferredHeight: 20
-                visible: root.downloadFolderPath.length > 0
+                // Hidden: inside basecamp the QML sandbox blocks the URL passed
+                // to Qt.openUrlExternally, so the button silently does nothing.
+                visible: false
                 source: Qt.resolvedUrl("assets/external-link-line.svg")
                 color: Theme.palette.textTertiary
 
