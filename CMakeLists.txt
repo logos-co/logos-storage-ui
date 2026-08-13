@@ -7,15 +7,17 @@ else()
     message(FATAL_ERROR "LogosModule.cmake not found. Set LOGOS_MODULE_BUILDER_ROOT.")
 endif()
 
+# Universal UI module: we write the .rep view contract + the StorageBackend
+# class; REP_FILE runs repc and the generated *Plugin glue (Q_PLUGIN_METADATA,
+# initLogos wiring, QtRO registration) is compiled in automatically.
 logos_module(
     NAME storage_ui
     REP_FILE src/StorageBackend.rep
     SOURCES
-        src/StorageInterface.h
-        src/StorageUIPlugin.h
-        src/StorageUIPlugin.cpp
         src/StorageBackend.h
         src/StorageBackend.cpp
+    INCLUDE_DIRS
+        src
     FIND_PACKAGES
         Qt6Network
     LINK_LIBRARIES
