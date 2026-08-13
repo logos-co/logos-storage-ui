@@ -26,3 +26,19 @@ logos_module(
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/metadata.json" _ui_metadata)
 string(REGEX MATCH "\"version\"[ \t]*:[ \t]*\"([^\"]+)\"" _ "${_ui_metadata}")
 target_compile_definitions(storage_ui_module_plugin PRIVATE STORAGE_UI_VERSION="${CMAKE_MATCH_1}")
+
+# Read the mix-config.json file into MIX_CONFIG_JSON variable
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/mix-config.json" MIX_CONFIG_JSON)
+
+ # Re-run cmake when mix-config.json changes
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/mix-config.json")
+
+# Generate MixConfig.h from MixConfig.h.in, replacing @MIX_CONFIG_JSON@ with the contents of mix-config.json
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/MixConfig.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/MixConfig.h"
+    @ONLY)
+
+# Include the generated headers in build
+target_include_directories(storage_ui_module_plugin PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")

@@ -1,4 +1,5 @@
 #include "StorageBackend.h"
+#include "MixConfig.h"
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
@@ -32,6 +33,7 @@ StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
     setNatReachability("Unknown");
     setDefaultConfigJson(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
     setUiVersion(STORAGE_UI_VERSION);
+    setMixConfigJson(QString::fromUtf8(MIX_CONFIG_JSON));
 
     // Disable system proxy detection — it crashes in Nix/some Linux environments
     QNetworkProxyFactory::setUseSystemConfiguration(false);
@@ -706,12 +708,18 @@ QJsonDocument StorageBackend::defaultConfig() {
     obj["disc-port"] = DEFAULT_DISC_PORT;
     obj["nat-schedule-interval"] = DEFAULT_NAT_SCHEDULE_INTERVAL;
 
+    const QJsonObject mix = mixConfig(DEFAULT_NETWORK);
     obj["mix-enabled"] = true;
-    obj["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
-    obj["mix-pool-json"] = QString::fromUtf8(
-        QJsonDocument::fromJson(MIX_POOL_JSON.toUtf8()).toJson(QJsonDocument::Compact));
+    obj["dht-mix-proxy"] = mix.value("dht-mix-proxy").toArray();
+    obj["mix-pool-json"] = mix.value("mix-pool-json").toString();
 
     return QJsonDocument(obj);
+}
+
+QJsonObject StorageBackend::mixConfig(const QString& network) {
+    const QJsonObject networks = QJsonDocument::fromJson(QByteArray(MIX_CONFIG_JSON)).object();
+    const QString name = networks.contains(network) ? network : DEFAULT_NETWORK;
+    return networks.value(name).toObject();
 }
 
 bool StorageBackend::isLegacyBootstrap(const QJsonArray& bootstrap) {
@@ -740,12 +748,14 @@ QJsonObject StorageBackend::migrateV1toV2(QJsonObject obj) {
     if (!obj.value("mix-enabled").toBool(false)) {
         obj["mix-enabled"] = true;
     }
+    // An absent "network" means the module's default preset, not "no network".
+    const QString network = obj.value("network").toString(DEFAULT_NETWORK);
+    const QJsonObject mix = mixConfig(network);
     if (obj.value("dht-mix-proxy").toArray().isEmpty()) {
-        obj["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
+        obj["dht-mix-proxy"] = mix.value("dht-mix-proxy").toArray();
     }
     if (obj.value("mix-pool-json").toString().isEmpty()) {
-        obj["mix-pool-json"] = QString::fromUtf8(
-            QJsonDocument::fromJson(MIX_POOL_JSON.toUtf8()).toJson(QJsonDocument::Compact));
+        obj["mix-pool-json"] = mix.value("mix-pool-json").toString();
     }
 
     if (obj.value("nat-schedule-interval").toString().isEmpty()) {

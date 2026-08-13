@@ -76,7 +76,8 @@ ScrollView {
 
     readonly property var logLevels: ["TRACE", "DEBUG", "INFO", "NOTICE", "WARN", "ERROR", "FATAL"]
     readonly property var natModes: ["auto", "extip"]
-    readonly property var networks: ["logos.test", "logos.dev"]
+    readonly property var mixConfig: root.backend ? root.asJson(root.backend.mixConfigJson, {}) : ({})
+    readonly property var networks: Object.keys(root.mixConfig)
 
     // A config can hold a value no preset lists. Offering it keeps it visible
     // and keeps a save that touches another field from dropping it.
@@ -267,6 +268,16 @@ ScrollView {
         putInt("disc-port", root.vDiscPort)
 
         return cfg
+    }
+
+    // The Mix relays are not part of the module's network preset, so switching
+    // network has to move them too: dev relays on the test network reach nothing.
+    function applyMixConfig(network) {
+        const mix = root.mixConfig[network]
+        if (!mix)
+            return
+        root.vMixProxies = root.toJsonText(mix["dht-mix-proxy"])
+        root.vMixPool = mix["mix-pool-json"]
     }
 
     function needsRestart(before, after) {
@@ -636,9 +647,10 @@ ScrollView {
                         objectName: "networkSelect"
                         enabled: !root.hasCustomBootstrap
                         model: root.optionsWith(root.networks, root.vNetwork)
-                        value: root.vNetwork === "" ? "logos.test" : root.vNetwork
+                        value: root.vNetwork === "" ? root.networks[0] : root.vNetwork
                         onPicked: function (network) {
                             root.vNetwork = network
+                            root.applyMixConfig(network)
                         }
                     }
                 }
