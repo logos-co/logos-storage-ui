@@ -107,6 +107,11 @@ sections:
               texts: ["Manage node", "Total space available"]
               timeout: 5000
 
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 5000
+
             - name: "Open the Settings popup"
               action: click_object
               find_value: "settingsButton"
