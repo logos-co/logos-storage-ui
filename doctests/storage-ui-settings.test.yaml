@@ -531,12 +531,13 @@ sections:
               value: true
 
             - name: "Pick the first network"
-              # userPicked() is the signal the combo box emits on a real click
-              # only, so this drives the same path a user would.
+              # pickNetwork() is what the selector calls on a real pick. The
+              # signal itself cannot be driven here: the inspector passes every
+              # argument as a QVariant, which a typed QML signal refuses.
               action: call_method
-              find_value: "networkSelect"
-              method: "userPicked"
-              args: [0]
+              find_value: "settingsForm"
+              method: "pickNetwork"
+              args: ["logos.test"]
 
             - name: "The edit is pending"
               action: expect_property
@@ -601,9 +602,9 @@ sections:
 
             - name: "Pick the second network"
               action: call_method
-              find_value: "networkSelect"
-              method: "userPicked"
-              args: [1]
+              find_value: "settingsForm"
+              method: "pickNetwork"
+              args: ["logos.dev"]
 
             - name: "The edit is pending"
               action: expect_property

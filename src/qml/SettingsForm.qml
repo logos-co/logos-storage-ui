@@ -272,7 +272,8 @@ ScrollView {
 
     // The Mix relays are not part of the module's network preset, so switching
     // network has to move them too: dev relays on the test network reach nothing.
-    function applyMixConfig(network) {
+    function pickNetwork(network) {
+        root.vNetwork = network
         const mix = root.mixConfig[network]
         if (!mix)
             return
@@ -649,8 +650,7 @@ ScrollView {
                         model: root.optionsWith(root.networks, root.vNetwork)
                         value: root.vNetwork === "" ? root.networks[0] : root.vNetwork
                         onPicked: function (network) {
-                            root.vNetwork = network
-                            root.applyMixConfig(network)
+                            root.pickNetwork(network)
                         }
                     }
                 }
