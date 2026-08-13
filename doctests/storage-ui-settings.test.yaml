@@ -473,3 +473,166 @@ sections:
           test "$(jq -r '."mix-pool-json"' "$cfg")" = '{"version":2,"relays":[]}'
 
           echo "round trip OK: the popup reloads what it saved"
+
+  - title: "Picking a network swaps the Mix relays"
+    step: true
+    text: |
+      Changing the network updates the Mix configuration fields.
+    steps:
+      - title: "Start from a config with no network and marked Mix values"
+        run: |
+          set -e
+          rm -rf /tmp/storage-ui-settings-data
+          mkdir -p /tmp/storage-ui-settings-data
+
+          mkdir -p "$HOME/.logos_storage"
+          cat > "$HOME/.logos_storage/config.json" <<'EOF'
+          {
+            "config-version": 2,
+            "data-dir": "/tmp/storage-ui-settings-data",
+            "log-level": "info",
+            "mix-enabled": true,
+            "dht-mix-proxy": ["spr:marker"],
+            "mix-pool-json": "{\"version\":1,\"relays\":[]}"
+          }
+          EOF
+
+          # No bootstrap list of its own: a custom one disables the selector.
+          test "$(jq 'has("bootstrap-node")' "$HOME/.logos_storage/config.json")" = "false"
+          test "$(jq 'has("network")' "$HOME/.logos_storage/config.json")" = "false"
+
+          echo "starting config in place: no network, marked Mix values"
+
+      - title: "Pick the first network and save"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "Dashboard opens"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 5000
+
+            - name: "Open the Settings popup"
+              action: click_object
+              find_value: "settingsButton"
+
+            - name: "The popup is open"
+              action: wait_for
+              texts: ["Log level", "Storage quota"]
+              timeout: 5000
+
+            - name: "The selector is offered, no custom bootstrap holds it"
+              action: expect_property
+              find_value: "networkSelect"
+              property: "enabled"
+              value: true
+
+            - name: "Pick the first network"
+              # userPicked() is the signal the combo box emits on a real click
+              # only, so this drives the same path a user would.
+              action: call_method
+              find_value: "networkSelect"
+              method: "userPicked"
+              args: [0]
+
+            - name: "The edit is pending"
+              action: expect_property
+              find_value: "unsavedNotice"
+              property: "visible"
+              value: true
+              screenshot: "storage-ui-settings-network-picked.png"
+              text: |
+                Picking a network rewrites the two Mix fields, so the form has
+                something to save.
+
+            - name: "Save"
+              action: click
+              target: "Save"
+
+            - name: "Let the write reach disk"
+              action: sleep
+              ms: 1000
+
+      - title: "The marked values were replaced"
+        run: |
+          # Without set -e the block exits on the trailing echo, so a failing
+          # test above would pass unnoticed.
+          set -e
+          cfg="$HOME/.logos_storage/config.json"
+          echo "saved config:"
+          jq . "$cfg"
+
+          test "$(jq 'has("network")' "$cfg")" = "true"
+
+          test "$(jq -r '."dht-mix-proxy"[0]' "$cfg")" != "spr:marker"
+          test "$(jq '."dht-mix-proxy" | length > 0' "$cfg")" = "true"
+
+          test "$(jq -r '."mix-pool-json"' "$cfg")" != '{"version":1,"relays":[]}'
+          test "$(jq -r '."mix-pool-json"' "$cfg" | jq '.relays | length > 0')" = "true"
+
+          # Kept as the reference the second network has to differ from.
+          cp "$cfg" /tmp/storage-ui-network-first.json
+
+          echo "OK: the first network replaced both Mix keys"
+
+      - title: "Pick the other network and save"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "Dashboard opens"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 5000
+
+            - name: "Open the Settings popup"
+              action: click_object
+              find_value: "settingsButton"
+
+            - name: "The popup is open"
+              action: wait_for
+              texts: ["Log level", "Storage quota"]
+              timeout: 5000
+
+            - name: "Pick the second network"
+              action: call_method
+              find_value: "networkSelect"
+              method: "userPicked"
+              args: [1]
+
+            - name: "The edit is pending"
+              action: expect_property
+              find_value: "unsavedNotice"
+              property: "visible"
+              value: true
+
+            - name: "Save"
+              action: click
+              target: "Save"
+
+            - name: "Let the write reach disk"
+              action: sleep
+              ms: 1000
+
+      - title: "The second network moved all three keys again"
+        run: |
+          set -e
+          cfg="$HOME/.logos_storage/config.json"
+          first=/tmp/storage-ui-network-first.json
+          echo "saved config:"
+          jq . "$cfg"
+
+          test "$(jq -r '.network' "$cfg")" != "$(jq -r '.network' "$first")"
+
+          test "$(jq -c '."dht-mix-proxy"' "$cfg")" != "$(jq -c '."dht-mix-proxy"' "$first")"
+          test "$(jq '."dht-mix-proxy" | length > 0' "$cfg")" = "true"
+
+          test "$(jq -r '."mix-pool-json"' "$cfg")" != "$(jq -r '."mix-pool-json"' "$first")"
+          test "$(jq -r '."mix-pool-json"' "$cfg" | jq '.relays | length > 0')" = "true"
+
+          echo "OK: each network carries its own Mix relays"
