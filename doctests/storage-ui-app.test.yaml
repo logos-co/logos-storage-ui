@@ -394,9 +394,6 @@ sections:
           test "$(jq '."disc-port"' "$cfg")" = "9191"
           test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "30s"
 
-          # The form was left on its defaults: no bootstrap list of its own, and
-          # the Mix values the app ships for the default network. Their contents
-          # are the mix-config.json job's business, not this test's.
           test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
           test "$(jq '."dht-mix-proxy" | length > 0' "$cfg")" = "true"
           test "$(jq -r '."mix-pool-json"' "$cfg" | jq '.relays | length > 0')" = "true"
