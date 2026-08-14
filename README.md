@@ -136,6 +136,22 @@ To restart the onboarding process, simply delete the preferences file and relaun
 The debug panel also provides access to the module's configuration JSON for runtime configuration tweaks. See the module's [API reference](https://logos-co.github.io/logos-storage-module/latest/api_reference.html) for a list of configuration options. To apply changes, restart the Storage Module.
 
 
+### Mix relays per network
+
+A Mix configuration per network is available in `mix-config.json`.
+The file is generated, never edited by hand:
+
+```bash
+./tools/gen-mix-config.sh
+```
+
+It fetches the live fleet data through `storage-config.sh` from
+`logos-storage-nim`.
+
+CMake embeds it at configure time, so a regenerated file needs no other change. 
+The `mix-config.json` workflow regenerates it on every PR and fails when the committed 
+file no longer matches the data available in `logos-storage-nim`.
+
 ### Nix Organization
 
 The build is driven by `flake.nix` and `metadata.json`, using `mkLogosQmlModule` from `logos-module-builder`. The previous layout with a separate `nix/` directory (`default.nix`, `lib.nix`, `app.nix`) has been replaced by that template.
