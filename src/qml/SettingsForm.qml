@@ -327,6 +327,7 @@ ScrollView {
         Layout.minimumWidth: 0
 
         onValueChanged: select.currentIndex = select.model.indexOf(select.value)
+        onModelChanged: select.currentIndex = select.model.indexOf(select.value)
         Component.onCompleted: select.currentIndex = select.model.indexOf(select.value)
         onUserPicked: function (index) {
             select.picked(select.model[index])
@@ -648,7 +649,7 @@ ScrollView {
                         objectName: "networkSelect"
                         enabled: !root.hasCustomBootstrap
                         model: root.optionsWith(root.networks, root.vNetwork)
-                        value: root.vNetwork === "" ? root.networks[0] : root.vNetwork
+                        value: root.vNetwork === "" ? (root.networks[0] || "") : root.vNetwork
                         onPicked: function (network) {
                             root.pickNetwork(network)
                         }
