@@ -180,6 +180,7 @@ sections:
           echo "config written by onboarding:"
           jq . "$cfg"
 
+          set -e
           test "$(jq '."config-version"' "$cfg")" = "2"
           test "$(jq '."listen-port"' "$cfg")" = "8500"
           test "$(jq '."disc-port"' "$cfg")" = "9090"
