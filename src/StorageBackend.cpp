@@ -1,4 +1,5 @@
 #include "StorageBackend.h"
+#include "MixConfig.h"
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
@@ -32,6 +33,7 @@ StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
     setNatReachability("Unknown");
     setDefaultConfigJson(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
     setUiVersion(STORAGE_UI_VERSION);
+    setMixConfigJson(QString::fromUtf8(MIX_CONFIG_JSON));
 
     // Disable system proxy detection — it crashes in Nix/some Linux environments
     QNetworkProxyFactory::setUseSystemConfiguration(false);
@@ -706,12 +708,47 @@ QJsonDocument StorageBackend::defaultConfig() {
     obj["disc-port"] = DEFAULT_DISC_PORT;
     obj["nat-schedule-interval"] = DEFAULT_NAT_SCHEDULE_INTERVAL;
 
+    const QJsonObject mix = mixConfig(DEFAULT_NETWORK);
     obj["mix-enabled"] = true;
-    obj["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
-    obj["mix-pool-json"] = QString::fromUtf8(
-        QJsonDocument::fromJson(MIX_POOL_JSON.toUtf8()).toJson(QJsonDocument::Compact));
+    obj["dht-mix-proxy"] = mix.value("dht-mix-proxy").toArray();
+    obj["mix-pool-json"] = mix.value("mix-pool-json").toString();
 
     return QJsonDocument(obj);
+}
+
+QJsonObject StorageBackend::mixConfig(const QString& network) {
+    const QJsonObject networks = QJsonDocument::fromJson(QByteArray(MIX_CONFIG_JSON)).object();
+    return networks.value(network).toObject();
+}
+
+// The relays are re-signed regularly, so a set frozen at install time stops
+// reaching anything: a config that follows a preset takes the one we ship.
+QString StorageBackend::syncMixConfig(QString configJsonStr) {
+    QJsonDocument doc = QJsonDocument::fromJson(configJsonStr.toUtf8());
+    if (!doc.isObject()) {
+        return configJsonStr;
+    }
+
+    QJsonObject obj = doc.object();
+    if (!obj.value("bootstrap-node").toArray().isEmpty()) {
+        return configJsonStr;
+    }
+
+    const QJsonObject mix = mixConfig(obj.value("network").toString(DEFAULT_NETWORK));
+    if (mix.isEmpty()) {
+        return configJsonStr;
+    }
+
+    const QJsonArray proxies = mix.value("dht-mix-proxy").toArray();
+    const QString pool = mix.value("mix-pool-json").toString();
+    if (obj.value("dht-mix-proxy").toArray() == proxies
+        && obj.value("mix-pool-json").toString() == pool) {
+        return configJsonStr;
+    }
+
+    obj["dht-mix-proxy"] = proxies;
+    obj["mix-pool-json"] = pool;
+    return QString::fromUtf8(QJsonDocument(obj).toJson(QJsonDocument::Indented));
 }
 
 bool StorageBackend::isLegacyBootstrap(const QJsonArray& bootstrap) {
@@ -740,12 +777,15 @@ QJsonObject StorageBackend::migrateV1toV2(QJsonObject obj) {
     if (!obj.value("mix-enabled").toBool(false)) {
         obj["mix-enabled"] = true;
     }
-    if (obj.value("dht-mix-proxy").toArray().isEmpty()) {
-        obj["dht-mix-proxy"] = QJsonArray::fromStringList(DHT_MIX_PROXY);
-    }
-    if (obj.value("mix-pool-json").toString().isEmpty()) {
-        obj["mix-pool-json"] = QString::fromUtf8(
-            QJsonDocument::fromJson(MIX_POOL_JSON.toUtf8()).toJson(QJsonDocument::Compact));
+    // An absent "network" means the module's default preset, not "no network".
+    const QJsonObject mix = mixConfig(obj.value("network").toString(DEFAULT_NETWORK));
+    if (!mix.isEmpty()) {
+        if (obj.value("dht-mix-proxy").toArray().isEmpty()) {
+            obj["dht-mix-proxy"] = mix.value("dht-mix-proxy").toArray();
+        }
+        if (obj.value("mix-pool-json").toString().isEmpty()) {
+            obj["mix-pool-json"] = mix.value("mix-pool-json").toString();
+        }
     }
 
     if (obj.value("nat-schedule-interval").toString().isEmpty()) {
@@ -793,14 +833,14 @@ void StorageBackend::migrateUserConfigFile() {
     QString current = QString::fromUtf8(file.readAll());
     file.close();
 
-    QString migrated = migrateConfig(current);
-    if (migrated == current) {
+    QString updated = syncMixConfig(migrateConfig(current));
+    if (updated == current) {
         return;
     }
 
-    saveUserConfig(migrated);
-    debug("Migrated user config to config version "
-          + QString::number(CURRENT_CONFIG_VERSION) + ".");
+    saveUserConfig(updated);
+    debug("Updated the user config: schema version "
+          + QString::number(CURRENT_CONFIG_VERSION) + ", preset Mix values.");
 }
 
 bool StorageBackend::togglePrivateQueries(bool enabled) {

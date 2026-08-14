@@ -9,6 +9,16 @@ QtObject {
     property bool mixRunning: false
     property string natReachability: "Unknown"
     property string uiVersion: "0.0.0"
+    property string mixConfigJson: JSON.stringify({
+                                                     "logos.test": {
+                                                         "dht-mix-proxy": ["spr:mock-test"],
+                                                         "mix-pool-json": "{\"version\":1,\"relays\":[]}"
+                                                     },
+                                                     "logos.dev": {
+                                                         "dht-mix-proxy": ["spr:mock-dev"],
+                                                         "mix-pool-json": "{\"version\":1,\"relays\":[]}"
+                                                     }
+                                                 })
     property string defaultConfigJson: JSON.stringify({
                                                           "config-version": 2,
                                                           "data-dir": "/home/user/.logos_storage/data",

@@ -76,7 +76,8 @@ ScrollView {
 
     readonly property var logLevels: ["TRACE", "DEBUG", "INFO", "NOTICE", "WARN", "ERROR", "FATAL"]
     readonly property var natModes: ["auto", "extip"]
-    readonly property var networks: ["logos.test", "logos.dev"]
+    readonly property var mixConfig: root.backend ? root.asJson(root.backend.mixConfigJson, {}) : ({})
+    readonly property var networks: Object.keys(root.mixConfig)
 
     // A config can hold a value no preset lists. Offering it keeps it visible
     // and keeps a save that touches another field from dropping it.
@@ -269,6 +270,17 @@ ScrollView {
         return cfg
     }
 
+    // The Mix relays are not part of the module's network preset, so switching
+    // network has to move them too: dev relays on the test network reach nothing.
+    function pickNetwork(network) {
+        root.vNetwork = network
+        const mix = root.mixConfig[network]
+        if (!mix)
+            return
+        root.vMixProxies = root.toJsonText(mix["dht-mix-proxy"])
+        root.vMixPool = mix["mix-pool-json"]
+    }
+
     function needsRestart(before, after) {
         for (let i = 0; i < root.restartKeys.length; i++) {
             const key = root.restartKeys[i]
@@ -315,6 +327,7 @@ ScrollView {
         Layout.minimumWidth: 0
 
         onValueChanged: select.currentIndex = select.model.indexOf(select.value)
+        onModelChanged: select.currentIndex = select.model.indexOf(select.value)
         Component.onCompleted: select.currentIndex = select.model.indexOf(select.value)
         onUserPicked: function (index) {
             select.picked(select.model[index])
@@ -636,9 +649,9 @@ ScrollView {
                         objectName: "networkSelect"
                         enabled: !root.hasCustomBootstrap
                         model: root.optionsWith(root.networks, root.vNetwork)
-                        value: root.vNetwork === "" ? "logos.test" : root.vNetwork
+                        value: root.vNetwork === "" ? (root.networks[0] || "") : root.vNetwork
                         onPicked: function (network) {
-                            root.vNetwork = network
+                            root.pickNetwork(network)
                         }
                     }
                 }
@@ -691,9 +704,11 @@ ScrollView {
 
                 Blob {
                     title: "DHT mix proxies"
-                    summary: "Peer records used as proxy destinations."
+                    summary: root.hasCustomBootstrap
+                             ? "Peer records used as proxy destinations."
+                             : "Peer records used as proxy destinations, set by the network preset."
                     body: root.vMixProxies
-                    editable: true
+                    editable: root.hasCustomBootstrap
                     fieldObjectName: "mixProxiesField"
                     onEdited: function (text) {
                         root.vMixProxies = text
@@ -702,9 +717,11 @@ ScrollView {
 
                 Blob {
                     title: "Mix relay pool"
-                    summary: "The relay pool the node mixes through."
+                    summary: root.hasCustomBootstrap
+                             ? "The relay pool the node mixes through."
+                             : "The relay pool the node mixes through, set by the network preset."
                     body: root.vMixPool
-                    editable: true
+                    editable: root.hasCustomBootstrap
                     fieldObjectName: "mixPoolField"
                     onEdited: function (text) {
                         root.vMixPool = text
