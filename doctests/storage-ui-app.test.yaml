@@ -176,11 +176,11 @@ sections:
 
       - title: "The guided run wrote the default configuration"
         run: |
+          set -e
           cfg="$HOME/.logos_storage/config.json"
           echo "config written by onboarding:"
           jq . "$cfg"
 
-          set -e
           test "$(jq '."config-version"' "$cfg")" = "2"
           test "$(jq '."listen-port"' "$cfg")" = "8500"
           test "$(jq '."disc-port"' "$cfg")" = "9090"
@@ -387,11 +387,11 @@ sections:
       #
       - title: "The advanced run wrote what the form showed"
         run: |
+          set -e
           cfg="$HOME/.logos_storage/config.json"
           echo "config written by onboarding:"
           jq . "$cfg"
 
-          set -e
           test "$(jq '."disc-port"' "$cfg")" = "9191"
           test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "30s"
 

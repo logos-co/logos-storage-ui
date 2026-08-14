@@ -166,9 +166,13 @@ class StorageBackend : public StorageBackendSimpleSource {
     static QJsonObject migrateV0toV1(QJsonObject obj);
     static QJsonObject migrateV1toV2(QJsonObject obj);
 
-    // Mix config for a given network preset.
-    // It is used to fill the dht-mix-proxy and mix-enabled fields.
+    // Mix config for a given network preset, empty when the network is not one
+    // we ship. It is used to fill the dht-mix-proxy and mix-pool-json fields.
     static QJsonObject mixConfig(const QString& network);
+
+    // Put back the Mix values the network preset comes with. Left alone when
+    // the user runs their own network, i.e. carries their own bootstrap list.
+    static QString syncMixConfig(QString configJson);
 
     // True when the array matches the bootstrap list the UI used to ship,
     // i.e. the user never set their own bootstrap nodes.

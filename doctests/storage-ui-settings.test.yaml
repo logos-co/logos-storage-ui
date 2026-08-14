@@ -77,6 +77,7 @@ sections:
 
       - title: "Confirm the starting values"
         run: |
+          set -e
           cfg="$HOME/.logos_storage/config.json"
 
           test "$(jq -r '."log-level"' "$cfg")" = "info"
@@ -266,6 +267,7 @@ sections:
     steps:
       - title: "Log level, ports and network"
         run: |
+          set -e
           cfg="$HOME/.logos_storage/config.json"
           echo "saved config:"
           jq . "$cfg"
@@ -279,6 +281,7 @@ sections:
 
       - title: "The storage quota is written in bytes"
         run: |
+          set -e
           cfg="$HOME/.logos_storage/config.json"
 
           test "$(jq '."storage-quota"' "$cfg")" = "8589934592"
@@ -288,6 +291,7 @@ sections:
 
       - title: "The bootstrap records are written as a list"
         run: |
+          set -e
           cfg="$HOME/.logos_storage/config.json"
 
           test "$(jq '."bootstrap-node" | length' "$cfg")" = "2"
@@ -298,6 +302,7 @@ sections:
 
       - title: "The AutoNAT interval is written as typed"
         run: |
+          set -e
           cfg="$HOME/.logos_storage/config.json"
 
           test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "5m"
@@ -306,6 +311,7 @@ sections:
 
       - title: "The NAT mode and the external IP are joined into one value"
         run: |
+          set -e
           cfg="$HOME/.logos_storage/config.json"
 
           test "$(jq -r '.nat' "$cfg")" = "extip:203.0.113.7"
@@ -314,6 +320,7 @@ sections:
 
       - title: "The keys left alone survived the save"
         run: |
+          set -e
           cfg="$HOME/.logos_storage/config.json"
 
           test "$(jq -r '."data-dir"' "$cfg")" = "/tmp/storage-ui-settings-data"
@@ -324,6 +331,7 @@ sections:
 
       - title: "The Mix JSON fields are written back parsed"
         run: |
+          set -e
           cfg="$HOME/.logos_storage/config.json"
 
           test "$(jq '."dht-mix-proxy" | length' "$cfg")" = "1"
@@ -468,6 +476,7 @@ sections:
 
       - title: "The config is unchanged by reopening"
         run: |
+          set -e
           cfg="$HOME/.logos_storage/config.json"
 
           test "$(jq -r '."log-level"' "$cfg")" = "trace"
@@ -485,6 +494,8 @@ sections:
       Changing the network updates the Mix configuration fields.
     steps:
       - title: "Start from a config with no network and marked Mix values"
+        # The marked values are what the startup has to replace: a config that
+        # follows a preset gets the relays the app ships, on every start.
         run: |
           set -e
           rm -rf /tmp/storage-ui-settings-data
@@ -562,11 +573,11 @@ sections:
               action: sleep
               ms: 1000
 
-      - title: "The marked values were replaced"
+      - title: "The preset relays replaced the marked ones, and the network was written"
         run: |
+          set -e
           # Without set -e the block exits on the trailing echo, so a failing
           # test above would pass unnoticed.
-          set -e
           cfg="$HOME/.logos_storage/config.json"
           echo "saved config:"
           jq . "$cfg"

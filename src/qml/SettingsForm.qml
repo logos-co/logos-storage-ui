@@ -703,9 +703,11 @@ ScrollView {
 
                 Blob {
                     title: "DHT mix proxies"
-                    summary: "Peer records used as proxy destinations."
+                    summary: root.hasCustomBootstrap
+                             ? "Peer records used as proxy destinations."
+                             : "Peer records used as proxy destinations, set by the network preset."
                     body: root.vMixProxies
-                    editable: true
+                    editable: root.hasCustomBootstrap
                     fieldObjectName: "mixProxiesField"
                     onEdited: function (text) {
                         root.vMixProxies = text
@@ -714,9 +716,11 @@ ScrollView {
 
                 Blob {
                     title: "Mix relay pool"
-                    summary: "The relay pool the node mixes through."
+                    summary: root.hasCustomBootstrap
+                             ? "The relay pool the node mixes through."
+                             : "The relay pool the node mixes through, set by the network preset."
                     body: root.vMixPool
-                    editable: true
+                    editable: root.hasCustomBootstrap
                     fieldObjectName: "mixPoolField"
                     onEdited: function (text) {
                         root.vMixPool = text
