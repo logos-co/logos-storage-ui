@@ -540,6 +540,11 @@ sections:
               texts: ["Log level", "Storage quota"]
               timeout: 5000
 
+            - name: "The config lands in the form"
+              action: wait_for
+              texts: ["/tmp/storage-ui-settings-data"]
+              timeout: 5000
+
             - name: "The selector is offered, no custom bootstrap holds it"
               action: expect_property
               find_value: "networkSelect"
@@ -616,6 +621,13 @@ sections:
               texts: ["Log level", "Storage quota"]
               timeout: 5000
 
+            - name: "The config lands in the form"
+              # Reading the file is async: picking before it answers would be
+              # overwritten by the values coming back.
+              action: wait_for
+              texts: ["/tmp/storage-ui-settings-data"]
+              timeout: 5000
+
             - name: "Pick the second network"
               action: call_method
               find_value: "settingsForm"
@@ -641,6 +653,7 @@ sections:
           set -e
           cfg="$HOME/.logos_storage/config.json"
           first=/tmp/storage-ui-network-first.json
+          test -f "$first"
           echo "saved config:"
           jq . "$cfg"
 
