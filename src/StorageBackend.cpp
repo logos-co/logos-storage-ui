@@ -99,6 +99,11 @@ void StorageBackend::init(QString configJson) {
     QJsonObject moduleConfig = m_config.object();
     moduleConfig.remove("config-version");
 
+    const QString dataDir = moduleConfig.value("data-dir").toString();
+    if (!dataDir.isEmpty()) {
+        moduleConfig["data-dir"] = QDir::toNativeSeparators(dataDir);
+    }
+
     bool result = m_logos->storage_module.init(
         QString::fromUtf8(QJsonDocument(moduleConfig).toJson(QJsonDocument::Compact)));
 
