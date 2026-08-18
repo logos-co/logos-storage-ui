@@ -1,0 +1,23 @@
+<!-- storage_ui module icon, redrawn as vector from the original 28x28 raster.
+     Geometry measured from that raster, so the 256x256 render is the same
+     glyph rather than an upscale:
+       content bbox   x,y 4..24 on a 28 grid (20/28 = 71% of the canvas)
+       two bars       h 9 each, 2 gap  (9 + 2 + 9 = 20)
+       LED cutout     ~2.4 wide, centred on x=10, vertically centred per bar
+       colour         #969696, the single colour in the original
+     Cutouts are real holes (fill-rule evenodd), as in the original, not white
+     fills; the background is transparent. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="256" height="256">
+  <path fill="#969696" fill-rule="evenodd" d="
+    M 5.5 4 H 22.5 A 1.5 1.5 0 0 1 24 5.5 V 11.5 A 1.5 1.5 0 0 1 22.5 13 H 5.5
+    A 1.5 1.5 0 0 1 4 11.5 V 5.5 A 1.5 1.5 0 0 1 5.5 4 Z
+    M 9.1 7.4 H 11.5 A 0.35 0.35 0 0 1 11.85 7.75 V 9.25 A 0.35 0.35 0 0 1 11.5 9.6
+    H 9.1 A 0.35 0.35 0 0 1 8.75 9.25 V 7.75 A 0.35 0.35 0 0 1 9.1 7.4 Z
+  "/>
+  <path fill="#969696" fill-rule="evenodd" d="
+    M 5.5 15 H 22.5 A 1.5 1.5 0 0 1 24 16.5 V 22.5 A 1.5 1.5 0 0 1 22.5 24 H 5.5
+    A 1.5 1.5 0 0 1 4 22.5 V 16.5 A 1.5 1.5 0 0 1 5.5 15 Z
+    M 9.1 18.4 H 11.5 A 0.35 0.35 0 0 1 11.85 18.75 V 20.25 A 0.35 0.35 0 0 1 11.5 20.6
+    H 9.1 A 0.35 0.35 0 0 1 8.75 20.25 V 18.75 A 0.35 0.35 0 0 1 9.1 18.4 Z
+  "/>
+</svg>
