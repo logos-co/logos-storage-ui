@@ -1,0 +1,48 @@
+name: Windows (nix cross)
+
+# Cross-builds this module for x86_64-w64-mingw32 and gates the .lgx it ships.
+# Everything except the inputs below lives in logos-co/logos-windows-ci.
+#
+# WHY THERE IS NO doctest-spec HERE, AND WHY THAT IS NOT A CHOICE
+#
+# The harness can run a doctest spec on Windows, but not THESE specs. All three
+# of this repo's doctests are ui_test-driven (37, 12 and 62 actions), and
+# `doctest emit-smoke` has no ui_test branch -- it emits `file:`, `run:`,
+# `extra_run:` and `check_file:` and DROPS everything else. Pointing
+# `doctest-spec:` at them would therefore produce a script that asserts almost
+# nothing, exits 0, and reports a green Windows leg: a vacuous pass, which is
+# strictly worse than no leg at all.
+#
+# Two further blockers behind that one, so this is not a near miss: logos-qt-mcp
+# (which drives every ui_test) has no x86_64-windows target, and the specs seed
+# their starting state through the Linux QSettings ini at
+# ~/.config/Logos/LogosStandalone.conf.
+#
+# What is covered instead: the package this repo actually ships, and -- via the
+# harness's lgx-variant gate -- every PE inside it, import closures included.
+# The UI's BEHAVIOUR on Windows stays hand-verified for now; it renders, and
+# that was checked on a real Windows box, but it is not automated here.
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    uses: logos-co/logos-windows-ci/.github/workflows/windows-ci.yml@v1
+    secrets: inherit
+    with:
+      # The portable variant, not `lgx`: `lgx` emits the `windows-x86_64-dev`
+      # variant, which lgpm refuses to install into a portable Basecamp bundle.
+      # `lgx-portable` emits `windows-x86_64`, which is what actually ships.
+      targets: lgx-portable
+      # This repo's only Windows artifact is an archive, so there are no loose
+      # PEs to count -- but lgx-variant is a floor in its own right, and it is
+      # what makes the harness open the archive and gate the PEs INSIDE it,
+      # import closures included. That is the assertion that would have caught
+      # a plugin shipped without libstorage.dll beside it.
+      min-pes: 0
+      lgx-variant: true
+      smoke-file: .github/smoke/storage-ui-lgx.sh
