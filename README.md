@@ -106,9 +106,9 @@ Artefacts land in `doctests/preview-outputs/`, the report is
 
 ## Guidance 
 
-You can access to the [Storage Module documentation](https://logos-co.github.io/logos-storage-module/latest) to get more context about the Storage Module and its configuration. 
+You can access to the [Storage Module documentation](https://logos-storage.github.io/logos-storage-docs) to get more context about the Storage Module and its configuration. 
 
-You can also refer to our [UI Guide](docs/ui-guide.md) for information about the usage of the Storage UI.
+You can also refer to our [UI user guide]([docs/ui-guide.md](https://logos-storage.github.io/logos-storage-docs/storage/guides/ui-user-guide) for information about the usage of the Storage UI.
 
 If you prefer a technical approach, you can refer to our [doctest using automated tests](https://logos-co.github.io/logos-doctest-hub/#logos-storage-module/ubuntu-latest/driving-the-storage-ui-against-this-module).
 
@@ -133,7 +133,7 @@ The settings are saved to the preferences file to preserve the onboarding defaul
 
 To restart the onboarding process, simply delete the preferences file and relaunch the application or use the debug panel (ctrl + d) to reset the onboarding state.
 
-The debug panel also provides access to the module's configuration JSON for runtime configuration tweaks. See the module's [API reference](https://logos-co.github.io/logos-storage-module/latest/api_reference.html) for a list of configuration options. To apply changes, restart the Storage Module.
+The debug panel also provides access to the module's configuration JSON for runtime configuration tweaks. See the module's [API reference](https://logos-storage.github.io/logos-storage-docs/storage/reference/storage-module-api) for a list of configuration options. To apply changes, restart the Storage Module.
 
 
 ### Nix Organization
@@ -142,7 +142,7 @@ The build is driven by `flake.nix` and `metadata.json`, using `mkLogosQmlModule`
 
 ## Development
 
-For more information on development, see the [development documentation](docs/development.md).
+For more information on development, see the [development documentation]([docs/development.md](https://logos-storage.github.io/logos-storage-docs/storage/developers/ui-development)).
 
 ## Requirements
 
