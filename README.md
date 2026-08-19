@@ -14,7 +14,11 @@ Run the app in development mode and watch for changes in the qml files:
 
 ```bash
 nix build .#ui-dev
+./result/bin/run-logos-standalone-ui
 ```
+
+The runner picks up the QML files from `src/qml` in the current directory, so it
+must be started from the repository root.
 
 You can override a dependency by using a local version with `--override-input`. Example:
 
