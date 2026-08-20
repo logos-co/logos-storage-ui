@@ -3,6 +3,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
+#include <QEventLoop>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -25,8 +26,8 @@
 // - the second one is to use the "debug" helper that logs both in the console and in a
 // QString property that can be displayed in the UI. This is more for users to understand
 // what is happening.
-StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
-    : StorageBackendSimpleSource(parent), m_logosAPI(nullptr), m_logos(nullptr) {
+StorageBackend::StorageBackend(QObject* parent)
+    : StorageBackendSimpleSource(parent), m_logos(nullptr) {
     qDebug() << "Initializing StorageBackend...";
 
     setStatus(Destroyed);
@@ -37,19 +38,60 @@ StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
 
     // Disable system proxy detection — it crashes in Nix/some Linux environments
     QNetworkProxyFactory::setUseSystemConfiguration(false);
+}
 
-    if (logosAPI) {
-        m_logosAPI = logosAPI;
-    } else {
-        m_logosAPI = new LogosAPI("core", this);
-    }
-
-    m_logos = new LogosModules(m_logosAPI);
+void StorageBackend::onContextReady() {
+    // The framework has wired modules(), so the typed storage_module surface is
+    // live. We build our own LogosModules over the same LogosAPI instead of
+    // aliasing &modules(): the generated plugin declares its LogosModules AFTER
+    // the backend, so it is destroyed FIRST, while ~StorageBackend below still
+    // has to reach storage_module to stop/destroy the node. Constructing it here
+    // is what this backend did before it became a generated view plugin; the
+    // LpBridge behind the typed wrapper is a process-wide cache keyed by
+    // (origin, target), so this is the same connection, not a second one.
+    m_logos = new LogosModules(modules().api);
 }
 
 StorageBackend::~StorageBackend()
 {
-    m_logosAPI = nullptr;
+    // The teardown that the hand-written StorageUIPlugin destructor used to run
+    // before this module became a generated view plugin (the generated glue's
+    // destructor is `= default`, so the backend owns its own shutdown now).
+    // Same branching as the legacy destroyWidget (minus QQuickWidget):
+    // Destroyed → noop; not Running → destroy(); Running → queued stop, wait up
+    // to 2s for stopCompleted, then destroy().
+    if (m_logos) {
+        const StorageStatus s = status();
+
+        if (s == Destroyed) {
+            qDebug() << "StorageBackend: teardown skipped (backend destroyed)";
+        } else if (s != Running) {
+            qDebug() << "StorageBackend: backend not running, destroying context";
+            destroy();
+        } else {
+            qDebug() << "StorageBackend: stopping backend before destroy";
+
+            QEventLoop loop;
+            QTimer timeout;
+            timeout.setSingleShot(true);
+
+            QObject::connect(&timeout, &QTimer::timeout, &loop, [&]() {
+                qWarning() << "StorageBackend: stop timeout during teardown";
+                loop.quit();
+            });
+
+            QObject::connect(this, &StorageBackend::stopCompleted, &loop, [&]() { loop.quit(); },
+                             Qt::QueuedConnection);
+
+            QMetaObject::invokeMethod(this, "stop", Qt::QueuedConnection);
+
+            timeout.start(2000);
+            loop.exec();
+
+            destroy();
+        }
+    }
+
     m_logos = nullptr;
 }
 
