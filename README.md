@@ -10,6 +10,16 @@ Run the app using the standalone runner:
 nix run
 ```
 
+Run the app in development mode and watch for changes in the qml files:
+
+```bash
+nix build .#ui-dev
+./result/bin/run-logos-standalone-ui
+```
+
+The runner picks up the QML files from `src/qml` in the current directory, so it
+must be started from the repository root.
+
 You can override a dependency by using a local version with `--override-input`. Example:
 
 ```
@@ -155,10 +165,6 @@ file no longer matches the data available in `logos-storage-nim`.
 ### Nix Organization
 
 The build is driven by `flake.nix` and `metadata.json`, using `mkLogosQmlModule` from `logos-module-builder`. The previous layout with a separate `nix/` directory (`default.nix`, `lib.nix`, `app.nix`) has been replaced by that template.
-
-## Development
-
-For more information on development, see the [development documentation](docs/development.md).
 
 ## Requirements
 
