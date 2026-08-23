@@ -159,6 +159,17 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
 
     QString configJson() override;
 
+  protected:
+    // Fired when the host is about to tear this view down -- after the view's
+    // event loop has returned, before the plugin is destroyed. Answers
+    // Asynchronous while the node is Running, so the host keeps its loop
+    // turning until stopCompleted lands and we call unloadFinished().
+    //
+    // Protected, and deliberately not a slot: this is framework plumbing, never
+    // remoted, and no QML caller can reach it. The grace period belongs to the
+    // host (2000ms in ui-host, 3000ms in logos_host) rather than to this file.
+    LogosShutdown aboutToUnload() override;
+
   private:
     // Provide a default config for onboarding
     static QJsonDocument defaultConfig();
@@ -201,6 +212,12 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // onContextReady() in the .cpp for why the destructor needs it to outlive
     // the generated plugin's own aggregate.
     LogosModules* m_logos;
+    // "stop requested" and "teardown finished" are different states: the host
+    // may return from its grace period with the stop still in flight, and the
+    // destructor must then neither ask for a second stop nor wait out another
+    // full timeout on top of one the host has already exceeded.
+    bool m_stopRequested = false;
+    bool m_teardownDone = false;
 
     bool m_eventsSubscribed = false;
 

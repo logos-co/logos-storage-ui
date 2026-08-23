@@ -52,14 +52,78 @@ void StorageBackend::onContextReady() {
     m_logos = new LogosModules(modules().api);
 }
 
+LogosShutdown StorageBackend::aboutToUnload()
+{
+    // The teardown that used to run in ~StorageBackend (and, before this module
+    // became a generated view plugin, in the hand-written StorageUIPlugin
+    // destructor). It belongs here: the host calls this after the view's event
+    // loop has returned and before the plugin is destroyed, and it -- not this
+    // file -- owns the deadline.
+    //
+    // Same branching as before: Destroyed -> nothing to do; not Running ->
+    // destroy() inline; Running -> queued stop, and the host waits for
+    // unloadFinished().
+    if (!m_logos) {
+        m_teardownDone = true;
+        return LogosShutdown::Synchronous;
+    }
+
+    const StorageStatus s = status();
+
+    if (s == Destroyed) {
+        qDebug() << "StorageBackend: teardown skipped (backend destroyed)";
+        m_teardownDone = true;
+        return LogosShutdown::Synchronous;
+    }
+
+    if (s != Running) {
+        qDebug() << "StorageBackend: backend not running, destroying context";
+        destroy();
+        m_teardownDone = true;
+        return LogosShutdown::Synchronous;
+    }
+
+    qDebug() << "StorageBackend: stopping backend before destroy";
+    m_stopRequested = true;
+
+    // Queued on purpose: the stop and the completion are both delivered by the
+    // event loop the HOST is about to run, which is what makes this
+    // non-blocking rather than the nested loop it replaces.
+    QObject::connect(this, &StorageBackend::stopCompleted, this, [this]() {
+        if (m_teardownDone)
+            return;
+        m_teardownDone = true;
+        destroy();
+        unloadFinished();
+    }, Qt::QueuedConnection);
+
+    QMetaObject::invokeMethod(this, "stop", Qt::QueuedConnection);
+    return LogosShutdown::Asynchronous;
+}
+
 StorageBackend::~StorageBackend()
 {
-    // The teardown that the hand-written StorageUIPlugin destructor used to run
-    // before this module became a generated view plugin (the generated glue's
-    // destructor is `= default`, so the backend owns its own shutdown now).
-    // Same branching as the legacy destroyWidget (minus QQuickWidget):
-    // Destroyed → noop; not Running → destroy(); Running → queued stop, wait up
-    // to 2s for stopCompleted, then destroy().
+    // Normal path: the host called aboutToUnload() and everything is already
+    // done. Nothing here should block -- that is the whole point of the hook.
+    if (m_teardownDone) {
+        m_logos = nullptr;
+        return;
+    }
+
+    // The host asked, we answered Asynchronous, and its grace period elapsed
+    // before stopCompleted arrived. It has already warned; waiting again here
+    // would only extend a teardown that is already over the host's budget.
+    if (m_stopRequested) {
+        qWarning() << "StorageBackend: stop still pending at destruction";
+        if (m_logos)
+            destroy();
+        m_logos = nullptr;
+        return;
+    }
+
+    // FALLBACK: nothing drove the hook -- a backend constructed outside the
+    // generated glue, as unit tests do. Block exactly as this destructor used
+    // to, so those paths keep the graceful stop instead of losing it silently.
     if (m_logos) {
         const StorageStatus s = status();
 
@@ -69,7 +133,7 @@ StorageBackend::~StorageBackend()
             qDebug() << "StorageBackend: backend not running, destroying context";
             destroy();
         } else {
-            qDebug() << "StorageBackend: stopping backend before destroy";
+            qDebug() << "StorageBackend: stopping backend before destroy (no unload hook)";
 
             QEventLoop loop;
             QTimer timeout;
@@ -92,6 +156,7 @@ StorageBackend::~StorageBackend()
         }
     }
 
+    m_teardownDone = true;
     m_logos = nullptr;
 }
 
@@ -550,7 +615,7 @@ void StorageBackend::fetch(QString cid) {
 void StorageBackend::logVersion() {
     qDebug() << "StorageBackend::version called";
 
-    LogosResult result = m_logos->storage_module.version();
+    LogosResult result = m_logos->storage_module.libstorageVersion();
 
     if (!result.success) {
         reportError("Failed to log version: " + result.getError());
