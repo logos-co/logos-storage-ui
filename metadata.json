@@ -3,12 +3,18 @@
   "display_name": "Storage",
   "version": "2.1.2",
   "type": "ui_qml",
+  "interface": "universal",
   "category": "storage",
   "description": "Storage interface for the Logos application",
   "main": "storage_ui_plugin",
   "icon": "src/icons/storage.png",
   "view": "qml/Main.qml",
   "dependencies": ["storage_module"],
+  "codegen": {
+    "rep": "src/StorageBackend.rep",
+    "backend_class": "StorageBackend",
+    "backend_header": "StorageBackend.h"
+  },
 
   "nix": {
     "packages": {

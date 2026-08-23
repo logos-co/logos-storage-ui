@@ -6,9 +6,11 @@ This documentation provides instructions for setting up the development environm
 
 The project is divided into two CMake entry points:
 
-1. **StorageUIPlugin**: It uses the root `CMakeLists.txt` and the sources under `src/`. This is the main UI. It is a plugin because it can be reused in the Logos main app or in a standalone application.
+1. **StorageUiPlugin**: It uses the root `CMakeLists.txt` and the sources under `src/`. This is the main UI. It is a plugin because it can be reused in the Logos main app or in a standalone application.
 
-2. **qml**: It uses `src/qml/CMakeLists.txt`. It is a dev application used to run the QML preview easily. Note that it relies on the `StorageUIPlugin` build folder, so **YOU MUST** build `StorageUIPlugin` before using the QML preview.
+   This module is a *generated view plugin* (`"type": "ui_qml"` + `"interface": "universal"` in `metadata.json`). Only two things are hand-written: `src/StorageBackend.rep` (the view contract remoted to QML) and `src/StorageBackend.{h,cpp}` (a `StorageBackendSimpleSource` that also derives `LogosUiPluginContext`). The plugin entry point itself — `StorageUiPlugin`, its `Q_PLUGIN_METADATA`, its interface header and the `initLogos` wiring — is emitted into `generated_code/` by `logos-qt-generator` from the `codegen` block in `metadata.json`; do not add it to `SOURCES`. The backend reaches `storage_module` through `LogosUiPluginContext::modules()`, wired just before `onContextReady()` fires.
+
+2. **qml**: It uses `src/qml/CMakeLists.txt`. It is a dev application used to run the QML preview easily. Note that it relies on the `StorageUiPlugin` build folder, so **YOU MUST** build `StorageUiPlugin` before using the QML preview.
 
 ## Qt Creator (for development)
 

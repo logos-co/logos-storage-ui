@@ -1,6 +1,7 @@
 #pragma once
 #include "logos_api.h"
 #include "logos_sdk.h"
+#include "logos_ui_plugin_context.h"
 #include "rep_StorageBackend_source.h"
 #include <QDir>
 #include <QFile>
@@ -47,11 +48,17 @@ static const QStringList LEGACY_BOOTSTRAP_NODES = {
     "8wQYaCwoJBAXfEfiRAnVOGgsKCQQF3xH4kQJ1TipGMEQCIGWJMsF57N1iIEQgTH7IrVOgEgv0J2P2v3jvQr5Cjy-RAiAy4aiZ8QtyDvCfl_K_"
     "w6SyZ9csFGkRNTpirq_M_QNgKw"};
 
-class StorageBackend : public StorageBackendSimpleSource {
+class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginContext {
     Q_OBJECT
   public:
-    explicit StorageBackend(LogosAPI* logosAPI = nullptr, QObject* parent = nullptr);
+    explicit StorageBackend(QObject* parent = nullptr);
     ~StorageBackend();
+
+    // Fires once the generated plugin glue has wired modules(); the typed
+    // storage_module surface is live from here on. Nothing is called on the
+    // module yet — the QML view drives init()/start() — so this only builds
+    // the typed-dependency handle the slots below use.
+    void onContextReady() override;
 
   public slots:
     // Init the Storage Module using the config json
@@ -152,6 +159,17 @@ class StorageBackend : public StorageBackendSimpleSource {
 
     QString configJson() override;
 
+  protected:
+    // Fired when the host is about to tear this view down -- after the view's
+    // event loop has returned, before the plugin is destroyed. Answers
+    // Asynchronous while the node is Running, so the host keeps its loop
+    // turning until stopCompleted lands and we call unloadFinished().
+    //
+    // Protected, and deliberately not a slot: this is framework plumbing, never
+    // remoted, and no QML caller can reach it. The grace period belongs to the
+    // host (2000ms in ui-host, 3000ms in logos_host) rather than to this file.
+    LogosShutdown aboutToUnload() override;
+
   private:
     // Provide a default config for onboarding
     static QJsonDocument defaultConfig();
@@ -189,9 +207,17 @@ class StorageBackend : public StorageBackendSimpleSource {
     // Emit error(message)
     void reportError(const QString& message);
 
-    // Logos related variables
-    LogosAPI* m_logosAPI;
+    // Typed access to the declared dependencies (storage_module). Owned by the
+    // backend rather than aliasing LogosUiPluginContext::modules() — see
+    // onContextReady() in the .cpp for why the destructor needs it to outlive
+    // the generated plugin's own aggregate.
     LogosModules* m_logos;
+    // "stop requested" and "teardown finished" are different states: the host
+    // may return from its grace period with the stop still in flight, and the
+    // destructor must then neither ask for a second stop nor wait out another
+    // full timeout on top of one the host has already exceeded.
+    bool m_stopRequested = false;
+    bool m_teardownDone = false;
 
     bool m_eventsSubscribed = false;
 

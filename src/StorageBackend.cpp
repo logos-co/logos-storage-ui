@@ -3,6 +3,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
+#include <QEventLoop>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -25,8 +26,8 @@
 // - the second one is to use the "debug" helper that logs both in the console and in a
 // QString property that can be displayed in the UI. This is more for users to understand
 // what is happening.
-StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
-    : StorageBackendSimpleSource(parent), m_logosAPI(nullptr), m_logos(nullptr) {
+StorageBackend::StorageBackend(QObject* parent)
+    : StorageBackendSimpleSource(parent), m_logos(nullptr) {
     qDebug() << "Initializing StorageBackend...";
 
     setStatus(Destroyed);
@@ -37,19 +38,125 @@ StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
 
     // Disable system proxy detection — it crashes in Nix/some Linux environments
     QNetworkProxyFactory::setUseSystemConfiguration(false);
+}
 
-    if (logosAPI) {
-        m_logosAPI = logosAPI;
-    } else {
-        m_logosAPI = new LogosAPI("core", this);
+void StorageBackend::onContextReady() {
+    // The framework has wired modules(), so the typed storage_module surface is
+    // live. We build our own LogosModules over the same LogosAPI instead of
+    // aliasing &modules(): the generated plugin declares its LogosModules AFTER
+    // the backend, so it is destroyed FIRST, while ~StorageBackend below still
+    // has to reach storage_module to stop/destroy the node. Constructing it here
+    // is what this backend did before it became a generated view plugin; the
+    // LpBridge behind the typed wrapper is a process-wide cache keyed by
+    // (origin, target), so this is the same connection, not a second one.
+    m_logos = new LogosModules(modules().api);
+}
+
+LogosShutdown StorageBackend::aboutToUnload()
+{
+    // The teardown that used to run in ~StorageBackend (and, before this module
+    // became a generated view plugin, in the hand-written StorageUIPlugin
+    // destructor). It belongs here: the host calls this after the view's event
+    // loop has returned and before the plugin is destroyed, and it -- not this
+    // file -- owns the deadline.
+    //
+    // Same branching as before: Destroyed -> nothing to do; not Running ->
+    // destroy() inline; Running -> queued stop, and the host waits for
+    // unloadFinished().
+    if (!m_logos) {
+        m_teardownDone = true;
+        return LogosShutdown::Synchronous;
     }
 
-    m_logos = new LogosModules(m_logosAPI);
+    const StorageStatus s = status();
+
+    if (s == Destroyed) {
+        qDebug() << "StorageBackend: teardown skipped (backend destroyed)";
+        m_teardownDone = true;
+        return LogosShutdown::Synchronous;
+    }
+
+    if (s != Running) {
+        qDebug() << "StorageBackend: backend not running, destroying context";
+        destroy();
+        m_teardownDone = true;
+        return LogosShutdown::Synchronous;
+    }
+
+    qDebug() << "StorageBackend: stopping backend before destroy";
+    m_stopRequested = true;
+
+    // Queued on purpose: the stop and the completion are both delivered by the
+    // event loop the HOST is about to run, which is what makes this
+    // non-blocking rather than the nested loop it replaces.
+    QObject::connect(this, &StorageBackend::stopCompleted, this, [this]() {
+        if (m_teardownDone)
+            return;
+        m_teardownDone = true;
+        destroy();
+        unloadFinished();
+    }, Qt::QueuedConnection);
+
+    QMetaObject::invokeMethod(this, "stop", Qt::QueuedConnection);
+    return LogosShutdown::Asynchronous;
 }
 
 StorageBackend::~StorageBackend()
 {
-    m_logosAPI = nullptr;
+    // Normal path: the host called aboutToUnload() and everything is already
+    // done. Nothing here should block -- that is the whole point of the hook.
+    if (m_teardownDone) {
+        m_logos = nullptr;
+        return;
+    }
+
+    // The host asked, we answered Asynchronous, and its grace period elapsed
+    // before stopCompleted arrived. It has already warned; waiting again here
+    // would only extend a teardown that is already over the host's budget.
+    if (m_stopRequested) {
+        qWarning() << "StorageBackend: stop still pending at destruction";
+        if (m_logos)
+            destroy();
+        m_logos = nullptr;
+        return;
+    }
+
+    // FALLBACK: nothing drove the hook -- a backend constructed outside the
+    // generated glue, as unit tests do. Block exactly as this destructor used
+    // to, so those paths keep the graceful stop instead of losing it silently.
+    if (m_logos) {
+        const StorageStatus s = status();
+
+        if (s == Destroyed) {
+            qDebug() << "StorageBackend: teardown skipped (backend destroyed)";
+        } else if (s != Running) {
+            qDebug() << "StorageBackend: backend not running, destroying context";
+            destroy();
+        } else {
+            qDebug() << "StorageBackend: stopping backend before destroy (no unload hook)";
+
+            QEventLoop loop;
+            QTimer timeout;
+            timeout.setSingleShot(true);
+
+            QObject::connect(&timeout, &QTimer::timeout, &loop, [&]() {
+                qWarning() << "StorageBackend: stop timeout during teardown";
+                loop.quit();
+            });
+
+            QObject::connect(this, &StorageBackend::stopCompleted, &loop, [&]() { loop.quit(); },
+                             Qt::QueuedConnection);
+
+            QMetaObject::invokeMethod(this, "stop", Qt::QueuedConnection);
+
+            timeout.start(2000);
+            loop.exec();
+
+            destroy();
+        }
+    }
+
+    m_teardownDone = true;
     m_logos = nullptr;
 }
 
@@ -508,7 +615,7 @@ void StorageBackend::fetch(QString cid) {
 void StorageBackend::logVersion() {
     qDebug() << "StorageBackend::version called";
 
-    LogosResult result = m_logos->storage_module.version();
+    LogosResult result = m_logos->storage_module.libstorageVersion();
 
     if (!result.success) {
         reportError("Failed to log version: " + result.getError());
