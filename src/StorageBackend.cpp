@@ -508,7 +508,7 @@ void StorageBackend::fetch(QString cid) {
 void StorageBackend::logVersion() {
     qDebug() << "StorageBackend::version called";
 
-    LogosResult result = m_logos->storage_module.version();
+    LogosResult result = m_logos->storage_module.libstorageVersion();
 
     if (!result.success) {
         reportError("Failed to log version: " + result.getError());
