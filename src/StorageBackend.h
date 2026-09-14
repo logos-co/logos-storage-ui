@@ -1,6 +1,7 @@
 #pragma once
 #include "logos_api.h"
 #include "logos_sdk.h"
+#include "logos_ui_plugin_context.h"
 #include "rep_StorageBackend_source.h"
 #include <QDir>
 #include <QFile>
@@ -47,11 +48,14 @@ static const QStringList LEGACY_BOOTSTRAP_NODES = {
     "8wQYaCwoJBAXfEfiRAnVOGgsKCQQF3xH4kQJ1TipGMEQCIGWJMsF57N1iIEQgTH7IrVOgEgv0J2P2v3jvQr5Cjy-RAiAy4aiZ8QtyDvCfl_K_"
     "w6SyZ9csFGkRNTpirq_M_QNgKw"};
 
-class StorageBackend : public StorageBackendSimpleSource {
+class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginContext {
     Q_OBJECT
   public:
-    explicit StorageBackend(LogosAPI* logosAPI = nullptr, QObject* parent = nullptr);
+    explicit StorageBackend(QObject* parent = nullptr);
     ~StorageBackend();
+
+    // Called once modules() is ready.
+    void onContextReady() override;
 
   public slots:
     // Init the Storage Module using the config json
@@ -152,6 +156,11 @@ class StorageBackend : public StorageBackendSimpleSource {
 
     QString configJson() override;
 
+  protected:
+    // Stop the node before unload. Asynchronous while Running: the host waits
+    // for unloadFinished().
+    LogosShutdown aboutToUnload() override;
+
   private:
     // Provide a default config for onboarding
     static QJsonDocument defaultConfig();
@@ -189,9 +198,10 @@ class StorageBackend : public StorageBackendSimpleSource {
     // Emit error(message)
     void reportError(const QString& message);
 
-    // Logos related variables
-    LogosAPI* m_logosAPI;
     LogosModules* m_logos;
+    // A stop can still be in flight after the host grace period.
+    bool m_stopRequested = false;
+    bool m_teardownDone = false;
 
     bool m_eventsSubscribed = false;
 

@@ -3,6 +3,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
+#include <QEventLoop>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -25,8 +26,8 @@
 // - the second one is to use the "debug" helper that logs both in the console and in a
 // QString property that can be displayed in the UI. This is more for users to understand
 // what is happening.
-StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
-    : StorageBackendSimpleSource(parent), m_logosAPI(nullptr), m_logos(nullptr) {
+StorageBackend::StorageBackend(QObject* parent)
+    : StorageBackendSimpleSource(parent), m_logos(nullptr) {
     qDebug() << "Initializing StorageBackend...";
 
     setStatus(Destroyed);
@@ -37,19 +38,101 @@ StorageBackend::StorageBackend(LogosAPI* logosAPI, QObject* parent)
 
     // Disable system proxy detection — it crashes in Nix/some Linux environments
     QNetworkProxyFactory::setUseSystemConfiguration(false);
+}
 
-    if (logosAPI) {
-        m_logosAPI = logosAPI;
-    } else {
-        m_logosAPI = new LogosAPI("core", this);
+void StorageBackend::onContextReady() {
+    // ~StorageBackend still calls storage_module after modules() is destroyed.
+    m_logos = new LogosModules(modules().api);
+}
+
+LogosShutdown StorageBackend::aboutToUnload()
+{
+    if (!m_logos) {
+        m_teardownDone = true;
+        return LogosShutdown::Synchronous;
     }
 
-    m_logos = new LogosModules(m_logosAPI);
+    const StorageStatus s = status();
+
+    if (s == Destroyed) {
+        qDebug() << "StorageBackend: teardown skipped (backend destroyed)";
+        m_teardownDone = true;
+        return LogosShutdown::Synchronous;
+    }
+
+    if (s != Running) {
+        qDebug() << "StorageBackend: backend not running, destroying context";
+        destroy();
+        m_teardownDone = true;
+        return LogosShutdown::Synchronous;
+    }
+
+    qDebug() << "StorageBackend: stopping backend before destroy";
+    m_stopRequested = true;
+
+    // Queued: the host's event loop delivers the stop, so this does not block.
+    QObject::connect(this, &StorageBackend::stopCompleted, this, [this]() {
+        if (m_teardownDone)
+            return;
+        m_teardownDone = true;
+        destroy();
+        unloadFinished();
+    }, Qt::QueuedConnection);
+
+    QMetaObject::invokeMethod(this, "stop", Qt::QueuedConnection);
+    return LogosShutdown::Asynchronous;
 }
 
 StorageBackend::~StorageBackend()
 {
-    m_logosAPI = nullptr;
+    if (m_teardownDone) {
+        m_logos = nullptr;
+        return;
+    }
+
+    // The host grace period elapsed before stopCompleted: do not wait again.
+    if (m_stopRequested) {
+        qWarning() << "StorageBackend: stop still pending at destruction";
+        if (m_logos)
+            destroy();
+        m_logos = nullptr;
+        return;
+    }
+
+    // aboutToUnload() was never called (e.g. unit tests): block until stopped.
+    if (m_logos) {
+        const StorageStatus s = status();
+
+        if (s == Destroyed) {
+            qDebug() << "StorageBackend: teardown skipped (backend destroyed)";
+        } else if (s != Running) {
+            qDebug() << "StorageBackend: backend not running, destroying context";
+            destroy();
+        } else {
+            qDebug() << "StorageBackend: stopping backend before destroy (no unload hook)";
+
+            QEventLoop loop;
+            QTimer timeout;
+            timeout.setSingleShot(true);
+
+            QObject::connect(&timeout, &QTimer::timeout, &loop, [&]() {
+                qWarning() << "StorageBackend: stop timeout during teardown";
+                loop.quit();
+            });
+
+            QObject::connect(this, &StorageBackend::stopCompleted, &loop, [&]() { loop.quit(); },
+                             Qt::QueuedConnection);
+
+            QMetaObject::invokeMethod(this, "stop", Qt::QueuedConnection);
+
+            timeout.start(2000);
+            loop.exec();
+
+            destroy();
+        }
+    }
+
+    m_teardownDone = true;
     m_logos = nullptr;
 }
 
@@ -513,7 +596,7 @@ void StorageBackend::fetch(QString cid) {
 void StorageBackend::logVersion() {
     qDebug() << "StorageBackend::version called";
 
-    LogosResult result = m_logos->storage_module.version();
+    LogosResult result = m_logos->storage_module.libstorageVersion();
 
     if (!result.success) {
         reportError("Failed to log version: " + result.getError());
