@@ -10,6 +10,7 @@
 #include <QJsonObject>
 #include <QLocale>
 #include <QNetworkProxyFactory>
+#include <QPointer>
 #include <QSslSocket>
 #include <QSettings>
 #include <cinttypes>
@@ -219,7 +220,15 @@ void StorageBackend::init(QString configJson) {
         return;
     }
 
-    if (!m_logos->storage_module.on("storageStart", [this](const QVariantList& data) {
+    // There is no way to unsubscribe from the events, so we use a
+    // QPointer to keep the callback alive as long as we need it.
+    QPointer<StorageBackend> self(this);
+
+    if (!m_logos->storage_module.on("storageStart", [this, self](const QVariantList& data) {
+            if (!self) {
+                return;
+            }
+
             QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
             bool success = payload["success"].toBool();
 
@@ -243,7 +252,11 @@ void StorageBackend::init(QString configJson) {
         qWarning() << "StorageWidget: failed to subscribe to storageStart events";
     }
 
-    if (!m_logos->storage_module.on("storageStop", [this](const QVariantList& data) {
+    if (!m_logos->storage_module.on("storageStop", [this, self](const QVariantList& data) {
+            if (!self) {
+                return;
+            }
+
             QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
             bool success = payload["success"].toBool();
 
@@ -277,7 +290,11 @@ void StorageBackend::init(QString configJson) {
         qWarning() << "StorageWidget: failed to subscribe to storageStop events";
     }
 
-    if (!m_logos->storage_module.on("storageUploadProgress", [this](const QVariantList& data) {
+    if (!m_logos->storage_module.on("storageUploadProgress", [this, self](const QVariantList& data) {
+            if (!self) {
+                return;
+            }
+
             QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
             bool success = payload["success"].toBool();
 
@@ -292,7 +309,11 @@ void StorageBackend::init(QString configJson) {
         qWarning() << "StorageWidget: failed to subscribe to storageUploadProgress events";
     }
 
-    if (!m_logos->storage_module.on("storageUploadDone", [this](const QVariantList& data) {
+    if (!m_logos->storage_module.on("storageUploadDone", [this, self](const QVariantList& data) {
+            if (!self) {
+                return;
+            }
+
             QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
             bool success = payload["success"].toBool();
 
@@ -309,7 +330,11 @@ void StorageBackend::init(QString configJson) {
         qWarning() << "StorageWidget: failed to subscribe to storageUploadDone events";
     }
 
-    if (!m_logos->storage_module.on("storageDownloadProgress", [this](const QVariantList& data) {
+    if (!m_logos->storage_module.on("storageDownloadProgress", [this, self](const QVariantList& data) {
+            if (!self) {
+                return;
+            }
+
             QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
             bool success = payload["success"].toBool();
 
@@ -324,7 +349,11 @@ void StorageBackend::init(QString configJson) {
         qWarning() << "StorageWidget: failed to subscribe to storageDownloadProgress events";
     }
 
-    if (!m_logos->storage_module.on("storageDownloadDone", [this](const QVariantList& data) {
+    if (!m_logos->storage_module.on("storageDownloadDone", [this, self](const QVariantList& data) {
+            if (!self) {
+                return;
+            }
+
             QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
             bool success = payload["success"].toBool();
 
@@ -345,7 +374,11 @@ void StorageBackend::init(QString configJson) {
         qWarning() << "StorageWidget: failed to subscribe to storageDownloadDone events";
     }
 
-    if (!m_logos->storage_module.on("storageDownloadManifestDone", [this](const QVariantList& data) {
+    if (!m_logos->storage_module.on("storageDownloadManifestDone", [this, self](const QVariantList& data) {
+            if (!self) {
+                return;
+            }
+
             QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
             bool success = payload["success"].toBool();
             QString cid = payload["cid"].toString();
@@ -362,7 +395,11 @@ void StorageBackend::init(QString configJson) {
         qWarning() << "StorageWidget: failed to subscribe to storageDownloadManifestDone events";
     }
 
-    if (!m_logos->storage_module.on("storageRemoveDone", [this](const QVariantList& data) {
+    if (!m_logos->storage_module.on("storageRemoveDone", [this, self](const QVariantList& data) {
+            if (!self) {
+                return;
+            }
+
             QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
             bool success = payload["success"].toBool();
             QString cid = payload["cid"].toString();
