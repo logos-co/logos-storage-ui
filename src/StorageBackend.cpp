@@ -12,6 +12,7 @@
 #include <QNetworkProxyFactory>
 #include <QSslSocket>
 #include <QSettings>
+#include <cinttypes>
 
 #ifndef STORAGE_UI_VERSION
 #define STORAGE_UI_VERSION "unknown"
@@ -42,11 +43,18 @@ void StorageBackend::onContextReady() {
     // ~StorageBackend still calls storage_module after modules() is destroyed.
     m_logos = new LogosModules(modules().api);
     setModuleVersion(m_logos->storage_module.moduleVersion());
+
+    // A node already there belongs to another consumer, such as Basecamp, and
+    // stays theirs for the rest of the session: only its owner destroys it.
+    // This check is done once, in onContextReady(): if the node is already
+    // there, we don't own it and will not destroy.
+    const LogosResult state = m_logos->storage_module.state();
+    m_attachedToExistingNode = state.success && state.getString() != "destroyed";
 }
 
 LogosShutdown StorageBackend::aboutToUnload()
 {
-    if (!m_logos) {
+    if (!m_logos || m_attachedToExistingNode) {
         m_teardownDone = true;
         return LogosShutdown::Synchronous;
     }
@@ -99,7 +107,7 @@ StorageBackend::~StorageBackend()
     }
 
     // aboutToUnload() was never called (e.g. unit tests): block until stopped.
-    if (m_logos) {
+    if (m_logos && !m_attachedToExistingNode) {
         const StorageStatus s = status();
 
         if (s == Destroyed) {
@@ -180,8 +188,18 @@ void StorageBackend::init(QString configJson) {
         moduleConfig["data-dir"] = QDir::toNativeSeparators(dataDir);
     }
 
-    bool result = m_logos->storage_module.init(
-        QString::fromUtf8(QJsonDocument(moduleConfig).toJson(QJsonDocument::Compact)));
+    // Skip the init when the node is already there, and take its state as ours.
+    bool result = true;
+
+    if (m_attachedToExistingNode) {
+        const LogosResult state = m_logos->storage_module.state();
+        setStatus(statusFromState(state.getString()));
+    } else {
+        result = m_logos->storage_module.init(
+            QString::fromUtf8(QJsonDocument(moduleConfig).toJson(QJsonDocument::Compact)));
+
+        setStatus(Stopped);
+    }
 
     qDebug() << "StorageBackend::initStorage: init";
 
@@ -192,7 +210,6 @@ void StorageBackend::init(QString configJson) {
         return;
     }
 
-    setStatus(Stopped);
     setMixRunning(m_config.object().value("mix-enabled").toBool(false));
 
     if (m_eventsSubscribed) {
@@ -236,6 +253,10 @@ void StorageBackend::init(QString configJson) {
                 reportError("Failed to stop Storage module:" + message);
             } else {
                 debug("Storage module stopped.");
+
+                // Here we don't check ownership, we NEED to destroy the context
+                // because trying start again will not work: libp2p switches doesn't
+                // not support that usecase.
                 QTimer::singleShot(0, this, [this]() {
                     LogosResult destroyResult = m_logos->storage_module.destroy();
                     if (!destroyResult.success) {
@@ -244,6 +265,8 @@ void StorageBackend::init(QString configJson) {
                     } else {
                         qDebug() << "StorageBackend: Storage module destroyed after stop.";
                         setStatus(Destroyed);
+                        // The host's node is gone: the next start creates ours.
+                        m_attachedToExistingNode = false;
                     }
                     emit stopCompleted();
                 });
@@ -366,6 +389,11 @@ void StorageBackend::init(QString configJson) {
 
 void StorageBackend::start() {
     qDebug() << "StorageBackend: start method called";
+
+    if (status() == Starting) {
+        debug("The Storage Module is already starting.");
+        return;
+    }
 
     // AutoNAT has no verdict until the node has run for a while.
     setNatReachability("Unknown");
@@ -715,6 +743,15 @@ void StorageBackend::reloadIfChanged(QString configJsonStr) {
 
     debug("New config detected");
 
+    if (m_attachedToExistingNode && status() != Destroyed) {
+        // Let consumer handle the config change
+        saveUserConfig(configJsonStr);
+
+        m_config = config;
+        debug("The node belongs to the host: the new config applies at its next launch.");
+        return;
+    }
+
     if (status() == Running || status() == Stopping ||
         status() == Starting) {
         debug("Cannot reload the config while running, stopping or starting...");
@@ -873,3 +910,10 @@ QString StorageBackend::getUserConfig() {
 }
 
 QString StorageBackend::configJson() { return QString::fromUtf8(m_config.toJson(QJsonDocument::Indented)); }
+
+StorageBackend::StorageStatus StorageBackend::statusFromState(const QString& state) {
+    if (state == "starting") return Starting;
+    if (state == "running") return Running;
+    if (state == "stopping") return Stopping;
+    return Stopped;
+}

@@ -10,7 +10,8 @@
   inputs = {
     logos-module-builder.url = "github:logos-co/logos-module-builder";
     nix-bundle-lgx.url = "github:logos-co/nix-bundle-lgx";
-    storage_module.url = "github:logos-co/logos-storage-module";
+    # TODO: back to master once logos-storage-module#90 is merged.
+    storage_module.url = "github:logos-co/logos-storage-module?ref=feat/node-state";
   };
 
   outputs = inputs@{ logos-module-builder, ... }:

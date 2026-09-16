@@ -147,6 +147,9 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // Provide a default config for onboarding
     static QJsonDocument defaultConfig();
 
+    // Map the module's state() string to the UI status.
+    StorageStatus statusFromState(const QString& state);
+
     // Refresh the persisted config.json through the module and rewrite it.
     void refreshUserConfigFile();
 
@@ -167,6 +170,10 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     bool m_teardownDone = false;
 
     bool m_eventsSubscribed = false;
+
+    // True when another consumer already had a node when we loaded: only its
+    // owner destroys it. Decided once, in onContextReady().
+    bool m_attachedToExistingNode = false;
 
     // Internal configuration object. It can be updated by
     // upnp or port forwarning methods.
