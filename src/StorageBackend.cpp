@@ -13,7 +13,6 @@
 #include <QPointer>
 #include <QSslSocket>
 #include <QSettings>
-#include <cinttypes>
 
 #ifndef STORAGE_UI_VERSION
 #define STORAGE_UI_VERSION "unknown"
@@ -196,11 +195,11 @@ void StorageBackend::init(QString configJson) {
     // Skip the init when the node is already there, and keep its state.
     bool result = true;
 
-    if (status() == Destroyed) {
+    const bool needsInit = status() == Destroyed;
+
+    if (needsInit) {
         result = m_logos->storage_module.init(
             QString::fromUtf8(QJsonDocument(moduleConfig).toJson(QJsonDocument::Compact)));
-
-        setStatus(Stopped);
     }
 
     qDebug() << "StorageBackend::initStorage: init";
@@ -212,6 +211,10 @@ void StorageBackend::init(QString configJson) {
         return;
     }
 
+    if (needsInit) {
+        setStatus(Stopped);
+    }
+
     setMixRunning(m_config.object().value("mix-enabled").toBool(false));
 
     if (m_eventsSubscribed) {
@@ -220,8 +223,9 @@ void StorageBackend::init(QString configJson) {
         return;
     }
 
-    // There is no way to unsubscribe from the events, so we use a
-    // QPointer to keep the callback alive as long as we need it.
+    // There is no way to unsubscribe from the events, and a node left running
+    // by another consumer outlives us: the QPointer makes the stale callbacks
+    // no-ops instead of a use-after-free.
     QPointer<StorageBackend> self(this);
 
     if (!m_logos->storage_module.on("storageStart", [this, self](const QVariantList& data) {
