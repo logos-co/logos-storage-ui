@@ -49,12 +49,16 @@ void StorageBackend::onContextReady() {
     // This check is done once, in onContextReady(): if the node is already
     // there, we don't own it and will not destroy.
     const LogosResult state = m_logos->storage_module.state();
-    m_attachedToExistingNode = state.success && state.getString() != "destroyed";
+    m_hasFirstNodeInit = state.success && state.getString() != "destroyed";
+
+    if (m_hasFirstNodeInit) {
+        setStatus(statusFromState(state.getString()));
+    }
 }
 
 LogosShutdown StorageBackend::aboutToUnload()
 {
-    if (!m_logos || m_attachedToExistingNode) {
+    if (!m_logos || m_hasFirstNodeInit) {
         m_teardownDone = true;
         return LogosShutdown::Synchronous;
     }
@@ -107,7 +111,7 @@ StorageBackend::~StorageBackend()
     }
 
     // aboutToUnload() was never called (e.g. unit tests): block until stopped.
-    if (m_logos && !m_attachedToExistingNode) {
+    if (m_logos && !m_hasFirstNodeInit) {
         const StorageStatus s = status();
 
         if (s == Destroyed) {
@@ -188,13 +192,10 @@ void StorageBackend::init(QString configJson) {
         moduleConfig["data-dir"] = QDir::toNativeSeparators(dataDir);
     }
 
-    // Skip the init when the node is already there, and take its state as ours.
+    // Skip the init when the node is already there, and keep its state.
     bool result = true;
 
-    if (m_attachedToExistingNode) {
-        const LogosResult state = m_logos->storage_module.state();
-        setStatus(statusFromState(state.getString()));
-    } else {
+    if (status() == Destroyed) {
         result = m_logos->storage_module.init(
             QString::fromUtf8(QJsonDocument(moduleConfig).toJson(QJsonDocument::Compact)));
 
@@ -265,8 +266,6 @@ void StorageBackend::init(QString configJson) {
                     } else {
                         qDebug() << "StorageBackend: Storage module destroyed after stop.";
                         setStatus(Destroyed);
-                        // The host's node is gone: the next start creates ours.
-                        m_attachedToExistingNode = false;
                     }
                     emit stopCompleted();
                 });
@@ -743,15 +742,6 @@ void StorageBackend::reloadIfChanged(QString configJsonStr) {
 
     debug("New config detected");
 
-    if (m_attachedToExistingNode && status() != Destroyed) {
-        // Let consumer handle the config change
-        saveUserConfig(configJsonStr);
-
-        m_config = config;
-        debug("The node belongs to the host: the new config applies at its next launch.");
-        return;
-    }
-
     if (status() == Running || status() == Stopping ||
         status() == Starting) {
         debug("Cannot reload the config while running, stopping or starting...");
@@ -770,7 +760,6 @@ void StorageBackend::reloadIfChanged(QString configJsonStr) {
     }
 
     init(configJsonStr);
-
     saveUserConfig(configJsonStr);
     setStatus(Stopped);
 }

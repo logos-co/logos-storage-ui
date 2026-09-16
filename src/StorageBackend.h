@@ -173,7 +173,7 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
 
     // True when another consumer already had a node when we loaded: only its
     // owner destroys it. Decided once, in onContextReady().
-    bool m_attachedToExistingNode = false;
+    bool m_hasFirstNodeInit = false;
 
     // Internal configuration object. It can be updated by
     // upnp or port forwarning methods.
