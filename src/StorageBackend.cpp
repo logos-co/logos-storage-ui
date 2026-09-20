@@ -98,26 +98,31 @@ void StorageBackend::init(QString configJson) {
         moduleConfig["data-dir"] = QDir::toNativeSeparators(dataDir);
     }
 
-    bool result = m_logos->storage_module.init(
+    const bool contextCreated = m_logos->storage_module.init(
         QString::fromUtf8(QJsonDocument(moduleConfig).toJson(QJsonDocument::Compact)));
 
     qDebug() << "StorageBackend::initStorage: init";
 
+    // Check if the context already exists.
+    const bool contextExists = m_logos->storage_module.libstorageVersion().success;
+
     // A node another consumer started (the package downloader) is already
     // initialised: attach to it.
-    const bool attached = !result;
+    const bool attached = !contextCreated && contextExists;
 
-    if (attached && !m_logos->storage_module.isRunning()) {
+    if (!contextCreated && !attached) {
         setStatus(Destroyed);
         reportError("Failed to init storage");
         emit initCompleted(false, "Failed to init storage");
         return;
     }
 
-    setStatus(attached ? Running : Stopped);
+    const bool running = attached && m_logos->storage_module.isRunning();
+
+    setStatus(running ? Running : Stopped);
     setMixRunning(m_config.object().value("mix-enabled").toBool(false));
 
-    if (attached) {
+    if (running) {
         fetchWidgetsData();
     }
 
