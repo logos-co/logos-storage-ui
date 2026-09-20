@@ -164,6 +164,7 @@ Item {
 
             onNext: {
                 settings.onboardingCompleted = true
+                d.backend.loadUserConfig()
                 stackView.replace(storageComponent, StackView.Immediate)
             }
         }

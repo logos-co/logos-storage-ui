@@ -47,11 +47,11 @@ LogosStorageLayout {
         return backend && backend.status === StorageBackend.Running
     }
 
+    // No start here: the node a user stopped stays stopped, and one the
+    // package downloader started is not ours to drive.
     Component.onCompleted: function () {
         if (isRunning()) {
             root.backend.fetchWidgetsData()
-        } else {
-            root.backend.start()
         }
     }
 

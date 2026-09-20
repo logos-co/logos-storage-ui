@@ -2,7 +2,6 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
-#include <QEventLoop>
 #include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
@@ -46,92 +45,11 @@ void StorageBackend::onContextReady() {
 
 LogosShutdown StorageBackend::aboutToUnload()
 {
-    if (!m_logos) {
-        m_teardownDone = true;
-        return LogosShutdown::Synchronous;
-    }
-
-    const StorageStatus s = status();
-
-    if (s == Destroyed) {
-        qDebug() << "StorageBackend: teardown skipped (backend destroyed)";
-        m_teardownDone = true;
-        return LogosShutdown::Synchronous;
-    }
-
-    if (s != Running) {
-        qDebug() << "StorageBackend: backend not running, destroying context";
-        destroy();
-        m_teardownDone = true;
-        return LogosShutdown::Synchronous;
-    }
-
-    qDebug() << "StorageBackend: stopping backend before destroy";
-    m_stopRequested = true;
-
-    // Queued: the host's event loop delivers the stop, so this does not block.
-    QObject::connect(this, &StorageBackend::stopCompleted, this, [this]() {
-        if (m_teardownDone)
-            return;
-        m_teardownDone = true;
-        destroy();
-        unloadFinished();
-    }, Qt::QueuedConnection);
-
-    QMetaObject::invokeMethod(this, "stop", Qt::QueuedConnection);
-    return LogosShutdown::Asynchronous;
+    return LogosShutdown::Synchronous;
 }
 
 StorageBackend::~StorageBackend()
 {
-    if (m_teardownDone) {
-        m_logos = nullptr;
-        return;
-    }
-
-    // The host grace period elapsed before stopCompleted: do not wait again.
-    if (m_stopRequested) {
-        qWarning() << "StorageBackend: stop still pending at destruction";
-        if (m_logos)
-            destroy();
-        m_logos = nullptr;
-        return;
-    }
-
-    // aboutToUnload() was never called (e.g. unit tests): block until stopped.
-    if (m_logos) {
-        const StorageStatus s = status();
-
-        if (s == Destroyed) {
-            qDebug() << "StorageBackend: teardown skipped (backend destroyed)";
-        } else if (s != Running) {
-            qDebug() << "StorageBackend: backend not running, destroying context";
-            destroy();
-        } else {
-            qDebug() << "StorageBackend: stopping backend before destroy (no unload hook)";
-
-            QEventLoop loop;
-            QTimer timeout;
-            timeout.setSingleShot(true);
-
-            QObject::connect(&timeout, &QTimer::timeout, &loop, [&]() {
-                qWarning() << "StorageBackend: stop timeout during teardown";
-                loop.quit();
-            });
-
-            QObject::connect(this, &StorageBackend::stopCompleted, &loop, [&]() { loop.quit(); },
-                             Qt::QueuedConnection);
-
-            QMetaObject::invokeMethod(this, "stop", Qt::QueuedConnection);
-
-            timeout.start(2000);
-            loop.exec();
-
-            destroy();
-        }
-    }
-
-    m_teardownDone = true;
     m_logos = nullptr;
 }
 
@@ -185,15 +103,23 @@ void StorageBackend::init(QString configJson) {
 
     qDebug() << "StorageBackend::initStorage: init";
 
-    if (!result) {
+    // A node another consumer started (the package downloader) is already
+    // initialised: attach to it.
+    const bool attached = !result;
+
+    if (attached && !m_logos->storage_module.isRunning()) {
         setStatus(Destroyed);
         reportError("Failed to init storage");
         emit initCompleted(false, "Failed to init storage");
         return;
     }
 
-    setStatus(Stopped);
+    setStatus(attached ? Running : Stopped);
     setMixRunning(m_config.object().value("mix-enabled").toBool(false));
+
+    if (attached) {
+        fetchWidgetsData();
+    }
 
     if (m_eventsSubscribed) {
         debug("new config is: " + configJson);
@@ -856,6 +782,11 @@ void StorageBackend::loadUserConfig() {
     } else {
         debug("Failed to read the user config file, fallback to default config");
         init(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
+    }
+
+    // The node is ours to start only when init created the context.
+    if (status() == Stopped) {
+        start();
     }
 }
 
