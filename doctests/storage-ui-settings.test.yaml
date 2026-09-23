@@ -3,7 +3,8 @@ output: storage-ui-settings.md
 release: ""
 
 intro: |
-  The Settings popup edits `~/.logos_storage/config.json` field by field.
+  The Settings popup edits the node config field by field. The next node start
+  writes it to `~/.logos_storage/config.json`.
 
   This test drives the popup through the QML inspector and asserts, for every
   editable setting, that the value lands on the right key with the right type,
@@ -246,9 +247,31 @@ sections:
                 The notice is gone, but the running node still holds the previous values
                 and needs a restart to apply values.
 
-            - name: "Let the write reach disk"
-              action: sleep
-              ms: 1000
+            - name: "Close the popup"
+              action: call_method
+              find_value: "settingsPopup"
+              method: "close"
+
+            - name: "Stop the node"
+              action: click
+              target: "Stop"
+
+            - name: "The node reports Stopped"
+              action: wait_for
+              texts: ["Stopped"]
+              timeout: 5000
+
+            - name: "Start the node on the saved settings"
+              action: click
+              target: "Start"
+              text: |
+                Starting builds a new node context. Its init writes the saved settings
+                to `config.json`.
+
+            - name: "The node runs on the saved settings"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
 
   - title: "Verify every setting reached the config file"
     step: true
@@ -564,9 +587,33 @@ sections:
               action: click
               target: "Save"
 
-            - name: "Let the write reach disk"
-              action: sleep
-              ms: 1000
+            - name: "Close the popup"
+              action: call_method
+              find_value: "settingsPopup"
+              method: "close"
+
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Stop the node"
+              action: click
+              target: "Stop"
+
+            - name: "The node reports Stopped"
+              action: wait_for
+              texts: ["Stopped"]
+              timeout: 5000
+
+            - name: "Start the node on the saved settings"
+              action: click
+              target: "Start"
+
+            - name: "The node runs on the saved settings"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
 
       - title: "The preset relays replaced the marked ones, and the network was written"
         run: |
@@ -639,9 +686,33 @@ sections:
               action: click
               target: "Save"
 
-            - name: "Let the write reach disk"
-              action: sleep
-              ms: 1000
+            - name: "Close the popup"
+              action: call_method
+              find_value: "settingsPopup"
+              method: "close"
+
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Stop the node"
+              action: click
+              target: "Stop"
+
+            - name: "The node reports Stopped"
+              action: wait_for
+              texts: ["Stopped"]
+              timeout: 5000
+
+            - name: "Start the node on the saved settings"
+              action: click
+              target: "Start"
+
+            - name: "The node runs on the saved settings"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
 
       - title: "The second network moved all three keys again"
         run: |

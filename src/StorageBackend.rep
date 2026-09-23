@@ -44,14 +44,11 @@ class StorageBackend
     SLOT(void refreshSpace())
 
     // Config
-    SLOT(void saveUserConfig(QString configJson))
-    SLOT(void loadUserConfig())
+    SLOT(void updateUserConfig(QString configJson))
     SLOT(QString getUserConfig())
-    SLOT(void reloadIfChanged(QString configJson))
 
     // Update the config after a network change.
     SLOT(QString migrateConfig(QString configJson))
-    SLOT(QString configJson())
 
     // Onboarding
     SLOT(void restartOnboarding())

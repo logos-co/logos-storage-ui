@@ -105,14 +105,9 @@ QtObject {
     function logSpr() {}
     function logVersion() {}
     function restartOnboarding() {}
-    function saveUserConfig(json) {}
-    function loadUserConfig() {}
-    function reloadIfChanged(json) {}
+    function updateUserConfig(json) {}
     function togglePrivateQueries(enabled) {
         return false
-    }
-    function configJson() {
-        return "{}"
     }
     function getUserConfig() {
         return JSON.stringify({

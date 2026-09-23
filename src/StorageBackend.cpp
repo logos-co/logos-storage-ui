@@ -81,17 +81,15 @@ void StorageBackend::init(QString configJson) {
 
     configJson = migrateConfig(configJson);
 
-    m_config = QJsonDocument::fromJson(configJson.toUtf8());
-    if (!m_config.isObject()) {
+    const QJsonDocument config = QJsonDocument::fromJson(configJson.toUtf8());
+    if (!config.isObject()) {
         reportError("Failed to create the storage: invalid JSON config:" + configJson);
         emit initCompleted(false, "Failed to create the storage, invalid json config");
         return;
     }
 
-    // Defensive here: the config-version should be
-    // removed by the Storage Module already.
-    QJsonObject moduleConfig = m_config.object();
-    moduleConfig.remove("config-version");
+    // config-version stays: the module persists it and drops it before the node.
+    QJsonObject moduleConfig = config.object();
 
     const QString dataDir = moduleConfig.value("data-dir").toString();
     if (!dataDir.isEmpty()) {
@@ -121,7 +119,9 @@ void StorageBackend::init(QString configJson) {
     const bool running = m_logos->storage_module.isRunning();
 
     setStatus(running ? Running : Stopped);
-    setMixRunning(m_config.object().value("mix-enabled").toBool(false));
+    setMixRunning(config.object().value("mix-enabled").toBool(false));
+
+    m_userConfig = QJsonDocument();
 
     if (running) {
         fetchWidgetsData();
@@ -302,26 +302,23 @@ void StorageBackend::start() {
     // AutoNAT has no verdict until the node has run for a while.
     setNatReachability("Unknown");
 
-    refreshUserConfigFile();
+    // A context takes one init: every start builds a new one, so the latest
+    // config applies.
+    // TODO: once #94 attaches to a node another consumer started, destroy only
+    // a context this backend created.
+    if (status() == Stopped) {
+        LogosResult result = m_logos->storage_module.destroy();
 
-    QFile file(USER_CONFIG_PATH);
-
-    if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QString configJsonStr = QString::fromUtf8(file.readAll());
-        reloadIfChanged(configJsonStr);
-    } else {
-        debug("Cannot open the user config file.", "warning");
-    }
-
-    if (status() == Destroyed) {
-        if (m_config.isNull()) {
-            debug("Failed to start node: m_config not set.");
-            emit startFailed("Failed to start node: configuration not set.");
+        if (!result.success) {
+            reportError("Failed to destroy the context error=" + result.getError());
+            emit startFailed("Failed to destroy the previous context.");
             return;
         }
 
-        init(QString::fromUtf8(m_config.toJson(QJsonDocument::Compact)));
+        setStatus(Destroyed);
     }
+
+    init(userConfig());
 
     if (status() != Stopped) {
         debug("The Storage Module is not initialised properly.");
@@ -532,7 +529,7 @@ void StorageBackend::logVersion() {
     debug("Logos Storage Nim=" + result.getString().section('-', -1));
     debug("Logos Storage UI=" STORAGE_UI_VERSION);
 
-    QString network = m_config.object().value("network").toString();
+    QString network = QJsonDocument::fromJson(userConfig().toUtf8()).object().value("network").toString();
     debug("Network=" + (network.isEmpty() ? QStringLiteral("custom") : network));
 }
 
@@ -633,56 +630,8 @@ void StorageBackend::refreshSpace() {
     emit spaceUpdated(total, used);
 }
 
-void StorageBackend::reloadIfChanged(QString configJsonStr) {
-    QJsonDocument config = QJsonDocument::fromJson(configJsonStr.toUtf8());
-    if (config.isNull()) {
-        debug("Invalid json detected !");
-        return;
-    }
-
-    if (m_config == config) {
-        debug("No change detected in the config");
-        return;
-    }
-
-    debug("New config detected");
-
-    if (status() == Running || status() == Stopping ||
-        status() == Starting) {
-        debug("Cannot reload the config while running, stopping or starting...");
-        return;
-    }
-
-    if (status() == Stopped) {
-        LogosResult result = m_logos->storage_module.destroy();
-
-        if (!result.success) {
-            reportError("Failed to destroy the context error=" + result.getError());
-            return;
-        } else {
-            setStatus(Destroyed);
-        }
-    }
-
-    init(configJsonStr);
-
-    saveUserConfig(configJsonStr);
-    setStatus(Stopped);
-}
-
-void StorageBackend::saveUserConfig(QString configJsonStr) {
-    qDebug() << "StorageBackend::saveUserConfig";
-
-    QString folderPath = QFileInfo(USER_CONFIG_PATH).absolutePath();
-    QDir().mkpath(folderPath);
-    QFile file(USER_CONFIG_PATH);
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        file.write(configJsonStr.toUtf8());
-        file.close();
-        debug("Config saved to " + USER_CONFIG_PATH);
-    } else {
-        reportError("Failed to save config to " + USER_CONFIG_PATH);
-    }
+void StorageBackend::updateUserConfig(QString configJsonStr) {
+    qDebug() << "StorageBackend::updateUserConfig";
 
     QJsonDocument config = QJsonDocument::fromJson(configJsonStr.toUtf8());
     if (config.isNull()) {
@@ -690,22 +639,8 @@ void StorageBackend::saveUserConfig(QString configJsonStr) {
         return;
     }
 
-    // The node takes a new log level without restarting, so apply it now
-    // rather than leaving the user waiting for a restart that changes nothing.
-    const QString logLevel = config.object().value("log-level").toString();
-    if (status() == Running && !logLevel.isEmpty() &&
-        logLevel != m_config.object().value("log-level").toString()) {
-        LogosResult result = m_logos->storage_module.updateLogLevel(logLevel.toUpper());
-        if (!result.success) {
-            reportError("Failed to update the log level: " + result.getError());
-            return;
-        }
-
-        QJsonObject obj = m_config.object();
-        obj["log-level"] = logLevel;
-        m_config = QJsonDocument(obj);
-        debug("Log level set to " + logLevel);
-    }
+    m_userConfig = config;
+    debug("Config updated, applied on the next start");
 }
 
 QJsonDocument StorageBackend::defaultConfig() {
@@ -733,30 +668,12 @@ QString StorageBackend::migrateConfig(QString configJsonStr) {
     return result.getString();
 }
 
-void StorageBackend::refreshUserConfigFile() {
-    QFile file(USER_CONFIG_PATH);
-    if (!file.exists() || !file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return;
-    }
-    const QByteArray current = file.readAll();
-    file.close();
+QString StorageBackend::userConfig() {
+    // An empty string makes the module read back the config saved by the last init.
+    const QString pending =
+        m_userConfig.isNull() ? QString() : QString::fromUtf8(m_userConfig.toJson(QJsonDocument::Compact));
 
-    // No toast here: init() migrates the same config right after and reports it.
-    const LogosResult result = m_logos->storage_module.migrateConfig(QString::fromUtf8(current));
-    if (!result.success) {
-        debug("Failed to refresh the user config file: " + result.getError(), "warning");
-        return;
-    }
-
-    const QJsonDocument refreshed = QJsonDocument::fromJson(result.getString().toUtf8());
-
-    // Compare parsed: the module returns compact json, the file is indented.
-    if (refreshed.isNull() || refreshed == QJsonDocument::fromJson(current)) {
-        return;
-    }
-
-    saveUserConfig(QString::fromUtf8(refreshed.toJson(QJsonDocument::Indented)));
-    debug("Updated the user config from the module.");
+    return migrateConfig(pending);
 }
 
 bool StorageBackend::togglePrivateQueries(bool enabled) {
@@ -776,36 +693,8 @@ void StorageBackend::fetchWidgetsData() {
     QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
 }
 
-void StorageBackend::loadUserConfig() {
-    qDebug() << "StorageBackend::loadUserConfig called.";
-
-    refreshUserConfigFile();
-
-    QFile file(USER_CONFIG_PATH);
-
-    if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        init(QString::fromUtf8(file.readAll()));
-    } else {
-        debug("Failed to read the user config file, fallback to default config");
-        init(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
-    }
-
-    if (status() == Stopped) {
-        start();
-    }
-}
-
 QString StorageBackend::getUserConfig() {
     qDebug() << "StorageBackend::getUserConfig called.";
 
-    QFile file(USER_CONFIG_PATH);
-
-    if (file.exists() && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        return QString::fromUtf8(file.readAll());
-    } else {
-        debug("Failed to read the user config file, use current config.");
-        return configJson();
-    }
+    return userConfig();
 }
-
-QString StorageBackend::configJson() { return QString::fromUtf8(m_config.toJson(QJsonDocument::Indented)); }

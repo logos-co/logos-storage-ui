@@ -126,7 +126,8 @@ ScrollView {
     // Keys the node only reads when it starts.
     readonly property var restartKeys: ["storage-quota", "listen-port", "nat",
                                         "network", "bootstrap-node", "dht-mix-proxy",
-                                        "mix-pool-json", "nat-schedule-interval"]
+                                        "mix-pool-json", "nat-schedule-interval",
+                                        "log-level"]
 
     clip: true
     contentWidth: availableWidth
@@ -317,7 +318,7 @@ ScrollView {
         // Read before the write: saving is what makes the edit the new baseline.
         const restartNeeded = root.restartRequired
         const cfg = root.buildConfig()
-        root.backend.saveUserConfig(JSON.stringify(cfg, null, 2))
+        root.backend.updateUserConfig(JSON.stringify(cfg, null, 2))
         root.loaded = cfg
         root.baselineJson = JSON.stringify(cfg)
         root.saved(restartNeeded)
