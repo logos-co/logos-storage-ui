@@ -74,6 +74,9 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     void exists(QString cid) override;
     void remove(QString cid) override;
 
+    // Whether the node should advertise the cid. Only logged for now.
+    void setAdvertise(QString cid, bool enabled) override;
+
     // Fetch a cid in background
     void fetch(QString cid) override;
 

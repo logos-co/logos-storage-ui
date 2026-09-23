@@ -652,6 +652,10 @@ void StorageBackend::logDataDir() {
     debug("Data dir: " + result.getString());
 }
 
+void StorageBackend::setAdvertise(QString cid, bool enabled) {
+    debug("Advertise " + cid + ": " + (enabled ? "on" : "off"));
+}
+
 void StorageBackend::downloadManifest(QString cid) {
     qDebug() << "StorageBackend::downloadManifest called with cid=" << cid;
 

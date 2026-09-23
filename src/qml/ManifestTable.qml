@@ -25,8 +25,11 @@ LogosFrame {
     property string downloadFolderPath: ""
     property var deleting: ({})
 
-    // Two 40px icon buttons, the gap between them and the pill's own padding.
-    readonly property int actionsColumnWidth: 40 * 2 + Theme.spacing.medium * 3
+    // Cids the user stopped advertising. Every other one is advertised.
+    property var unadvertised: ({})
+
+    // Three 40px icon buttons, the gaps between them and the pill's own padding.
+    readonly property int actionsColumnWidth: 40 * 3 + Theme.spacing.medium * 4
 
     property var addedDates: ({})
 
@@ -90,6 +93,16 @@ LogosFrame {
 
     function isDownloaded(item) {
         return !!(item && item.filename && root.downloadedNames[item.filename])
+    }
+
+    function toggleAdvertise(cid) {
+        var u = Object.assign({}, root.unadvertised)
+        if (u[cid])
+            delete u[cid]
+        else
+            u[cid] = true
+        root.unadvertised = u
+        root.backend.setAdvertise(cid, !u[cid])
     }
 
     function markDeleting(cid) {
@@ -224,10 +237,17 @@ LogosFrame {
     //         "size": 12222
     //     }]
 
+    // Logos module packages: the node only knows them by their extension.
+    function isLgx(item) {
+        return !!item && (item.filename || "").toLowerCase().endsWith(".lgx")
+    }
+
     // The badged icons claim a type: anything the node does not name as image,
-    // video or document gets the plain sheet rather than a wrong badge.
-    function mimetypeIcon(mimetype) {
-        const m = (mimetype || "").toLowerCase()
+    // video or document gets the package icon rather than a wrong badge.
+    function fileIcon(item) {
+        if (root.isLgx(item))
+            return "assets/lgx-package-icon.svg"
+        const m = (item.mimetype || "").toLowerCase()
         if (m.indexOf("video/") === 0)
             return "assets/videos.svg"
         if (m.indexOf("image/") === 0)
@@ -235,7 +255,7 @@ LogosFrame {
         if (m === "application/pdf" || m.indexOf("text/") === 0
                 || m.indexOf("document") >= 0 || m.indexOf("word") >= 0)
             return "assets/documents.svg"
-        return "assets/file.svg"
+        return "assets/archive-package-icon.svg"
     }
 
     implicitWidth: 1200
@@ -389,7 +409,7 @@ LogosFrame {
                                     anchors.left: parent.left
                                     anchors.verticalCenter: parent.verticalCenter
                                     visible: rowItem && !rowItem.status
-                                    source: rowItem ? root.mimetypeIcon(rowItem.mimetype) : ""
+                                    source: rowItem ? root.fileIcon(rowItem) : ""
                                     width: 32
                                     height: 32
                                     fillMode: Image.PreserveAspectFit
@@ -559,7 +579,8 @@ LogosFrame {
                                     color: Theme.palette.backgroundInset
                                     radius: Theme.spacing.radiusLarge
                                     visible: rowItem && !rowItem.status
-                                    implicitWidth: actionsRow.implicitWidth + Theme.spacing.medium * 2
+                                    // Same width on every row, even without the delete button.
+                                    implicitWidth: root.actionsColumnWidth
                                     implicitHeight: actionsRow.implicitHeight + Theme.spacing.small * 2
 
                                     Row {
@@ -569,15 +590,23 @@ LogosFrame {
 
                                         readonly property bool rowDownloaded: root.isDownloaded(rowItem)
 
+                                        AdvertiseToggle {
+                                            advertised: rowItem ? !root.unadvertised[rowItem.cid] : true
+                                            enabled: !actionsCell.rowDeleting
+                                            onClicked: root.toggleAdvertise(rowItem.cid)
+                                        }
+
                                         LogosIconButton {
                                             objectName: "downloadButton"
                                             iconSource: Qt.resolvedUrl("assets/download-2-fill.svg")
-                                            // Green once a copy sits in the
+                                            // Orange once a copy sits in the
                                             // download folder. Still clickable:
                                             // downloading again is legitimate.
-                                            iconColor: actionsRow.rowDownloaded ? Theme.palette.success
+                                            iconColor: actionsRow.rowDownloaded ? Theme.palette.accentOrange
                                                                                 : Theme.palette.textTertiary
-                                            background: IconButtonBackground {}
+                                            background: IconButtonBackground {
+                                                highlighted: actionsRow.rowDownloaded
+                                            }
                                             enabled: root.running && !root.isDownloading
                                                      && !actionsCell.rowDeleting
 
@@ -602,6 +631,8 @@ LogosFrame {
 
                                         LogosIconButton {
                                             objectName: "deleteButton"
+                                            // Installed modules may still need the package.
+                                            visible: !root.isLgx(rowItem)
                                             iconSource: Qt.resolvedUrl("assets/delete-bin-2-line.svg")
                                             background: IconButtonBackground {}
                                             enabled: root.running && !actionsCell.rowDeleting

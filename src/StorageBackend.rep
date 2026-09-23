@@ -38,6 +38,7 @@ class StorageBackend
     SLOT(void downloadManifests())
     SLOT(void exists(QString cid))
     SLOT(void remove(QString cid))
+    SLOT(void setAdvertise(QString cid, bool enabled))
     SLOT(void fetch(QString cid))
 
     // Space

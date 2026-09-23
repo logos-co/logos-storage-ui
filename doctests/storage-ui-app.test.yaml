@@ -56,6 +56,10 @@ sections:
         run: 'printf "hello from the storage UI doctest\n" > /tmp/storage-ui-upload.txt'
         check_file: "/tmp/storage-ui-upload.txt"
 
+      - title: "Write a Logos package sample"
+        run: 'printf "not a real package, only the extension matters\n" > /tmp/storage-ui-package.lgx'
+        check_file: "/tmp/storage-ui-package.lgx"
+
   - title: "Guided onboarding"
     step: true
     text: |
@@ -164,6 +168,34 @@ sections:
               timeout: 5000
               text: |
                 The table empties too.
+
+            - name: "Hand a Logos package to the upload dialog"
+              action: set_property
+              find_by: "objectName"
+              find_value: "uploadDialog"
+              property: "selectedFile"
+              value: "file:///tmp/storage-ui-package.lgx"
+
+            - name: "Fire the dialog's accepted signal again"
+              action: call_method
+              find_by: "objectName"
+              find_value: "uploadDialog"
+              method: "accepted"
+
+            - name: "The package joins the manifest list"
+              action: wait_for
+              texts: ["storage-ui-package.lgx"]
+              timeout: 5000
+              screenshot: "storage-ui-package.png"
+
+            - name: "A package cannot be deleted"
+              action: expect_property
+              find_value: "deleteButton"
+              property: "visible"
+              value: false
+              text: |
+                Installed modules may still need the package, so its row offers no
+                delete button.
 
             - name: "Stop the node"
               action: click
