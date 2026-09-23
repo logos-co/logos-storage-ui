@@ -178,6 +178,17 @@ sections:
 
           echo "Mix config OK: mix-enabled, dht-mix-proxy, mix-pool-json"
 
+      - title: "The values were read from the file"
+        run: |
+          set -e
+          cfg="$HOME/.logos_storage/config.json"
+
+          # Both differ from the defaults: the startup started from the file.
+          test "$(jq -r '."data-dir"' "$cfg")" = "/tmp/storage-ui-config-data"
+          test "$(jq -r '."log-level"' "$cfg")" = "DEBUG"
+
+          echo "values OK: data-dir and log-level kept"
+
   - title: "Restarting on the refreshed config is a no-op"
     step: true
     text: |
