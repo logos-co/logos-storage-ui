@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="9.5 9.5 45 45" width="20" height="20">
+  <g fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+    <!-- megaphone -->
+    <path d="M22 25h6l11-7v28l-11-7h-6z"/>
+    <path d="M22 25h-3.5a4 4 0 0 0 0 8H22"/>
+    <path d="M22 33l1.5 9h5l-2.5-10"/>
+
+    <!-- sound waves -->
+    <path d="M43 23l4-4"/>
+    <path d="M44 32h5"/>
+    <path d="M43 41l4 4"/>
+  </g>
+</svg>

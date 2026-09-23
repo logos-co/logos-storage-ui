@@ -16,6 +16,7 @@ LogosFrame {
     property var backend: MockBackend
     property bool running: false
     property bool enabled: true
+    property bool advertise: true
 
     RowLayout {
         anchors.top: parent.top
@@ -45,6 +46,7 @@ LogosFrame {
             enabled: cidInput.text.length > 0 && root.running && root.enabled
             onClicked: {
                 root.backend.downloadManifest(cidInput.text)
+                root.backend.setAdvertise(cidInput.text, root.advertise)
                 cidInput.text = ""
             }
         }
@@ -58,5 +60,14 @@ LogosFrame {
         title: "Fetch Manifest"
         color: Theme.palette.textSecondary
         hasSeparator: false
+    }
+
+    LogosSwitch {
+        objectName: "fetchAdvertiseSwitch"
+        anchors.right: parent.right
+        y: bottomTitle.y + bottomTitle.labelCenterY - height / 2
+        text: "Advertise"
+        checked: root.advertise
+        onToggled: root.advertise = checked
     }
 }

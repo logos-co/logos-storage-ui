@@ -9,6 +9,9 @@ Item {
     property color color: Theme.palette.text
     property bool hasSeparator: true
 
+    // Lets a control placed on the title line center on the label.
+    readonly property real labelCenterY: footerLabel.y + footerLabel.height / 2
+
     implicitHeight: footerLabel.implicitHeight + Theme.spacing.medium * 2
 
     LogosText {

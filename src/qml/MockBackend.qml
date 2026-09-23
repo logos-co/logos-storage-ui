@@ -59,6 +59,7 @@ QtObject {
     function remove(cid) {
         removeStarted(cid)
     }
+    function setAdvertise(cid, enabled) {}
     function logDebugInfo() {
         debugInfoUpdated({
                              "id": "16Uiu2HAmMockPeerIdForTheDesignPreview",
