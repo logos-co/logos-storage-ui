@@ -299,6 +299,12 @@ void StorageBackend::init(QString configJson) {
 void StorageBackend::start() {
     qDebug() << "StorageBackend: start method called";
 
+    if (status() != Stopped && status() != Destroyed) {
+        debug("Cannot start the node while it is starting, running or stopping.");
+        emit startFailed("The node is already starting, running or stopping.");
+        return;
+    }
+
     // AutoNAT has no verdict until the node has run for a while.
     setNatReachability("Unknown");
 
