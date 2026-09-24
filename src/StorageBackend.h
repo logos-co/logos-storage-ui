@@ -139,8 +139,7 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     QString migrateConfig(QString configJson) override;
 
   protected:
-    // Stop the node before unload. Asynchronous while Running: the host waits
-    // for unloadFinished().
+    // Leaves the shared node running.
     LogosShutdown aboutToUnload() override;
 
   private:
@@ -162,9 +161,6 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     void reportError(const QString& message);
 
     LogosModules* m_logos;
-    // A stop can still be in flight after the host grace period.
-    bool m_stopRequested = false;
-    bool m_teardownDone = false;
 
     bool m_eventsSubscribed = false;
 
