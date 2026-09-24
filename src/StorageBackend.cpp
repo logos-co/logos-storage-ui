@@ -104,6 +104,7 @@ void StorageBackend::init(QString configJson) {
     qDebug() << "StorageBackend::initStorage: init";
 
     // Check if the context already exists.
+    // libstorageVersion will return false if the context is not created.
     const bool contextExists = m_logos->storage_module.libstorageVersion().success;
 
     // A node another consumer started (the package downloader) is already
@@ -117,7 +118,7 @@ void StorageBackend::init(QString configJson) {
         return;
     }
 
-    const bool running = attached && m_logos->storage_module.isRunning();
+    const bool running = m_logos->storage_module.isRunning();
 
     setStatus(running ? Running : Stopped);
     setMixRunning(m_config.object().value("mix-enabled").toBool(false));
@@ -789,7 +790,6 @@ void StorageBackend::loadUserConfig() {
         init(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
     }
 
-    // The node is ours to start only when init created the context.
     if (status() == Stopped) {
         start();
     }
