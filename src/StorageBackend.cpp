@@ -79,8 +79,6 @@ void StorageBackend::debug(const QString& log, const QString& level) {
 void StorageBackend::init(QString configJson) {
     qDebug() << "StorageBackend::initStorage called";
 
-    configJson = migrateConfig(configJson);
-
     const QJsonDocument config = QJsonDocument::fromJson(configJson.toUtf8());
     if (!config.isObject()) {
         reportError("Failed to create the storage: invalid JSON config:" + configJson);
@@ -88,7 +86,7 @@ void StorageBackend::init(QString configJson) {
         return;
     }
 
-    // config-version stays: the module persists it and drops it before the node.
+    // The Storage Module persists it and drops it before the node.
     QJsonObject moduleConfig = config.object();
 
     const QString dataDir = moduleConfig.value("data-dir").toString();
@@ -674,23 +672,19 @@ QJsonDocument StorageBackend::defaultConfig() {
     return QJsonDocument(obj);
 }
 
-QString StorageBackend::migrateConfig(QString configJsonStr) {
-    const LogosResult result = m_logos->storage_module.migrateConfig(configJsonStr);
+QString StorageBackend::userConfig() {
+    if (!m_userConfig.isNull()) {
+        return QString::fromUtf8(m_userConfig.toJson(QJsonDocument::Compact));
+    }
+
+    const LogosResult result = m_logos->storage_module.loadConfigOrDefault();
 
     if (!result.success) {
-        reportError("Failed to refresh the config: " + result.getError());
-        return configJsonStr;
+        reportError("Failed to load the config: " + result.getError());
+        return QString();
     }
 
     return result.getString();
-}
-
-QString StorageBackend::userConfig() {
-    // An empty string makes the module read back the config saved by the last init.
-    const QString pending =
-        m_userConfig.isNull() ? QString() : QString::fromUtf8(m_userConfig.toJson(QJsonDocument::Compact));
-
-    return migrateConfig(pending);
 }
 
 bool StorageBackend::togglePrivateQueries(bool enabled) {

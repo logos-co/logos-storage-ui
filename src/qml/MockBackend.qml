@@ -10,16 +10,6 @@ QtObject {
     property string natReachability: "Unknown"
     property string uiVersion: "0.0.0"
     property string moduleVersion: "0.0.0"
-    function migrateConfig(configJson) {
-        const cfg = JSON.parse(configJson)
-        cfg["config-version"] = 3
-        if (!cfg["mix-enabled"])
-            return JSON.stringify(cfg)
-        cfg["dht-mix-proxy"] = ["spr:mock-" + (cfg["network"] || "logos.test")]
-        cfg["mix-pool-json"] = "{\"version\":1,\"relays\":[]}"
-        return JSON.stringify(cfg)
-    }
-
     property string defaultConfigJson: JSON.stringify({
                                                           "data-dir": "/home/user/.logos_storage/data",
                                                           "listen-port": 8500,

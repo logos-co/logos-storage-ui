@@ -267,40 +267,9 @@ ScrollView {
         return cfg
     }
 
+    // The next init fills in the Mix relays of the picked network.
     function pickNetwork(network) {
-        if (!root.backend) {
-            root.vNetwork = network
-            return
-        }
-
-        const request = JSON.stringify({
-                                           "network": network,
-                                           "mix-enabled": root.vMixEnabled,
-                                           "bootstrap-node": root.asJson(root.vBootstrap, [])
-                                       })
-
-        if (root.backend.isMock) {
-            root.vNetwork = network
-            root.applyMix(root.backend.migrateConfig(request))
-        } else if (typeof logos !== "undefined" && logos) {
-            logos.watch(root.backend.migrateConfig(request), function (text) {
-                root.vNetwork = network
-                root.applyMix(text)
-            }, function (err) {
-                console.warn("migrateConfig:", err)
-                // Put the previous network back in the selector
-                networkSelect.currentIndex = networkSelect.model.indexOf(networkSelect.value)
-            })
-        }
-    }
-
-    function applyMix(text) {
-        const cfg = root.asJson(text, {})
-
-        if (cfg["dht-mix-proxy"] !== undefined)
-            root.vMixProxies = root.toJsonText(cfg["dht-mix-proxy"])
-        if (cfg["mix-pool-json"] !== undefined)
-            root.vMixPool = cfg["mix-pool-json"]
+        root.vNetwork = network
     }
 
     function needsRestart(before, after) {

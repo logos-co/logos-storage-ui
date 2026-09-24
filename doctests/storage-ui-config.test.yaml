@@ -4,7 +4,7 @@ release: ""
 
 intro: |
   The UI can refresh a config from an older build on startup by calling
-  the Storage Module `migrateConfig` before `init`.
+  the Storage Module `loadConfigOrDefault` before `init`.
 
   This test starts the app on a config from an older build and asserts what
   comes back:

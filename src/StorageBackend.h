@@ -112,11 +112,6 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // Fetch multiple data for the widgets: manifests, debug..
     void fetchWidgetsData() override;
 
-    // Bring a config up to date with the module that will run it. Used by the
-    // settings form when the user picks a network: the Mix relays of the new
-    // one come back with it.
-    QString migrateConfig(QString configJson) override;
-
   protected:
     // Leaves the shared node running.
     LogosShutdown aboutToUnload() override;

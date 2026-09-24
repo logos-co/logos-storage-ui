@@ -499,7 +499,7 @@ sections:
   - title: "Picking a network swaps the Mix relays"
     step: true
     text: |
-      Changing the network updates the Mix configuration fields.
+      Changing the network brings its Mix configuration on the next start.
     steps:
       - title: "Start from a config with no network and marked Mix values"
         # The marked values are what the startup has to replace: a config that
@@ -568,11 +568,6 @@ sections:
               method: "pickNetwork"
               args: ["logos.test"]
 
-            - name: "Let the Mix relays come back"
-              # The pick applies once the module answers.
-              action: sleep
-              ms: 1000
-
             - name: "The edit is pending"
               action: expect_property
               find_value: "unsavedNotice"
@@ -580,8 +575,8 @@ sections:
               value: true
               screenshot: "storage-ui-settings-network-picked.png"
               text: |
-                Picking a network rewrites the two Mix fields, so the form has
-                something to save.
+                Picking a network is an edit to save. Its Mix relays come with
+                the next start.
 
             - name: "Save"
               action: click
@@ -670,11 +665,6 @@ sections:
               find_value: "settingsForm"
               method: "pickNetwork"
               args: ["logos.dev"]
-
-            - name: "Let the Mix relays come back"
-              # The pick applies once the module answers.
-              action: sleep
-              ms: 1000
 
             - name: "The edit is pending"
               action: expect_property
