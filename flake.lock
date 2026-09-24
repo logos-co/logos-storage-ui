@@ -34046,16 +34046,15 @@
         "logos-storage": "logos-storage"
       },
       "locked": {
-        "lastModified": 1789973030,
-        "narHash": "sha256-jcqql3b+C/tisqzFl2n+esD0cXiKcDQDJtETk8sdM1Q=",
+        "lastModified": 1790232134,
+        "narHash": "sha256-7mUuvADbFK+GndUn8Tcg5IRDN4ShXFuAcvco/BI49BU=",
         "owner": "logos-co",
         "repo": "logos-storage-module",
-        "rev": "d1830ccbf1897fb911cd4e586a149af12a39df66",
+        "rev": "6e24e06b047999dbf20613f73ccb08e4a6b85901",
         "type": "github"
       },
       "original": {
         "owner": "logos-co",
-        "ref": "feat/node-running",
         "repo": "logos-storage-module",
         "type": "github"
       }
