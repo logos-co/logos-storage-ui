@@ -308,10 +308,21 @@ void StorageBackend::start() {
     // AutoNAT has no verdict until the node has run for a while.
     setNatReachability("Unknown");
 
+    // Another consumer (the package downloader) started the node: attach to it.
+    if (m_logos->storage_module.isRunning()) {
+        init(userConfig());
+
+        // Double-check the internalstatus is Running after init, in case
+        // the init call fails for some reason.
+        if (status() == Running) {
+            emit startCompleted();
+        }
+
+        return;
+    }
+
     // A context takes one init: every start builds a new one, so the latest
     // config applies.
-    // TODO: once #94 attaches to a node another consumer started, destroy only
-    // a context this backend created.
     if (status() == Stopped) {
         LogosResult result = m_logos->storage_module.destroy();
 
