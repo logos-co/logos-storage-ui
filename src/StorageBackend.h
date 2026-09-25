@@ -71,7 +71,8 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     void exists(QString cid) override;
     void remove(QString cid) override;
 
-    // Whether the node should advertise the cid. Only logged for now.
+    // Whether the node announces the cid to the DHT and serves it to peers.
+    // Emit manifestsUpdated once applied.
     void setAdvertise(QString cid, bool enabled) override;
 
     // Fetch a cid in background
@@ -90,7 +91,7 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     void downloadFile(QString cid, QUrl url, qint64 totalBytes) override;
 
     // Emit manifestsUpdated
-    void downloadManifest(QString cid) override;
+    void downloadManifest(QString cid, bool advertise) override;
 
     // Download all the manifests and notify
     // Emit manifestsUpdated
@@ -106,11 +107,6 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
 
     // Get the content of the user config file
     QString getUserConfig() override;
-
-    // Toggle private DHT queries over Mix on the running node.
-    // Requires the node to run with mix-enabled and a non-empty dht-mix-proxy.
-    // Emit error(message) and return false on failure.
-    bool togglePrivateQueries(bool enabled) override;
 
     // Fetch multiple data for the widgets: manifests, debug..
     void fetchWidgetsData() override;

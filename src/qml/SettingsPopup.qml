@@ -14,10 +14,8 @@ Popup {
 
     property var backend: MockBackend
     property string downloadFolderPath: ""
-    property bool privateQueries: true
 
     signal folderPathChanged(string path)
-    signal privateQueriesToggled(bool enabled)
 
     // Saved, waiting for the restart that makes the node read the new values.
     property bool restartPending: false
@@ -109,13 +107,9 @@ Popup {
 
             backend: root.backend
             downloadFolderPath: root.downloadFolderPath
-            privateQueries: root.privateQueries
 
             onFolderPathChanged: function (path) {
                 root.folderPathChanged(path)
-            }
-            onPrivateQueriesToggled: function (enabled) {
-                root.privateQueriesToggled(enabled)
             }
             onSaved: function (restartNeeded) {
                 if (restartNeeded)

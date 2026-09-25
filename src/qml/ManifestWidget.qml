@@ -16,7 +16,7 @@ LogosFrame {
     property var backend: MockBackend
     property bool running: false
     property bool enabled: true
-    property bool advertise: true
+    property bool advertise: false
 
     RowLayout {
         anchors.top: parent.top
@@ -45,8 +45,7 @@ LogosFrame {
             Layout.alignment: Qt.AlignTop
             enabled: cidInput.text.length > 0 && root.running && root.enabled
             onClicked: {
-                root.backend.downloadManifest(cidInput.text)
-                root.backend.setAdvertise(cidInput.text, root.advertise)
+                root.backend.downloadManifest(cidInput.text, root.advertise)
                 cidInput.text = ""
             }
         }

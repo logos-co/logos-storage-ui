@@ -17,14 +17,12 @@ ScrollView {
 
     property var backend: MockBackend
     property string downloadFolderPath: ""
-    property bool privateQueries: true
 
     // Onboarding writes the first config, so it starts from the defaults and
     // hides what its own flow already covers.
     property bool onboarding: false
 
     signal folderPathChanged(string path)
-    signal privateQueriesToggled(bool enabled)
     signal saved(bool restartNeeded)
 
     readonly property string displayFolderPath: downloadFolderPath.replace(
@@ -111,11 +109,6 @@ ScrollView {
             return ""
         return JSON.stringify(value, null, 2)
     }
-
-    // mixRunning only says the config asked for Mix: the toggle reaches a live
-    // module, so the node has to be up as well.
-    readonly property bool mixReady: root.backend && root.backend.mixRunning
-                                     && root.backend.status === StorageBackend.Running
 
     // A bootstrap list of their own is what the user joined instead of a preset.
     // Judged on the text, not on the parsed value: mid-typing the JSON does not
@@ -658,23 +651,6 @@ ScrollView {
                     LogosSwitch {
                         checked: root.vMixEnabled
                         enabled: false
-                    }
-                }
-
-                SettingRow {
-                    title: "Private DHT queries"
-                    description: root.mixReady
-                                 ? "Applied immediately, no restart needed."
-                                 : "Needs a node running with Mix enabled."
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
-
-                    LogosSwitch {
-                        checked: root.privateQueries
-                        enabled: root.mixReady
-                        onToggled: root.privateQueriesToggled(checked)
                     }
                 }
 

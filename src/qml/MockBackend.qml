@@ -52,7 +52,7 @@ QtObject {
     }
     function uploadFile(url) {}
     function downloadFile(cid, url, totalBytes) {}
-    function downloadManifest(cid) {
+    function downloadManifest(cid, advertise) {
         manifestFetchStarted(cid)
     }
     function downloadManifests() {}
@@ -97,9 +97,6 @@ QtObject {
     function logVersion() {}
     function restartOnboarding() {}
     function updateUserConfig(json) {}
-    function togglePrivateQueries(enabled) {
-        return false
-    }
     function getUserConfig() {
         return JSON.stringify({
                                   "config-version": 3,

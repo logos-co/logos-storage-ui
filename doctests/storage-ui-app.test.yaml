@@ -306,35 +306,6 @@ sections:
               texts: ["Stop"]
               timeout: 30000
 
-            - name: "Private DHT queries are on by default"
-              action: expect_property
-              find_by: "text"
-              find_value: "Mix"
-              property: "checked"
-              value: true
-              text: |
-                DHT provider lookups are routed through the Mix protocol, which
-                makes them much harder to trace back to you. It is on by default
-                when enabling Mix.
-
-            - name: "Turn private queries off"
-              action: click_object
-              find_by: "text"
-              find_value: "Mix"
-
-            - name: "The switch reports them off"
-              action: expect_property
-              find_by: "text"
-              find_value: "Mix"
-              property: "checked"
-              value: false
-              screenshot: "storage-ui-mix-disabled.png"
-
-            - name: "Turn them back on"
-              action: click_object
-              find_by: "text"
-              find_value: "Mix"
-
       # Disabled: the CID below is only served by the node this test itself
       # started, and that node is shut down as soon as the run ends. The
       # provider records left in the DHT are stale, so the fetch times out.

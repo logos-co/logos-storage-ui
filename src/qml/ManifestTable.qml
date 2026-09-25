@@ -25,9 +25,6 @@ LogosFrame {
     property string downloadFolderPath: ""
     property var deleting: ({})
 
-    // Cids the user stopped advertising. Every other one is advertised.
-    property var unadvertised: ({})
-
     // Three 40px icon buttons, the gaps between them and the pill's own padding.
     readonly property int actionsColumnWidth: 40 * 3 + Theme.spacing.medium * 4
 
@@ -93,16 +90,6 @@ LogosFrame {
 
     function isDownloaded(item) {
         return !!(item && item.filename && root.downloadedNames[item.filename])
-    }
-
-    function toggleAdvertise(cid) {
-        var u = Object.assign({}, root.unadvertised)
-        if (u[cid])
-            delete u[cid]
-        else
-            u[cid] = true
-        root.unadvertised = u
-        root.backend.setAdvertise(cid, !u[cid])
     }
 
     function markDeleting(cid) {
@@ -175,6 +162,7 @@ LogosFrame {
                                  "datasetSize": String(r.datasetSize || 0),
                                  "status": r.status || "",
                                  "error": r.error || "",
+                                 "advertised": r.advertised !== false,
                                  "added": root.formatAdded(r.cid || "")
                              })
         }
@@ -591,9 +579,10 @@ LogosFrame {
                                         readonly property bool rowDownloaded: root.isDownloaded(rowItem)
 
                                         AdvertiseToggle {
-                                            advertised: rowItem ? !root.unadvertised[rowItem.cid] : true
-                                            enabled: !actionsCell.rowDeleting
-                                            onClicked: root.toggleAdvertise(rowItem.cid)
+                                            // Unknown when the node could not say: shown as its default.
+                                            advertised: !rowItem || rowItem.advertised !== false
+                                            enabled: root.running && !actionsCell.rowDeleting
+                                            onClicked: root.backend.setAdvertise(rowItem.cid, !advertised)
                                         }
 
                                         LogosIconButton {

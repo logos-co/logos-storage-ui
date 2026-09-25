@@ -34,7 +34,7 @@ class StorageBackend
     // Upload / Download
     SLOT(void uploadFile(QUrl url))
     SLOT(void downloadFile(QString cid, QUrl url, qint64 totalBytes))
-    SLOT(void downloadManifest(QString cid))
+    SLOT(void downloadManifest(QString cid, bool advertise))
     SLOT(void downloadManifests())
     SLOT(void exists(QString cid))
     SLOT(void remove(QString cid))
@@ -50,12 +50,6 @@ class StorageBackend
 
     // Onboarding
     SLOT(void restartOnboarding())
-
-    // Mix
-    // Toggle routing of DHT queries over Mix on the running node. Requires the
-    // node to run with mix-enabled and a non-empty dht-mix-proxy, else fails.
-    // Returns true on success.
-    SLOT(bool togglePrivateQueries(bool enabled))
 
     // Widgets / Debug
     SLOT(void fetchWidgetsData())
