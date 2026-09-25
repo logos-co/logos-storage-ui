@@ -138,7 +138,7 @@ Popup {
                 objectName: "restartPendingNotice"
                 Layout.fillWidth: true
                 visible: root.restartPending
-                text: root.compact ? "Saved. Restart to apply." : "Saved. Restart the node to apply the new settings."
+                text: root.compact ? "Restart to apply and save to disk." : "Saved. Restart the node to apply and save to disk."
                 font.pixelSize: Theme.typography.secondaryText
                 color: Theme.palette.warning
                 elide: Text.ElideRight

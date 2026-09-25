@@ -166,6 +166,7 @@ Item {
 
     ErrorToast {
         id: errorToast
+        objectName: "errorToast"
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Theme.spacing.medium

@@ -397,3 +397,134 @@ sections:
           test "$(jq 'has("nat")' "$cfg")" = "false"
 
           echo "advanced OK: the edited ports landed, the presets were kept"
+
+  - title: "Restarting the onboarding"
+    step: true
+    text: |
+      The debug popup can send a returning user back through onboarding. The
+      running node stops, and the new onboarding config applies on the next start.
+    steps:
+      - title: "Restart onboarding and take the guided path"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "The dashboard opens"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 5000
+
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Open the debug popup"
+              action: click_object
+              find_value: "debugButton"
+
+            - name: "Restart onboarding"
+              action: call_method
+              find_by: "objectName"
+              find_value: "restartOnboardingButton"
+              method: "clicked"
+
+            - name: "The node stops and the onboarding wizard opens"
+              action: wait_for
+              texts: ["Guided", "Advanced"]
+              timeout: 30000
+
+            - name: "Confirm the guided setup"
+              action: call_method
+              find_by: "text"
+              find_value: "Continue"
+              method: "clicked"
+
+            - name: "Onboarding reaches the folder step"
+              action: wait_for
+              texts: ["Select Drives"]
+              timeout: 5000
+
+            - name: "Finish onboarding"
+              action: call_method
+              find_by: "objectName"
+              find_value: "downloadFolderContinue"
+              method: "clicked"
+
+            - name: "The node runs again"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+      - title: "The guided run replaced the advanced config"
+        run: |
+          set -e
+          cfg="$HOME/.logos_storage/config.json"
+          echo "config written by the second onboarding:"
+          jq . "$cfg"
+
+          test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "60s"
+
+          echo "restart OK: the default interval replaced the advanced one"
+
+  - title: "Attaching to a node another module started"
+    step: true
+    text: |
+      The package downloader starts the storage node as soon as the storage
+      module is ready. When the app opens on that node, it attaches to it
+      instead of starting its own.
+    steps:
+      - title: "Build lgpm"
+        run: "nix build 'github:logos-co/logos-package-manager#cli' -o lgpm"
+        check_file: "lgpm/bin/lgpm"
+
+      - title: "Add the package downloader to the app's modules"
+        run: |
+          set -e
+          system="$(nix eval --impure --raw --expr builtins.currentSystem)"
+          program="$(nix eval --raw "github:logos-co/logos-storage-ui{release}#apps.$system.default.program")"
+          test -x "$program"
+
+          # The modules the app ships with: storage_module and the standalone's own.
+          modules="$(grep -o -- '--modules-dir "[^"]*"' "$program" | cut -d'"' -f2)"
+          test -d "$modules"
+
+          rm -rf ./attach-modules
+          cp -rL "$modules" ./attach-modules
+          chmod -R u+w ./attach-modules
+
+          nix build 'github:logos-co/logos-package-downloader-module/feat/storage-fetcher#lgx' -o downloader-lgx
+          ./lgpm/bin/lgpm --modules-dir ./attach-modules --allow-unsigned install --file downloader-lgx/*.lgx
+          ./lgpm/bin/lgpm --modules-dir ./attach-modules list
+        expect_contains:
+          - "package_downloader"
+          - "storage_module"
+
+      - title: "Launch the app with the downloader loaded first"
+        ui_test:
+          # The second --modules-dir wins over the one the launcher passes.
+          launch: "nix run github:logos-co/logos-storage-ui{release} -- --modules-dir ./attach-modules -l package_downloader -l storage_module"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "The dashboard opens"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 5000
+
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Attaching raised no error"
+              action: expect_property
+              find_value: "errorToast"
+              property: "title"
+              value: ""
+              text: |
+                The node was already starting: the app waits for it instead of
+                reporting a failed start.
