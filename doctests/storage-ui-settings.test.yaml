@@ -3,7 +3,8 @@ output: storage-ui-settings.md
 release: ""
 
 intro: |
-  The Settings popup edits `~/.logos_storage/config.json` field by field.
+  The Settings popup edits the node config field by field. The next node start
+  writes it to `~/.logos_storage/config.json`.
 
   This test drives the popup through the QML inspector and asserts, for every
   editable setting, that the value lands on the right key with the right type,
@@ -200,11 +201,11 @@ sections:
               property: "vMixProxies"
               value: "[\"spr:CiUIAhIhApIj9p6zJDRbw2NoCo-tj98Y760YbppRiEpGIE1yGaMzEgIDARpJCicAJQgCEiECkiP2nrMkNFvDY2gKj62P3xjvrRhumlGISkYgTXIZozMQvcz8wQYaCwoJBAWhF3WRAnVEGgsKCQQFoRd1kQJ1RCpGMEQCIFZB84O_nzPNuViqEGRL1vJTjHBJ-i5ZDgFL5XZxm4HAAiB8rbLHkUdFfWdiOmlencYVn0noSMRHzn4lJYoShuVzlw\"]"
 
-            - name: "Bump the Mix relay pool"
+            - name: "Replace the Mix relay pool with one logos.test relay"
               action: set_property
               find_value: "settingsForm"
               property: "vMixPool"
-              value: "{\"version\":2,\"relays\":[]}"
+              value: "{\"version\":1,\"relays\":[{\"peerId\":\"16Uiu2HAm3xPbYz2zsq5XVGDCMqKhhNXZWyYV6WLVv3yzzUiRJWnW\",\"mixPubKey\":\"7da7478099878e16e1ae64d8d92f3ac5a033d309202672f38c4b23580029c935\",\"libp2pPubKey\":\"027ebbf9c3c5903a6ac9e4c48c33db86d37c354c6df52fa78817394112f2736c6b\",\"multiAddr\":\"/ip4/178.128.140.206/tcp/8070\"}]}"
 
             - name: "The network preset is locked by the custom bootstrap"
               action: expect_property
@@ -246,9 +247,31 @@ sections:
                 The notice is gone, but the running node still holds the previous values
                 and needs a restart to apply values.
 
-            - name: "Let the write reach disk"
-              action: sleep
-              ms: 1000
+            - name: "Close the popup"
+              action: call_method
+              find_value: "settingsPopup"
+              method: "close"
+
+            - name: "Stop the node"
+              action: click
+              target: "Stop"
+
+            - name: "The node reports Stopped"
+              action: wait_for
+              texts: ["Stopped"]
+              timeout: 5000
+
+            - name: "Start the node on the saved settings"
+              action: click
+              target: "Start"
+              text: |
+                Starting builds a new node context. Its init writes the saved settings
+                to `config.json`.
+
+            - name: "The node runs on the saved settings"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
 
   - title: "Verify every setting reached the config file"
     step: true
@@ -329,7 +352,7 @@ sections:
           test "$(jq -r '."dht-mix-proxy"[0]' "$cfg")" = "spr:CiUIAhIhApIj9p6zJDRbw2NoCo-tj98Y760YbppRiEpGIE1yGaMzEgIDARpJCicAJQgCEiECkiP2nrMkNFvDY2gKj62P3xjvrRhumlGISkYgTXIZozMQvcz8wQYaCwoJBAWhF3WRAnVEGgsKCQQFoRd1kQJ1RCpGMEQCIFZB84O_nzPNuViqEGRL1vJTjHBJ-i5ZDgFL5XZxm4HAAiB8rbLHkUdFfWdiOmlencYVn0noSMRHzn4lJYoShuVzlw"
           test "$(jq '."dht-mix-proxy" | type' "$cfg")" = '"array"'
 
-          test "$(jq -r '."mix-pool-json"' "$cfg")" = '{"version":2,"relays":[]}'
+          test "$(jq -r '."mix-pool-json"' "$cfg")" = '{"version":1,"relays":[{"peerId":"16Uiu2HAm3xPbYz2zsq5XVGDCMqKhhNXZWyYV6WLVv3yzzUiRJWnW","mixPubKey":"7da7478099878e16e1ae64d8d92f3ac5a033d309202672f38c4b23580029c935","libp2pPubKey":"027ebbf9c3c5903a6ac9e4c48c33db86d37c354c6df52fa78817394112f2736c6b","multiAddr":"/ip4/178.128.140.206/tcp/8070"}]}'
           test "$(jq '."mix-pool-json" | type' "$cfg")" = '"string"'
 
           echo "OK: the proxy list is an array, the relay pool stays a string"
@@ -451,7 +474,7 @@ sections:
               action: expect_property
               find_value: "mixPoolField"
               property: "text"
-              value: "{\"version\":2,\"relays\":[]}"
+              value: "{\"version\":1,\"relays\":[{\"peerId\":\"16Uiu2HAm3xPbYz2zsq5XVGDCMqKhhNXZWyYV6WLVv3yzzUiRJWnW\",\"mixPubKey\":\"7da7478099878e16e1ae64d8d92f3ac5a033d309202672f38c4b23580029c935\",\"libp2pPubKey\":\"027ebbf9c3c5903a6ac9e4c48c33db86d37c354c6df52fa78817394112f2736c6b\",\"multiAddr\":\"/ip4/178.128.140.206/tcp/8070\"}]}"
 
             - name: "Nothing is pending, so Save is disabled"
               action: expect_property
@@ -469,14 +492,14 @@ sections:
           test "$(jq -r '.nat' "$cfg")" = "extip:203.0.113.7"
           test "$(jq -r '.network' "$cfg")" = "logos.dev"
           test "$(jq '."bootstrap-node" | length' "$cfg")" = "2"
-          test "$(jq -r '."mix-pool-json"' "$cfg")" = '{"version":2,"relays":[]}'
+          test "$(jq -r '."mix-pool-json"' "$cfg")" = '{"version":1,"relays":[{"peerId":"16Uiu2HAm3xPbYz2zsq5XVGDCMqKhhNXZWyYV6WLVv3yzzUiRJWnW","mixPubKey":"7da7478099878e16e1ae64d8d92f3ac5a033d309202672f38c4b23580029c935","libp2pPubKey":"027ebbf9c3c5903a6ac9e4c48c33db86d37c354c6df52fa78817394112f2736c6b","multiAddr":"/ip4/178.128.140.206/tcp/8070"}]}'
 
           echo "round trip OK: the popup reloads what it saved"
 
   - title: "Picking a network swaps the Mix relays"
     step: true
     text: |
-      Changing the network updates the Mix configuration fields.
+      Changing the network brings its Mix configuration on the next start.
     steps:
       - title: "Start from a config with no network and marked Mix values"
         # The marked values are what the startup has to replace: a config that
@@ -545,11 +568,6 @@ sections:
               method: "pickNetwork"
               args: ["logos.test"]
 
-            - name: "Let the Mix relays come back"
-              # The pick applies once the module answers.
-              action: sleep
-              ms: 1000
-
             - name: "The edit is pending"
               action: expect_property
               find_value: "unsavedNotice"
@@ -557,16 +575,40 @@ sections:
               value: true
               screenshot: "storage-ui-settings-network-picked.png"
               text: |
-                Picking a network rewrites the two Mix fields, so the form has
-                something to save.
+                Picking a network is an edit to save. Its Mix relays come with
+                the next start.
 
             - name: "Save"
               action: click
               target: "Save"
 
-            - name: "Let the write reach disk"
-              action: sleep
-              ms: 1000
+            - name: "Close the popup"
+              action: call_method
+              find_value: "settingsPopup"
+              method: "close"
+
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Stop the node"
+              action: click
+              target: "Stop"
+
+            - name: "The node reports Stopped"
+              action: wait_for
+              texts: ["Stopped"]
+              timeout: 5000
+
+            - name: "Start the node on the saved settings"
+              action: click
+              target: "Start"
+
+            - name: "The node runs on the saved settings"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
 
       - title: "The preset relays replaced the marked ones, and the network was written"
         run: |
@@ -624,11 +666,6 @@ sections:
               method: "pickNetwork"
               args: ["logos.dev"]
 
-            - name: "Let the Mix relays come back"
-              # The pick applies once the module answers.
-              action: sleep
-              ms: 1000
-
             - name: "The edit is pending"
               action: expect_property
               find_value: "unsavedNotice"
@@ -639,9 +676,33 @@ sections:
               action: click
               target: "Save"
 
-            - name: "Let the write reach disk"
-              action: sleep
-              ms: 1000
+            - name: "Close the popup"
+              action: call_method
+              find_value: "settingsPopup"
+              method: "close"
+
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Stop the node"
+              action: click
+              target: "Stop"
+
+            - name: "The node reports Stopped"
+              action: wait_for
+              texts: ["Stopped"]
+              timeout: 5000
+
+            - name: "Start the node on the saved settings"
+              action: click
+              target: "Start"
+
+            - name: "The node runs on the saved settings"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
 
       - title: "The second network moved all three keys again"
         run: |
@@ -661,3 +722,72 @@ sections:
           test "$(jq -r '."mix-pool-json"' "$cfg" | jq '.relays | length > 0')" = "true"
 
           echo "OK: each network carries its own Mix relays"
+
+  - title: "Saved settings need a restart to reach the disk"
+    step: true
+    text: |
+      Save keeps the settings for the next start. Closing the app before
+      restarting the node drops them.
+    steps:
+      - title: "Note the listen port on disk"
+        run: |
+          set -e
+          jq '."listen-port"' "$HOME/.logos_storage/config.json" > /tmp/storage-ui-settings-port
+          test "$(cat /tmp/storage-ui-settings-port)" != "8700"
+
+          echo "listen port on disk: $(cat /tmp/storage-ui-settings-port)"
+
+      - title: "Save a new port, then close without restarting"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "Dashboard opens"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 5000
+
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Open the Settings popup"
+              action: click_object
+              find_value: "settingsButton"
+
+            - name: "The config lands in the form"
+              action: wait_for
+              texts: ["/tmp/storage-ui-settings-data"]
+              timeout: 5000
+
+            - name: "Set the listen port"
+              action: set_text
+              find_by: "objectName"
+              find_value: "listenPortField"
+              value: "8700"
+
+            - name: "Save"
+              action: click
+              target: "Save"
+
+            - name: "The popup asks for a restart"
+              action: expect_property
+              find_value: "restartPendingNotice"
+              property: "visible"
+              value: true
+              screenshot: "storage-ui-settings-restart-pending.png"
+              text: |
+                The new port is kept in memory: it reaches the disk only when
+                the node restarts.
+
+      - title: "The port on disk did not change"
+        run: |
+          set -e
+          cfg="$HOME/.logos_storage/config.json"
+
+          test "$(jq '."listen-port"' "$cfg")" = "$(cat /tmp/storage-ui-settings-port)"
+
+          echo "OK: without a restart, the saved port was dropped"

@@ -126,7 +126,8 @@ ScrollView {
     // Keys the node only reads when it starts.
     readonly property var restartKeys: ["storage-quota", "listen-port", "nat",
                                         "network", "bootstrap-node", "dht-mix-proxy",
-                                        "mix-pool-json", "nat-schedule-interval"]
+                                        "mix-pool-json", "nat-schedule-interval",
+                                        "log-level"]
 
     clip: true
     contentWidth: availableWidth
@@ -266,40 +267,9 @@ ScrollView {
         return cfg
     }
 
+    // The next init fills in the Mix relays of the picked network.
     function pickNetwork(network) {
-        if (!root.backend) {
-            root.vNetwork = network
-            return
-        }
-
-        const request = JSON.stringify({
-                                           "network": network,
-                                           "mix-enabled": root.vMixEnabled,
-                                           "bootstrap-node": root.asJson(root.vBootstrap, [])
-                                       })
-
-        if (root.backend.isMock) {
-            root.vNetwork = network
-            root.applyMix(root.backend.migrateConfig(request))
-        } else if (typeof logos !== "undefined" && logos) {
-            logos.watch(root.backend.migrateConfig(request), function (text) {
-                root.vNetwork = network
-                root.applyMix(text)
-            }, function (err) {
-                console.warn("migrateConfig:", err)
-                // Put the previous network back in the selector
-                networkSelect.currentIndex = networkSelect.model.indexOf(networkSelect.value)
-            })
-        }
-    }
-
-    function applyMix(text) {
-        const cfg = root.asJson(text, {})
-
-        if (cfg["dht-mix-proxy"] !== undefined)
-            root.vMixProxies = root.toJsonText(cfg["dht-mix-proxy"])
-        if (cfg["mix-pool-json"] !== undefined)
-            root.vMixPool = cfg["mix-pool-json"]
+        root.vNetwork = network
     }
 
     function needsRestart(before, after) {
@@ -317,7 +287,7 @@ ScrollView {
         // Read before the write: saving is what makes the edit the new baseline.
         const restartNeeded = root.restartRequired
         const cfg = root.buildConfig()
-        root.backend.saveUserConfig(JSON.stringify(cfg, null, 2))
+        root.backend.updateUserConfig(JSON.stringify(cfg, null, 2))
         root.loaded = cfg
         root.baselineJson = JSON.stringify(cfg)
         root.saved(restartNeeded)

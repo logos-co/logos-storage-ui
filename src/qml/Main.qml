@@ -35,17 +35,12 @@ Item {
         target: typeof logos !== "undefined" && logos ? logos : null
         ignoreUnknownSignals: true
 
-        // When the onboarding is completed,
-        // the user should have a config save in his
-        // home folder.
-        // After the config is loaded, the node will be
-        // started and the storeComponent will replace
-        // the stackView item immediatly.
+        // When the onboarding is completed, the storeComponent
+        // replaces the stackView item immediatly and starts the node.
         function onViewModuleReadyChanged(moduleName, ready) {
             if (moduleName !== d.mod || !ready)
                 return
             if (settings.onboardingCompleted && d.backend) {
-                d.backend.loadUserConfig()
                 stackView.replace(storageComponent, StackView.Immediate)
             }
         }
@@ -121,7 +116,7 @@ Item {
             onCompleted: function (isGuide) {
                 if (isGuide) {
                     // Guided setup: the node runs on the default configuration.
-                    d.backend.saveUserConfig(d.backend.defaultConfigJson)
+                    d.backend.updateUserConfig(d.backend.defaultConfigJson)
                     stackView.push(downloadFolderComponent)
                 } else {
                     stackView.push(advancedSetupComponent)
@@ -164,7 +159,6 @@ Item {
 
             onNext: {
                 settings.onboardingCompleted = true
-                d.backend.loadUserConfig()
                 stackView.replace(storageComponent, StackView.Immediate)
             }
         }
@@ -172,6 +166,7 @@ Item {
 
     ErrorToast {
         id: errorToast
+        objectName: "errorToast"
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Theme.spacing.medium

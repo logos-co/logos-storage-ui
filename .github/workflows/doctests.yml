@@ -9,7 +9,7 @@ name: storage-ui Doc-Tests
 #
 # Specs:
 #   storage-ui-config.test.yaml: Verify a config from an older build is refreshed by the Storage Module on startup.
-#   storage-ui-settings.test.yaml: Verify every Settings field is written to its config.json key on save, and that the read-only keys survive.
+#   storage-ui-settings.test.yaml: Verify every Settings field is written to its config.json key on the next start, and that the read-only keys survive.
 #   storage-ui-app.test.yaml: Walk both onboarding paths, then upload from the dashboard.
 
 on:

@@ -16,7 +16,6 @@ static const int RET_OK = 0;
 static const int RET_PROGRESS = 3;
 static const QString APP_HOME = QDir::homePath() + "/.logos_storage";
 static const QString DEFAULT_DATA_DIR = APP_HOME + "/data";
-static const QString USER_CONFIG_PATH = APP_HOME + "/config.json";
 
 static const int DEFAULT_LISTEN_PORT = 8500;
 static const int DEFAULT_CHUNK_SIZE = 1024 * 64;
@@ -46,9 +45,7 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // 6- storageDownloadProgress
     void init(QString configJson) override;
 
-    // Start the node
-    // If the user configuration has changed, it will
-    // reloaded it.
+    // Init a new context with the user config, then start the node.
     void start() override;
 
     // Destroy the Storage Module
@@ -100,28 +97,12 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // Emit spaceUpdated to refresh the widget
     void refreshSpace() override;
 
-    // Save the user config passed in parameter
-    // into the user config json.
-    void saveUserConfig(QString configJson) override;
-
-    // Load the user config saved previously
-    void loadUserConfig() override;
+    // Keep the user config passed in parameter for the next start,
+    // whose init persists it through the Storage Module.
+    void updateUserConfig(QString configJson) override;
 
     // Get the content of the user config file
     QString getUserConfig() override;
-
-    // Take a new config json and reload the Storage context
-    // if the configuration has changed.
-    //
-    // This method cannot be used if the Storage Module
-    // is running, starting or stopping.
-    //
-    // If the Storage Module was already created,
-    // it will be destroyed first.
-    //
-    // On success, the status will be set to Stopped.
-    //
-    void reloadIfChanged(QString configJson) override;
 
     // Toggle private DHT queries over Mix on the running node.
     // Requires the node to run with mix-enabled and a non-empty dht-mix-proxy.
@@ -131,13 +112,6 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // Fetch multiple data for the widgets: manifests, debug..
     void fetchWidgetsData() override;
 
-    QString configJson() override;
-
-    // Bring a config up to date with the module that will run it. Used by the
-    // settings form when the user picks a network: the Mix relays of the new
-    // one come back with it.
-    QString migrateConfig(QString configJson) override;
-
   protected:
     // Leaves the shared node running.
     LogosShutdown aboutToUnload() override;
@@ -146,8 +120,9 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // Provide a default config for onboarding
     static QJsonDocument defaultConfig();
 
-    // Refresh the persisted config.json through the module and rewrite it.
-    void refreshUserConfigFile();
+    // The config set by updateUserConfig, else the one the module persisted,
+    // migrated by the module.
+    QString userConfig();
 
     // Display debug (or message) in the terminal and
     // add it to the debugLogs to make it accessible
@@ -164,7 +139,9 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
 
     bool m_eventsSubscribed = false;
 
-    // Internal configuration object. It can be updated by
-    // upnp or port forwarning methods.
-    QJsonDocument m_config;
+    // Config saved by the user, applied on the next start.
+    QJsonDocument m_userConfig;
+
+    // The context was created by another consumer (the package downloader).
+    bool m_attached = false;
 };
