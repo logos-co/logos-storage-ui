@@ -114,6 +114,8 @@ void StorageBackend::init(QString configJson) {
         return;
     }
 
+    m_attached = attached;
+
     const bool running = m_logos->storage_module.isRunning();
 
     setStatus(running ? Running : Stopped);
@@ -347,6 +349,13 @@ void StorageBackend::start() {
     auto result = m_logos->storage_module.start();
 
     if (!result) {
+        if (m_attached) {
+            // The other consumer is starting the node:
+            // its storageStart event completes this start.
+            debug("The node is busy, waiting for it to start.");
+            return;
+        }
+
         setStatus(Stopped);
         reportError("Failed to start storage");
         emit startFailed("Failed to start storage");

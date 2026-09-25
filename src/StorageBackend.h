@@ -141,4 +141,7 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
 
     // Config saved by the user, applied on the next start.
     QJsonDocument m_userConfig;
+
+    // The context was created by another consumer (the package downloader).
+    bool m_attached = false;
 };
