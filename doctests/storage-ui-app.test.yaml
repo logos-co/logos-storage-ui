@@ -622,7 +622,8 @@ sections:
     step: true
     text: |
       Private transfers go over Mix. When the configuration turns Mix off, the
-      app does not offer them.
+      app does not offer them. Turning Mix on in the settings offers them again
+      after a restart.
     steps:
       - title: "Write a configuration with Mix off"
         run: |
@@ -673,3 +674,92 @@ sections:
               text: |
                 The `Private` switch is greyed out. The lock on each manifest row
                 is greyed out the same way.
+
+            - name: "Open the Settings popup"
+              action: click_object
+              find_value: "settingsButton"
+
+            - name: "The popup is open"
+              action: wait_for
+              texts: ["Settings", "Mix enabled"]
+              timeout: 5000
+
+            - name: "The Mix switch shows the saved value"
+              action: expect_property
+              find_value: "mixEnabledSwitch"
+              property: "checked"
+              value: false
+
+            - name: "Turn Mix on"
+              action: set_property
+              find_by: "objectName"
+              find_value: "mixEnabledSwitch"
+              property: "checked"
+              value: true
+
+            - name: "Fire the switch's toggled signal"
+              action: call_method
+              find_by: "objectName"
+              find_value: "mixEnabledSwitch"
+              method: "toggled"
+
+            - name: "Save"
+              action: click
+              target: "Save"
+
+            - name: "Let the save settle"
+              action: sleep
+              ms: 1000
+
+            - name: "Turning Mix on asks for a restart"
+              action: expect_property
+              find_value: "restartPendingNotice"
+              property: "visible"
+              value: true
+              screenshot: "storage-ui-mix-enabled.png"
+              text: |
+                The node reads `mix-enabled` when it starts, so the change needs
+                a restart.
+
+            - name: "Close the popup"
+              action: call_method
+              find_value: "settingsPopup"
+              method: "close"
+
+            - name: "Stop the node"
+              action: click
+              target: "Stop"
+
+            - name: "The node reports Stopped"
+              action: wait_for
+              texts: ["Stopped"]
+              timeout: 30000
+
+            - name: "Start the node with Mix"
+              action: click
+              target: "Start"
+
+            - name: "The node runs again"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Private fetch is offered once Mix runs"
+              action: expect_property
+              find_value: "fetchPrivateSwitch"
+              property: "enabled"
+              value: true
+              screenshot: "storage-ui-private-with-mix.png"
+              text: |
+                After the restart the node runs with Mix, and the `Private` switch
+                can be turned on.
+
+      - title: "The saved config turns Mix on"
+        run: |
+          set -e
+          cfg="$HOME/.logos_storage/config.json"
+          jq . "$cfg"
+
+          test "$(jq '."mix-enabled"' "$cfg")" = "true"
+
+          echo "OK: mix-enabled saved as true"

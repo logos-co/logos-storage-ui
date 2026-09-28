@@ -120,7 +120,7 @@ ScrollView {
     readonly property var restartKeys: ["storage-quota", "listen-port", "nat",
                                         "network", "bootstrap-node", "dht-mix-proxy",
                                         "mix-pool-json", "nat-schedule-interval",
-                                        "log-level"]
+                                        "log-level", "mix-enabled"]
 
     clip: true
     contentWidth: availableWidth
@@ -256,6 +256,11 @@ ScrollView {
         putJson("dht-mix-proxy", root.vMixProxies)
         put("mix-pool-json", root.vMixPool)
         putInt("listen-port", root.vListenPort)
+
+        // Written only when the user flips it: an absent key stays absent.
+        if (root.vMixEnabled !== !!cfg["mix-enabled"]) {
+            cfg["mix-enabled"] = root.vMixEnabled
+        }
 
         return cfg
     }
@@ -642,15 +647,16 @@ ScrollView {
 
                 SettingRow {
                     title: "Mix enabled"
-                    description: "DHT provider lookups are routed through the Mix protocol."
+                    description: "Private fetches and downloads go over the Mix protocol."
 
                     Item {
                         Layout.fillWidth: true
                     }
 
                     LogosSwitch {
+                        objectName: "mixEnabledSwitch"
                         checked: root.vMixEnabled
-                        enabled: false
+                        onToggled: root.vMixEnabled = checked
                     }
                 }
 
