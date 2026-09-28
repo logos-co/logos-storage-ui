@@ -45,7 +45,7 @@ LogosFrame {
             Layout.alignment: Qt.AlignTop
             enabled: cidInput.text.length > 0 && root.running && root.enabled
             onClicked: {
-                root.backend.downloadManifest(cidInput.text, root.isPrivate)
+                root.backend.downloadManifest(cidInput.text, root.isPrivate && root.backend.mixRunning)
                 cidInput.text = ""
             }
         }
@@ -68,7 +68,7 @@ LogosFrame {
         text: "Private"
         // Mix carries private transfers.
         enabled: root.backend.mixRunning
-        checked: root.isPrivate
+        checked: root.isPrivate && root.backend.mixRunning
         onToggled: root.isPrivate = checked
     }
 }

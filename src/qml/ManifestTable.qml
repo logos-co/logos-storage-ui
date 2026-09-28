@@ -94,6 +94,11 @@ LogosFrame {
         return !!(item && item.filename && root.downloadedNames[item.filename])
     }
 
+    // Without Mix the choice is kept but not applied.
+    function isPrivateDownload(item) {
+        return !!item && !!root.privateDownloads[item.cid] && root.backend.mixRunning
+    }
+
     function togglePrivateDownload(cid) {
         var p = Object.assign({}, root.privateDownloads)
         if (p[cid]) {
@@ -594,7 +599,7 @@ LogosFrame {
                                         readonly property bool rowDownloaded: root.isDownloaded(rowItem)
 
                                         PrivateToggle {
-                                            isPrivate: !!rowItem && !!root.privateDownloads[rowItem.cid]
+                                            isPrivate: root.isPrivateDownload(rowItem)
                                             // Mix carries private transfers. A running download keeps the mode it started with.
                                             enabled: root.backend.mixRunning && !actionsCell.rowDeleting
                                                      && !actionsCell.rowDownloading
@@ -631,7 +636,7 @@ LogosFrame {
                                                             parseInt(
                                                                 rowItem.datasetSize)
                                                             || 0,
-                                                            !!root.privateDownloads[rowItem.cid])
+                                                            root.isPrivateDownload(rowItem))
                                             }
                                         }
 
