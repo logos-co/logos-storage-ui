@@ -282,9 +282,13 @@ LogosFrame {
                 root.unmarkDeleting(cid)
             }
 
-            function onManifestFetchStarted(cid) {
+            function onManifestFetchStarted(cid, isPrivate) {
                 root.addPending(cid)
                 root.recordAdded(cid)
+                // A private fetch keeps the download private too.
+                if (isPrivate && !root.privateDownloads[cid]) {
+                    root.togglePrivateDownload(cid)
+                }
             }
 
             function onUploadCompleted(cid) {
@@ -591,7 +595,9 @@ LogosFrame {
 
                                         PrivateToggle {
                                             isPrivate: !!rowItem && !!root.privateDownloads[rowItem.cid]
-                                            enabled: !actionsCell.rowDeleting
+                                            // Mix carries private transfers. A running download keeps the mode it started with.
+                                            enabled: root.backend.mixRunning && !actionsCell.rowDeleting
+                                                     && !actionsCell.rowDownloading
                                             onClicked: root.togglePrivateDownload(rowItem.cid)
                                         }
 

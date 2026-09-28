@@ -233,6 +233,56 @@ sections:
                 Installed modules may still need the package, so its row offers no
                 delete button.
 
+            - name: "Private fetch is offered"
+              action: expect_property
+              find_value: "fetchPrivateSwitch"
+              property: "enabled"
+              value: true
+              text: |
+                The node runs with Mix, so the Fetch Manifest card offers the
+                `Private` switch.
+
+            - name: "Turn on the Private switch"
+              action: set_property
+              find_by: "objectName"
+              find_value: "fetchPrivateSwitch"
+              property: "checked"
+              value: true
+
+            - name: "Fire the switch's toggled signal"
+              action: call_method
+              find_by: "objectName"
+              find_value: "fetchPrivateSwitch"
+              method: "toggled"
+
+            - name: "Paste a CID into Fetch Manifest"
+              action: set_property
+              find_by: "placeholderText"
+              find_value: "CID"
+              property: "text"
+              value: "zDvZRwzkzrrYB6sS1rRpRLt4gBhc1pWoyTSjkfszfmj1seaYYLCZ"
+
+            - name: "Fetch the manifest privately"
+              action: call_method
+              find_by: "text"
+              find_value: "Fetch"
+              method: "clicked"
+
+            - name: "Wait for the fetch to start"
+              action: sleep
+              ms: 1000
+
+            - name: "The fetched row downloads privately"
+              action: expect_property
+              find_value: "privateToggle"
+              property: "isPrivate"
+              value: true
+              screenshot: "storage-ui-private-fetch.png"
+              text: |
+                The fetch goes over Mix, and the new row starts with its lock on:
+                the download that follows stays private too. The row being
+                fetched sits on top of the list.
+
             - name: "Stop the node"
               action: click
               target: "Stop"
@@ -567,3 +617,59 @@ sections:
               text: |
                 The node was already starting: the app waits for it instead of
                 reporting a failed start.
+
+  - title: "Private mode needs Mix"
+    step: true
+    text: |
+      Private transfers go over Mix. When the configuration turns Mix off, the
+      app does not offer them.
+    steps:
+      - title: "Write a configuration with Mix off"
+        run: |
+          rm -rf /tmp/storage-ui-nomix-data
+          mkdir -p /tmp/storage-ui-nomix-data
+
+          mkdir -p "$HOME/.config/Logos"
+          cat > "$HOME/.config/Logos/LogosStandalone.conf" <<'EOF'
+          [Storage]
+          onboardingCompleted=true
+          EOF
+
+          mkdir -p "$HOME/.logos_storage"
+          cat > "$HOME/.logos_storage/config.json" <<'EOF'
+          {
+            "config-version": 3,
+            "data-dir": "/tmp/storage-ui-nomix-data",
+            "log-level": "info",
+            "listen-port": 8500,
+            "mix-enabled": false
+          }
+          EOF
+        check_file: "/tmp/storage-ui-nomix-data"
+
+      - title: "Launch the app"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "The dashboard opens on the saved configuration"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 5000
+
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Private fetch is not offered"
+              action: expect_property
+              find_value: "fetchPrivateSwitch"
+              property: "enabled"
+              value: false
+              screenshot: "storage-ui-private-no-mix.png"
+              text: |
+                The `Private` switch is greyed out. The lock on each manifest row
+                is greyed out the same way.

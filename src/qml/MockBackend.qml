@@ -31,7 +31,7 @@ QtObject {
     signal downloadCompleted(string cid)
     signal spaceUpdated(real total, real used)
     signal manifestsUpdated(var manifests)
-    signal manifestFetchStarted(string cid)
+    signal manifestFetchStarted(string cid, bool isPrivate)
     signal manifestFetchFailed(string cid, string error)
     signal removeStarted(string cid)
     signal removeFailed(string cid, string error)
@@ -53,7 +53,7 @@ QtObject {
     function uploadFile(url) {}
     function downloadFile(cid, url, totalBytes, isPrivate) {}
     function downloadManifest(cid, isPrivate) {
-        manifestFetchStarted(cid)
+        manifestFetchStarted(cid, isPrivate)
     }
     function downloadManifests() {}
     function remove(cid) {

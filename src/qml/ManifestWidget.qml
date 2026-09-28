@@ -66,6 +66,8 @@ LogosFrame {
         anchors.right: parent.right
         y: bottomTitle.y + bottomTitle.labelCenterY - height / 2
         text: "Private"
+        // Mix carries private transfers.
+        enabled: root.backend.mixRunning
         checked: root.isPrivate
         onToggled: root.isPrivate = checked
     }

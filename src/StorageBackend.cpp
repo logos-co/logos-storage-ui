@@ -618,7 +618,7 @@ void StorageBackend::downloadManifest(QString cid, bool isPrivate) {
     // The fetch runs in the background: the manifest arrives later via the
     // "storageDownloadManifestDone" event. Signal the start so the UI can show
     // a pending row.
-    emit manifestFetchStarted(cid);
+    emit manifestFetchStarted(cid, isPrivate);
 }
 
 void StorageBackend::downloadManifests() {

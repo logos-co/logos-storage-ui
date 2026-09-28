@@ -83,7 +83,7 @@ class StorageBackend
 
     // Manifests
     SIGNAL(manifestsUpdated(QVariantList manifests))
-    SIGNAL(manifestFetchStarted(QString cid))
+    SIGNAL(manifestFetchStarted(QString cid, bool isPrivate))
     SIGNAL(manifestFetchFailed(QString cid, QString error))
 
     // Remove
