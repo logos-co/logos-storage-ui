@@ -147,6 +147,42 @@ sections:
               text: |
                 The manifest row carries the filename and, under it, the CID to share.
 
+            - name: "A download is not private by default"
+              action: expect_property
+              find_value: "privateToggle"
+              property: "isPrivate"
+              value: false
+              text: |
+                The lock on the row is off: the download goes straight to the peers
+                and the node advertises the file afterwards.
+
+            - name: "Turn on the private download"
+              action: call_method
+              find_by: "objectName"
+              find_value: "privateToggle"
+              method: "clicked"
+
+            - name: "The row reports a private download"
+              action: expect_property
+              find_value: "privateToggle"
+              property: "isPrivate"
+              value: true
+              screenshot: "storage-ui-private-download.png"
+              text: |
+                The download now goes over Mix, and the node does not advertise the file.
+
+            - name: "Turn the private download off again"
+              action: call_method
+              find_by: "objectName"
+              find_value: "privateToggle"
+              method: "clicked"
+
+            - name: "The row reports a direct download again"
+              action: expect_property
+              find_value: "privateToggle"
+              property: "isPrivate"
+              value: false
+
             - name: "Delete the manifest"
               action: call_method
               find_by: "objectName"

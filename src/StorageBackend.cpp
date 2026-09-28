@@ -472,7 +472,7 @@ void StorageBackend::uploadFile(QUrl url) {
     qDebug() << "StorageBackend: uploadFile result =" << sessionId;
 }
 
-void StorageBackend::downloadFile(QString cid, QUrl url, qint64 totalBytes) {
+void StorageBackend::downloadFile(QString cid, QUrl url, qint64 totalBytes, bool isPrivate) {
     qDebug() << "StorageBackend: downloadFile called";
 
     if (!url.isLocalFile()) {
@@ -486,7 +486,7 @@ void StorageBackend::downloadFile(QString cid, QUrl url, qint64 totalBytes) {
               .arg(totalBytes));
     emit downloadStarted(cid, filename, totalBytes);
 
-    LogosResult result = m_logos->storage_module.downloadToUrl(cid, url.toLocalFile(), false, DEFAULT_CHUNK_SIZE, false, true);
+    LogosResult result = m_logos->storage_module.downloadToUrl(cid, url.toLocalFile(), false, DEFAULT_CHUNK_SIZE, isPrivate, !isPrivate);
 
     if (!result.success) {
         reportError("Failed to download file:" + result.getError());
@@ -605,24 +605,10 @@ void StorageBackend::logDataDir() {
     debug("Data dir: " + result.getString());
 }
 
-void StorageBackend::setAdvertise(QString cid, bool enabled) {
-    qDebug() << "StorageBackend::setAdvertise called with cid=" << cid << "enabled=" << enabled;
+void StorageBackend::downloadManifest(QString cid, bool isPrivate) {
+    qDebug() << "StorageBackend::downloadManifest called with cid=" << cid << "isPrivate=" << isPrivate;
 
-    LogosResult result = m_logos->storage_module.setAdvertise(cid, enabled);
-
-    if (!result.success) {
-        reportError("Failed to change advertise for " + cid + ": " + result.getError());
-        return;
-    }
-
-    debug("Advertise " + cid + ": " + (enabled ? "on" : "off"));
-    QMetaObject::invokeMethod(this, &StorageBackend::downloadManifests, Qt::QueuedConnection);
-}
-
-void StorageBackend::downloadManifest(QString cid, bool advertise) {
-    qDebug() << "StorageBackend::downloadManifest called with cid=" << cid;
-
-    LogosResult result = m_logos->storage_module.downloadManifest(cid, false, advertise);
+    LogosResult result = m_logos->storage_module.downloadManifest(cid, isPrivate, !isPrivate);
 
     if (!result.success) {
         reportError("Failed to fetch manifest cid " + cid + ": " + result.getError());
@@ -648,21 +634,7 @@ void StorageBackend::downloadManifests() {
         return;
     }
 
-    QVariantList manifests = result.getList();
-    for (QVariant& item : manifests) {
-        QVariantMap manifest = item.toMap();
-        const QString cid = manifest.value("cid").toString();
-        LogosResult advertised = m_logos->storage_module.getAdvertise(cid);
-        if (!advertised.success) {
-            qWarning() << "StorageBackend::downloadManifests Failed to read advertise for" << cid << ":"
-                       << advertised.getError();
-            continue;
-        }
-        manifest["advertised"] = advertised.getValue<bool>();
-        item = manifest;
-    }
-
-    emit manifestsUpdated(manifests);
+    emit manifestsUpdated(result.getList());
 }
 
 void StorageBackend::refreshSpace() {

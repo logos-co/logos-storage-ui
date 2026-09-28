@@ -51,15 +51,14 @@ QtObject {
         peersUpdated(3)
     }
     function uploadFile(url) {}
-    function downloadFile(cid, url, totalBytes) {}
-    function downloadManifest(cid, advertise) {
+    function downloadFile(cid, url, totalBytes, isPrivate) {}
+    function downloadManifest(cid, isPrivate) {
         manifestFetchStarted(cid)
     }
     function downloadManifests() {}
     function remove(cid) {
         removeStarted(cid)
     }
-    function setAdvertise(cid, enabled) {}
     function logDebugInfo() {
         debugInfoUpdated({
                              "id": "16Uiu2HAmMockPeerIdForTheDesignPreview",

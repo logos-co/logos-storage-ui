@@ -71,10 +71,6 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     void exists(QString cid) override;
     void remove(QString cid) override;
 
-    // Whether the node announces the cid to the DHT and serves it to peers.
-    // Emit manifestsUpdated once applied.
-    void setAdvertise(QString cid, bool enabled) override;
-
     // Fetch a cid in background
     void fetch(QString cid) override;
 
@@ -88,10 +84,12 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // Emit downloadStarted(cid, filename, totalBytes) when download begins
     // Emit downloadChunk(len) on each storageDownloadProgress event
     // Emit downloadCompleted(cid) on storageDownloadDone
-    void downloadFile(QString cid, QUrl url, qint64 totalBytes) override;
+    // A private download goes over Mix and is not advertised.
+    void downloadFile(QString cid, QUrl url, qint64 totalBytes, bool isPrivate) override;
 
     // Emit manifestsUpdated
-    void downloadManifest(QString cid, bool advertise) override;
+    // A private fetch goes over Mix and is not advertised.
+    void downloadManifest(QString cid, bool isPrivate) override;
 
     // Download all the manifests and notify
     // Emit manifestsUpdated

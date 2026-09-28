@@ -24,6 +24,8 @@ LogosFrame {
     property string downloadingCid: ""
     property string downloadFolderPath: ""
     property var deleting: ({})
+    // Cids whose download goes over Mix, not advertised. Every other one is direct.
+    property var privateDownloads: ({})
 
     // Three 40px icon buttons, the gaps between them and the pill's own padding.
     readonly property int actionsColumnWidth: 40 * 3 + Theme.spacing.medium * 4
@@ -90,6 +92,16 @@ LogosFrame {
 
     function isDownloaded(item) {
         return !!(item && item.filename && root.downloadedNames[item.filename])
+    }
+
+    function togglePrivateDownload(cid) {
+        var p = Object.assign({}, root.privateDownloads)
+        if (p[cid]) {
+            delete p[cid]
+        } else {
+            p[cid] = true
+        }
+        root.privateDownloads = p
     }
 
     function markDeleting(cid) {
@@ -162,7 +174,6 @@ LogosFrame {
                                  "datasetSize": String(r.datasetSize || 0),
                                  "status": r.status || "",
                                  "error": r.error || "",
-                                 "advertised": r.advertised !== false,
                                  "added": root.formatAdded(r.cid || "")
                              })
         }
@@ -578,11 +589,10 @@ LogosFrame {
 
                                         readonly property bool rowDownloaded: root.isDownloaded(rowItem)
 
-                                        AdvertiseToggle {
-                                            // Unknown when the node could not say: shown as its default.
-                                            advertised: !rowItem || rowItem.advertised !== false
-                                            enabled: root.running && !actionsCell.rowDeleting
-                                            onClicked: root.backend.setAdvertise(rowItem.cid, !advertised)
+                                        PrivateToggle {
+                                            isPrivate: !!rowItem && !!root.privateDownloads[rowItem.cid]
+                                            enabled: !actionsCell.rowDeleting
+                                            onClicked: root.togglePrivateDownload(rowItem.cid)
                                         }
 
                                         LogosIconButton {
@@ -614,7 +624,8 @@ LogosFrame {
                                                             dest,
                                                             parseInt(
                                                                 rowItem.datasetSize)
-                                                            || 0)
+                                                            || 0,
+                                                            !!root.privateDownloads[rowItem.cid])
                                             }
                                         }
 
