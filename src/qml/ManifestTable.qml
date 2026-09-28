@@ -281,6 +281,9 @@ LogosFrame {
             function onRemoveStarted(cid) {
                 root.markDeleting(cid)
                 root.forgetAdded(cid)
+                if (root.privateDownloads[cid]) {
+                    root.togglePrivateDownload(cid)
+                }
             }
 
             function onRemoveFailed(cid, error) {
@@ -290,8 +293,8 @@ LogosFrame {
             function onManifestFetchStarted(cid, isPrivate) {
                 root.addPending(cid)
                 root.recordAdded(cid)
-                // A private fetch keeps the download private too.
-                if (isPrivate && !root.privateDownloads[cid]) {
+                // The download follows the mode of the fetch.
+                if (isPrivate !== !!root.privateDownloads[cid]) {
                     root.togglePrivateDownload(cid)
                 }
             }
