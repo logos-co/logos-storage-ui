@@ -17,14 +17,12 @@ ScrollView {
 
     property var backend: MockBackend
     property string downloadFolderPath: ""
-    property bool privateQueries: true
 
     // Onboarding writes the first config, so it starts from the defaults and
     // hides what its own flow already covers.
     property bool onboarding: false
 
     signal folderPathChanged(string path)
-    signal privateQueriesToggled(bool enabled)
     signal saved(bool restartNeeded)
 
     readonly property string displayFolderPath: downloadFolderPath.replace(
@@ -112,11 +110,6 @@ ScrollView {
         return JSON.stringify(value, null, 2)
     }
 
-    // mixRunning only says the config asked for Mix: the toggle reaches a live
-    // module, so the node has to be up as well.
-    readonly property bool mixReady: root.backend && root.backend.mixRunning
-                                     && root.backend.status === StorageBackend.Running
-
     // A bootstrap list of their own is what the user joined instead of a preset.
     // Judged on the text, not on the parsed value: mid-typing the JSON does not
     // parse yet, and the preset must not flicker back on between keystrokes.
@@ -127,7 +120,7 @@ ScrollView {
     readonly property var restartKeys: ["storage-quota", "listen-port", "nat",
                                         "network", "bootstrap-node", "dht-mix-proxy",
                                         "mix-pool-json", "nat-schedule-interval",
-                                        "log-level"]
+                                        "log-level", "mix-enabled"]
 
     clip: true
     contentWidth: availableWidth
@@ -263,6 +256,11 @@ ScrollView {
         putJson("dht-mix-proxy", root.vMixProxies)
         put("mix-pool-json", root.vMixPool)
         putInt("listen-port", root.vListenPort)
+
+        // Written only when the user flips it: an absent key stays absent.
+        if (root.vMixEnabled !== !!cfg["mix-enabled"]) {
+            cfg["mix-enabled"] = root.vMixEnabled
+        }
 
         return cfg
     }
@@ -649,32 +647,16 @@ ScrollView {
 
                 SettingRow {
                     title: "Mix enabled"
-                    description: "DHT provider lookups are routed through the Mix protocol."
+                    description: "Private fetches and downloads go over the Mix protocol."
 
                     Item {
                         Layout.fillWidth: true
                     }
 
                     LogosSwitch {
+                        objectName: "mixEnabledSwitch"
                         checked: root.vMixEnabled
-                        enabled: false
-                    }
-                }
-
-                SettingRow {
-                    title: "Private DHT queries"
-                    description: root.mixReady
-                                 ? "Applied immediately, no restart needed."
-                                 : "Needs a node running with Mix enabled."
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
-
-                    LogosSwitch {
-                        checked: root.privateQueries
-                        enabled: root.mixReady
-                        onToggled: root.privateQueriesToggled(checked)
+                        onToggled: root.vMixEnabled = checked
                     }
                 }
 

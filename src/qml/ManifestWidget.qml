@@ -16,6 +16,7 @@ LogosFrame {
     property var backend: MockBackend
     property bool running: false
     property bool enabled: true
+    property bool isPrivate: false
 
     RowLayout {
         anchors.top: parent.top
@@ -44,7 +45,7 @@ LogosFrame {
             Layout.alignment: Qt.AlignTop
             enabled: cidInput.text.length > 0 && root.running && root.enabled
             onClicked: {
-                root.backend.downloadManifest(cidInput.text)
+                root.backend.downloadManifest(cidInput.text, root.isPrivate && root.backend.mixRunning)
                 cidInput.text = ""
             }
         }
@@ -58,5 +59,16 @@ LogosFrame {
         title: "Fetch Manifest"
         color: Theme.palette.textSecondary
         hasSeparator: false
+    }
+
+    LogosSwitch {
+        objectName: "fetchPrivateSwitch"
+        anchors.right: parent.right
+        y: bottomTitle.y + bottomTitle.labelCenterY - height / 2
+        text: "Private"
+        // Mix carries private transfers.
+        enabled: root.backend.mixRunning
+        checked: root.isPrivate && root.backend.mixRunning
+        onToggled: root.isPrivate = checked
     }
 }

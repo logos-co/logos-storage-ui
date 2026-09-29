@@ -56,6 +56,10 @@ sections:
         run: 'printf "hello from the storage UI doctest\n" > /tmp/storage-ui-upload.txt'
         check_file: "/tmp/storage-ui-upload.txt"
 
+      - title: "Write a Logos package sample"
+        run: 'printf "not a real package, only the extension matters\n" > /tmp/storage-ui-package.lgx'
+        check_file: "/tmp/storage-ui-package.lgx"
+
   - title: "Guided onboarding"
     step: true
     text: |
@@ -143,6 +147,42 @@ sections:
               text: |
                 The manifest row carries the filename and, under it, the CID to share.
 
+            - name: "A download is not private by default"
+              action: expect_property
+              find_value: "privateToggle"
+              property: "isPrivate"
+              value: false
+              text: |
+                The lock on the row is off: the download goes straight to the peers
+                and the node advertises the file afterwards.
+
+            - name: "Turn on the private download"
+              action: call_method
+              find_by: "objectName"
+              find_value: "privateToggle"
+              method: "clicked"
+
+            - name: "The row reports a private download"
+              action: expect_property
+              find_value: "privateToggle"
+              property: "isPrivate"
+              value: true
+              screenshot: "storage-ui-private-download.png"
+              text: |
+                The download now goes over Mix, and the node does not advertise the file.
+
+            - name: "Turn the private download off again"
+              action: call_method
+              find_by: "objectName"
+              find_value: "privateToggle"
+              method: "clicked"
+
+            - name: "The row reports a direct download again"
+              action: expect_property
+              find_value: "privateToggle"
+              property: "isPrivate"
+              value: false
+
             - name: "Delete the manifest"
               action: call_method
               find_by: "objectName"
@@ -164,6 +204,84 @@ sections:
               timeout: 5000
               text: |
                 The table empties too.
+
+            - name: "Hand a Logos package to the upload dialog"
+              action: set_property
+              find_by: "objectName"
+              find_value: "uploadDialog"
+              property: "selectedFile"
+              value: "file:///tmp/storage-ui-package.lgx"
+
+            - name: "Fire the dialog's accepted signal again"
+              action: call_method
+              find_by: "objectName"
+              find_value: "uploadDialog"
+              method: "accepted"
+
+            - name: "The package joins the manifest list"
+              action: wait_for
+              texts: ["storage-ui-package.lgx"]
+              timeout: 5000
+              screenshot: "storage-ui-package.png"
+
+            - name: "A package cannot be deleted"
+              action: expect_property
+              find_value: "deleteButton"
+              property: "visible"
+              value: false
+              text: |
+                Installed modules may still need the package, so its row offers no
+                delete button.
+
+            - name: "Private fetch is offered"
+              action: expect_property
+              find_value: "fetchPrivateSwitch"
+              property: "enabled"
+              value: true
+              text: |
+                The node runs with Mix, so the Fetch Manifest card offers the
+                `Private` switch.
+
+            - name: "Turn on the Private switch"
+              action: set_property
+              find_by: "objectName"
+              find_value: "fetchPrivateSwitch"
+              property: "checked"
+              value: true
+
+            - name: "Fire the switch's toggled signal"
+              action: call_method
+              find_by: "objectName"
+              find_value: "fetchPrivateSwitch"
+              method: "toggled"
+
+            - name: "Paste a CID into Fetch Manifest"
+              action: set_property
+              find_by: "placeholderText"
+              find_value: "CID"
+              property: "text"
+              value: "zDvZRwzkzrrYB6sS1rRpRLt4gBhc1pWoyTSjkfszfmj1seaYYLCZ"
+
+            - name: "Fetch the manifest privately"
+              action: call_method
+              find_by: "text"
+              find_value: "Fetch"
+              method: "clicked"
+
+            - name: "Wait for the fetch to start"
+              action: sleep
+              ms: 1000
+
+            - name: "The fetched row downloads privately"
+              action: expect_property
+              find_value: "privateToggle"
+              property: "isPrivate"
+              value: true
+              screenshot: "storage-ui-private-fetch.png"
+              text: |
+                The fetch goes over Mix, and the new row starts with its lock on:
+                the download that follows stays private too. The row being
+                fetched sits on top of the list.
 
             - name: "Stop the node"
               action: click
@@ -273,35 +391,6 @@ sections:
               action: wait_for
               texts: ["Stop"]
               timeout: 30000
-
-            - name: "Private DHT queries are on by default"
-              action: expect_property
-              find_by: "text"
-              find_value: "Mix"
-              property: "checked"
-              value: true
-              text: |
-                DHT provider lookups are routed through the Mix protocol, which
-                makes them much harder to trace back to you. It is on by default
-                when enabling Mix.
-
-            - name: "Turn private queries off"
-              action: click_object
-              find_by: "text"
-              find_value: "Mix"
-
-            - name: "The switch reports them off"
-              action: expect_property
-              find_by: "text"
-              find_value: "Mix"
-              property: "checked"
-              value: false
-              screenshot: "storage-ui-mix-disabled.png"
-
-            - name: "Turn them back on"
-              action: click_object
-              find_by: "text"
-              find_value: "Mix"
 
       # Disabled: the CID below is only served by the node this test itself
       # started, and that node is shut down as soon as the run ends. The
@@ -528,3 +617,149 @@ sections:
               text: |
                 The node was already starting: the app waits for it instead of
                 reporting a failed start.
+
+  - title: "Private mode needs Mix"
+    step: true
+    text: |
+      Private transfers go over Mix. When the configuration turns Mix off, the
+      app does not offer them. Turning Mix on in the settings offers them again
+      after a restart.
+    steps:
+      - title: "Write a configuration with Mix off"
+        run: |
+          rm -rf /tmp/storage-ui-nomix-data
+          mkdir -p /tmp/storage-ui-nomix-data
+
+          mkdir -p "$HOME/.config/Logos"
+          cat > "$HOME/.config/Logos/LogosStandalone.conf" <<'EOF'
+          [Storage]
+          onboardingCompleted=true
+          EOF
+
+          mkdir -p "$HOME/.logos_storage"
+          cat > "$HOME/.logos_storage/config.json" <<'EOF'
+          {
+            "config-version": 3,
+            "data-dir": "/tmp/storage-ui-nomix-data",
+            "log-level": "info",
+            "listen-port": 8500,
+            "mix-enabled": false
+          }
+          EOF
+        check_file: "/tmp/storage-ui-nomix-data"
+
+      - title: "Launch the app"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "The dashboard opens on the saved configuration"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 5000
+
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Private fetch is not offered"
+              action: expect_property
+              find_value: "fetchPrivateSwitch"
+              property: "enabled"
+              value: false
+              screenshot: "storage-ui-private-no-mix.png"
+              text: |
+                The `Private` switch is greyed out. The lock on each manifest row
+                is greyed out the same way.
+
+            - name: "Open the Settings popup"
+              action: click_object
+              find_value: "settingsButton"
+
+            - name: "The popup is open"
+              action: wait_for
+              texts: ["Settings", "Mix enabled"]
+              timeout: 5000
+
+            - name: "The Mix switch shows the saved value"
+              action: expect_property
+              find_value: "mixEnabledSwitch"
+              property: "checked"
+              value: false
+
+            - name: "Turn Mix on"
+              action: set_property
+              find_by: "objectName"
+              find_value: "mixEnabledSwitch"
+              property: "checked"
+              value: true
+
+            - name: "Fire the switch's toggled signal"
+              action: call_method
+              find_by: "objectName"
+              find_value: "mixEnabledSwitch"
+              method: "toggled"
+
+            - name: "Save"
+              action: click
+              target: "Save"
+
+            - name: "Let the save settle"
+              action: sleep
+              ms: 1000
+
+            - name: "Turning Mix on asks for a restart"
+              action: expect_property
+              find_value: "restartPendingNotice"
+              property: "visible"
+              value: true
+              screenshot: "storage-ui-mix-enabled.png"
+              text: |
+                The node reads `mix-enabled` when it starts, so the change needs
+                a restart.
+
+            - name: "Close the popup"
+              action: call_method
+              find_value: "settingsPopup"
+              method: "close"
+
+            - name: "Stop the node"
+              action: click
+              target: "Stop"
+
+            - name: "The node reports Stopped"
+              action: wait_for
+              texts: ["Stopped"]
+              timeout: 30000
+
+            - name: "Start the node with Mix"
+              action: click
+              target: "Start"
+
+            - name: "The node runs again"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Private fetch is offered once Mix runs"
+              action: expect_property
+              find_value: "fetchPrivateSwitch"
+              property: "enabled"
+              value: true
+              screenshot: "storage-ui-private-with-mix.png"
+              text: |
+                After the restart the node runs with Mix, and the `Private` switch
+                can be turned on.
+
+      - title: "The saved config turns Mix on"
+        run: |
+          set -e
+          cfg="$HOME/.logos_storage/config.json"
+          jq . "$cfg"
+
+          test "$(jq '."mix-enabled"' "$cfg")" = "true"
+
+          echo "OK: mix-enabled saved as true"

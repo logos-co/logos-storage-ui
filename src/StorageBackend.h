@@ -84,10 +84,12 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // Emit downloadStarted(cid, filename, totalBytes) when download begins
     // Emit downloadChunk(len) on each storageDownloadProgress event
     // Emit downloadCompleted(cid) on storageDownloadDone
-    void downloadFile(QString cid, QUrl url, qint64 totalBytes) override;
+    // A private download goes over Mix and is not advertised.
+    void downloadFile(QString cid, QUrl url, qint64 totalBytes, bool isPrivate) override;
 
     // Emit manifestsUpdated
-    void downloadManifest(QString cid) override;
+    // A private fetch goes over Mix and is not advertised.
+    void downloadManifest(QString cid, bool isPrivate) override;
 
     // Download all the manifests and notify
     // Emit manifestsUpdated
@@ -103,11 +105,6 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
 
     // Get the content of the user config file
     QString getUserConfig() override;
-
-    // Toggle private DHT queries over Mix on the running node.
-    // Requires the node to run with mix-enabled and a non-empty dht-mix-proxy.
-    // Emit error(message) and return false on failure.
-    bool togglePrivateQueries(bool enabled) override;
 
     // Fetch multiple data for the widgets: manifests, debug..
     void fetchWidgetsData() override;

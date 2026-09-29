@@ -460,7 +460,7 @@ void StorageBackend::uploadFile(QUrl url) {
     debug(QString("Starting upload of file: %1 bytes").arg(totalBytes));
     emit uploadStarted(totalBytes);
 
-    LogosResult result = m_logos->storage_module.uploadUrl(url.toLocalFile(), DEFAULT_CHUNK_SIZE);
+    LogosResult result = m_logos->storage_module.uploadUrl(url.toLocalFile(), DEFAULT_CHUNK_SIZE, true);
 
     if (!result.success) {
         reportError("Failed to upload file:" + result.getError());
@@ -472,7 +472,7 @@ void StorageBackend::uploadFile(QUrl url) {
     qDebug() << "StorageBackend: uploadFile result =" << sessionId;
 }
 
-void StorageBackend::downloadFile(QString cid, QUrl url, qint64 totalBytes) {
+void StorageBackend::downloadFile(QString cid, QUrl url, qint64 totalBytes, bool isPrivate) {
     qDebug() << "StorageBackend: downloadFile called";
 
     if (!url.isLocalFile()) {
@@ -486,7 +486,7 @@ void StorageBackend::downloadFile(QString cid, QUrl url, qint64 totalBytes) {
               .arg(totalBytes));
     emit downloadStarted(cid, filename, totalBytes);
 
-    LogosResult result = m_logos->storage_module.downloadToUrl(cid, url.toLocalFile(), false, DEFAULT_CHUNK_SIZE);
+    LogosResult result = m_logos->storage_module.downloadToUrl(cid, url.toLocalFile(), false, DEFAULT_CHUNK_SIZE, isPrivate, !isPrivate);
 
     if (!result.success) {
         reportError("Failed to download file:" + result.getError());
@@ -529,7 +529,7 @@ void StorageBackend::remove(QString cid) {
 void StorageBackend::fetch(QString cid) {
     qDebug() << "StorageBackend::fetch called";
 
-    LogosResult result = m_logos->storage_module.fetch(cid);
+    LogosResult result = m_logos->storage_module.fetch(cid, false, true);
 
     if (!result.success) {
         reportError("Failed to fetch cid " + cid + ": " + result.getError());
@@ -605,10 +605,10 @@ void StorageBackend::logDataDir() {
     debug("Data dir: " + result.getString());
 }
 
-void StorageBackend::downloadManifest(QString cid) {
-    qDebug() << "StorageBackend::downloadManifest called with cid=" << cid;
+void StorageBackend::downloadManifest(QString cid, bool isPrivate) {
+    qDebug() << "StorageBackend::downloadManifest called with cid=" << cid << "isPrivate=" << isPrivate;
 
-    LogosResult result = m_logos->storage_module.downloadManifest(cid);
+    LogosResult result = m_logos->storage_module.downloadManifest(cid, isPrivate, !isPrivate);
 
     if (!result.success) {
         reportError("Failed to fetch manifest cid " + cid + ": " + result.getError());
@@ -618,7 +618,7 @@ void StorageBackend::downloadManifest(QString cid) {
     // The fetch runs in the background: the manifest arrives later via the
     // "storageDownloadManifestDone" event. Signal the start so the UI can show
     // a pending row.
-    emit manifestFetchStarted(cid);
+    emit manifestFetchStarted(cid, isPrivate);
 }
 
 void StorageBackend::downloadManifests() {
@@ -694,17 +694,6 @@ QString StorageBackend::userConfig() {
     }
 
     return result.getString();
-}
-
-bool StorageBackend::togglePrivateQueries(bool enabled) {
-    qDebug() << "StorageBackend::togglePrivateQueries called with" << enabled;
-
-    LogosResult result = m_logos->storage_module.togglePrivateQueries(enabled);
-    if (!result.success) {
-        reportError("Failed to toggle private queries: " + result.getError());
-        return false;
-    }
-    return true;
 }
 
 void StorageBackend::fetchWidgetsData() {
