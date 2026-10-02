@@ -1,7 +1,7 @@
 {
   "name": "storage_ui",
   "display_name": "Storage",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "type": "ui_qml",
   "interface": "universal",
   "category": "storage",
