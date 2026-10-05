@@ -10,7 +10,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  # event_name: a pull_request run on a merged PR has github.ref == refs/heads/master.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:

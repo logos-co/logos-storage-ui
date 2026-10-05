@@ -19,7 +19,8 @@ on:
     branches: [master, main]
 
 concurrency:
-  group: doctests-${{ github.ref }}
+  # event_name: a pull_request run on a merged PR has github.ref == refs/heads/master.
+  group: doctests-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -34,8 +35,9 @@ jobs:
           - storage-ui-app
 
     # ATTIC_TOKEN_PUBLIC only exists in the public-cache environment; master
-    # jobs must opt into it to publish to the public cache.
-    environment: ${{ github.ref == 'refs/heads/master' && 'public-cache' || '' }}
+    # jobs must opt into it to publish to the public cache. Push only: the
+    # environment rejects a pull_request run, even on a merged PR.
+    environment: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && 'public-cache' || '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 180
 
