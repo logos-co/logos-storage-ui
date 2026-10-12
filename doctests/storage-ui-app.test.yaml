@@ -643,6 +643,7 @@ sections:
             "data-dir": "/tmp/storage-ui-nomix-data",
             "log-level": "info",
             "listen-port": 8500,
+            "network": "logos.dev",
             "mix-enabled": false
           }
           EOF
