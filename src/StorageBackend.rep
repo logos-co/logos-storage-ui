@@ -34,6 +34,7 @@ class StorageBackend
     // Upload / Download
     SLOT(void uploadFile(QUrl url))
     SLOT(void downloadFile(QString cid, QUrl url, qint64 totalBytes, bool isPrivate))
+    SLOT(void cancelDownload(QString cid))
     SLOT(void downloadManifest(QString cid, bool isPrivate))
     SLOT(void downloadManifests())
     SLOT(void exists(QString cid))
@@ -80,6 +81,8 @@ class StorageBackend
     SIGNAL(downloadStarted(QString cid, QString filename, qint64 totalBytes))
     SIGNAL(downloadChunk(qint64 len))
     SIGNAL(downloadCompleted(QString cid))
+    SIGNAL(downloadCancelled(QString cid))
+    SIGNAL(downloadFailed(QString cid, QString error))
 
     // Manifests
     SIGNAL(manifestsUpdated(QVariantList manifests))

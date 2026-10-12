@@ -283,6 +283,44 @@ sections:
                 the download that follows stays private too. The row being
                 fetched sits on top of the list.
 
+            - name: "The manifest arrives in the list"
+              action: wait_for
+              texts: ["farewell-to-westphalia-foss-edition.pdf"]
+              timeout: 60000
+
+            - name: "Start the private download"
+              action: call_method
+              find_by: "objectName"
+              find_value: "downloadButton"
+              method: "clicked"
+
+            - name: "A cancel button replaces the download button"
+              action: expect_property
+              find_value: "cancelDownloadButton"
+              property: "visible"
+              value: true
+              screenshot: "storage-ui-cancel-download.png"
+              text: |
+                While the file downloads, its row offers a cancel button
+                instead of the download button.
+
+            - name: "Cancel the download"
+              action: call_method
+              find_by: "objectName"
+              find_value: "cancelDownloadButton"
+              method: "clicked"
+
+            - name: "The download stops"
+              action: wait_for
+              texts: ["No download in progress"]
+              timeout: 5000
+
+            - name: "The download button is back"
+              action: expect_property
+              find_value: "downloadButton"
+              property: "visible"
+              value: true
+
             - name: "Stop the node"
               action: click
               target: "Stop"

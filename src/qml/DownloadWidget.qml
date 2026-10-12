@@ -115,7 +115,11 @@ LogosFrame {
             root.downloadInProgress = false
         }
 
-        function onError(message) {
+        function onDownloadCancelled(cid) {
+            root.reset()
+        }
+
+        function onDownloadFailed(cid, error) {
             root.reset()
         }
     }
