@@ -29,6 +29,8 @@ QtObject {
     signal downloadStarted(string cid, string filename, real totalBytes)
     signal downloadChunk(real len)
     signal downloadCompleted(string cid)
+    signal downloadCancelled(string cid)
+    signal downloadFailed(string cid, string error)
     signal spaceUpdated(real total, real used)
     signal manifestsUpdated(var manifests)
     signal manifestFetchStarted(string cid, bool isPrivate)
@@ -52,6 +54,9 @@ QtObject {
     }
     function uploadFile(url) {}
     function downloadFile(cid, url, totalBytes, isPrivate) {}
+    function cancelDownload(cid) {
+        downloadCancelled(cid)
+    }
     function downloadManifest(cid, isPrivate) {
         manifestFetchStarted(cid, isPrivate)
     }

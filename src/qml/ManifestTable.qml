@@ -318,7 +318,12 @@ LogosFrame {
                 root.rebuildDownloaded()
             }
 
-            function onError(message) {
+            function onDownloadCancelled(cid) {
+                root.isDownloading = false
+                root.downloadingCid = ""
+            }
+
+            function onDownloadFailed(cid, error) {
                 root.isDownloading = false
                 root.downloadingCid = ""
             }
@@ -610,7 +615,24 @@ LogosFrame {
                                         }
 
                                         LogosIconButton {
+                                            objectName: "cancelDownloadButton"
+                                            // Takes the place of the download button while the row downloads.
+                                            visible: actionsCell.rowDownloading
+                                            iconSource: Qt.resolvedUrl("assets/close-circle-line.svg")
+                                            background: IconButtonBackground {}
+                                            enabled: root.running
+
+                                            LogosToolTip {
+                                                text: "Cancel the download"
+                                                visible: parent.hovered
+                                            }
+
+                                            onClicked: root.backend.cancelDownload(rowItem.cid)
+                                        }
+
+                                        LogosIconButton {
                                             objectName: "downloadButton"
+                                            visible: !actionsCell.rowDownloading
                                             iconSource: Qt.resolvedUrl("assets/download-2-fill.svg")
                                             // Orange once a copy sits in the
                                             // download folder. Still clickable:

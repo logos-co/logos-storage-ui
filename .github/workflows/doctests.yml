@@ -65,12 +65,17 @@ jobs:
 
       - name: Run doc-test
         run: |
+          mkdir -p "${{ runner.temp }}/doctest-work"
+          tail -F "${{ runner.temp }}/doctest-work/ui-test-app.log" \
+            > "${{ runner.temp }}/${{ matrix.spec }}.app.log" 2>&1 &
+
           # --continue-on-fail so the run walks every step and the report is
           # complete. The job still fails (non-zero exit) if any step failed.
           nix run github:logos-co/logos-doctest -- run \
             doctests/${{ matrix.spec }}.test.yaml \
             --verbose \
             --continue-on-fail \
+            --workdir "${{ runner.temp }}/doctest-work" \
             --release-for logos-storage-ui=${{ steps.commit.outputs.sha }} \
             --report "${{ runner.temp }}/${{ matrix.spec }}.report.html"
 
@@ -92,4 +97,12 @@ jobs:
         with:
           name: doctest-report-${{ matrix.spec }}
           path: report-out/index.html
+          if-no-files-found: warn
+
+      - name: Upload app log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctest-app-log-${{ matrix.spec }}
+          path: ${{ runner.temp }}/${{ matrix.spec }}.app.log
           if-no-files-found: warn
