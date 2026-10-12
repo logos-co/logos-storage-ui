@@ -294,6 +294,10 @@ sections:
               find_value: "downloadButton"
               method: "clicked"
 
+            - name: "Wait for the download to start"
+              action: sleep
+              ms: 1000
+
             - name: "A cancel button replaces the download button"
               action: expect_property
               find_value: "cancelDownloadButton"
