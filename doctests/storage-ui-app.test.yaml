@@ -283,48 +283,6 @@ sections:
                 the download that follows stays private too. The row being
                 fetched sits on top of the list.
 
-            - name: "The manifest arrives in the list"
-              action: wait_for
-              texts: ["farewell-to-westphalia-foss-edition.pdf"]
-              timeout: 60000
-
-            - name: "Start the private download"
-              action: call_method
-              find_by: "objectName"
-              find_value: "downloadButton"
-              method: "clicked"
-
-            - name: "Wait for the download to start"
-              action: sleep
-              ms: 1000
-
-            - name: "A cancel button replaces the download button"
-              action: expect_property
-              find_value: "cancelDownloadButton"
-              property: "visible"
-              value: true
-              screenshot: "storage-ui-cancel-download.png"
-              text: |
-                While the file downloads, its row offers a cancel button
-                instead of the download button.
-
-            - name: "Cancel the download"
-              action: call_method
-              find_by: "objectName"
-              find_value: "cancelDownloadButton"
-              method: "clicked"
-
-            - name: "The download stops"
-              action: wait_for
-              texts: ["No download in progress"]
-              timeout: 5000
-
-            - name: "The download button is back"
-              action: expect_property
-              find_value: "downloadButton"
-              property: "visible"
-              value: true
-
             - name: "Stop the node"
               action: click
               target: "Stop"
@@ -805,3 +763,140 @@ sections:
           test "$(jq '."mix-enabled"' "$cfg")" = "true"
 
           echo "OK: mix-enabled saved as true"
+
+  - title: "Cancelling a private download"
+    step: true
+    text: |
+      A download can be cancelled while it runs. This run fetches a file from
+      the `logos.dev` network over Mix, starts its download and cancels it.
+    steps:
+      - title: "Write a configuration for the dev network"
+        text: |
+          Mix works once the node knows its public address. A short
+          `nat-schedule-interval` makes the node find it sooner.
+        run: |
+          rm -rf /tmp/storage-ui-cancel-data
+          mkdir -p /tmp/storage-ui-cancel-data
+          rm -f "$HOME/farewell-to-westphalia-foss-edition.pdf"
+
+          mkdir -p "$HOME/.config/Logos"
+          cat > "$HOME/.config/Logos/LogosStandalone.conf" <<'EOF'
+          [Storage]
+          onboardingCompleted=true
+          EOF
+
+          mkdir -p "$HOME/.logos_storage"
+          cat > "$HOME/.logos_storage/config.json" <<'EOF'
+          {
+            "config-version": 3,
+            "data-dir": "/tmp/storage-ui-cancel-data",
+            "log-level": "info",
+            "listen-port": 8500,
+            "network": "logos.dev",
+            "nat-schedule-interval": "10s",
+            "mix-enabled": true
+          }
+          EOF
+        check_file: "/tmp/storage-ui-cancel-data"
+
+      - title: "Launch the app"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "The dashboard opens on the saved configuration"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 5000
+
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Let the node get its Mix address"
+              action: sleep
+              ms: 40000
+
+            - name: "Turn on the Private switch"
+              action: set_property
+              find_by: "objectName"
+              find_value: "fetchPrivateSwitch"
+              property: "checked"
+              value: true
+
+            - name: "Fire the switch's toggled signal"
+              action: call_method
+              find_by: "objectName"
+              find_value: "fetchPrivateSwitch"
+              method: "toggled"
+
+            - name: "Paste a CID into Fetch Manifest"
+              action: set_property
+              find_by: "placeholderText"
+              find_value: "CID"
+              property: "text"
+              value: "zDvZRwzkzrrYB6sS1rRpRLt4gBhc1pWoyTSjkfszfmj1seaYYLCZ"
+
+            - name: "Fetch the manifest privately"
+              action: call_method
+              find_by: "text"
+              find_value: "Fetch"
+              method: "clicked"
+
+            - name: "The manifest arrives in the list"
+              action: wait_for
+              texts: ["farewell-to-westphalia-foss-edition.pdf"]
+              timeout: 120000
+
+            - name: "The row downloads privately"
+              action: expect_property
+              find_value: "privateToggle"
+              property: "isPrivate"
+              value: true
+
+            - name: "Start the private download"
+              action: call_method
+              find_by: "objectName"
+              find_value: "downloadButton"
+              method: "clicked"
+
+            - name: "Wait for the download to start"
+              action: sleep
+              ms: 1000
+
+            - name: "A cancel button replaces the download button"
+              action: expect_property
+              find_value: "cancelDownloadButton"
+              property: "visible"
+              value: true
+              screenshot: "storage-ui-cancel-download.png"
+              text: |
+                While the file downloads, its row offers a cancel button
+                instead of the download button.
+
+            - name: "Cancel the download"
+              action: call_method
+              find_by: "objectName"
+              find_value: "cancelDownloadButton"
+              method: "clicked"
+
+            - name: "The download stops"
+              action: wait_for
+              texts: ["No download in progress"]
+              timeout: 5000
+
+            - name: "The download button is back"
+              action: expect_property
+              find_value: "downloadButton"
+              property: "visible"
+              value: true
+
+      - title: "The partial file is gone"
+        run: |
+          set -e
+          test ! -e "$HOME/farewell-to-westphalia-foss-edition.pdf"
+
+          echo "OK: no partial file left"
