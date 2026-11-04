@@ -225,6 +225,7 @@ void StorageBackend::init(QString configJson) {
 
             if (!success) {
                 QString message = payload["error"].toString();
+                emit downloadFailed(payload["sessionId"].toString(), message);
                 reportError("Failure during download progress: " + message);
             } else {
                 qint64 len = payload["bytes"].toInteger();
@@ -238,8 +239,25 @@ void StorageBackend::init(QString configJson) {
             QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
             bool success = payload["success"].toBool();
 
+            if (!m_cancelledCid.isEmpty() && payload["sessionId"].toString() == m_cancelledCid) {
+                QString cid = m_cancelledCid;
+                m_cancelledCid.clear();
+
+                if (!QFile::remove(m_downloadPath)) {
+                    reportError("Download cancelled, but the partial file could not be removed: " + m_downloadPath);
+                }
+
+                emit downloadCancelled(cid);
+
+                QMetaObject::invokeMethod(this, &StorageBackend::refreshSpace, Qt::QueuedConnection);
+
+                debug("Download cancelled for cid " + cid);
+                return;
+            }
+
             if (!success) {
                 QString message = payload["error"].toString();
+                emit downloadFailed(payload["sessionId"].toString(), message);
                 reportError("Failed to download: " + message);
             } else {
                 // The download session id is the cid.
@@ -476,19 +494,26 @@ void StorageBackend::downloadFile(QString cid, QUrl url, qint64 totalBytes, bool
     qDebug() << "StorageBackend: downloadFile called";
 
     if (!url.isLocalFile()) {
+        emit downloadFailed(cid, "The provided URL is not a local file.");
         reportError("The provided URL is not a local file.");
         return;
     }
 
     QString filename = QFileInfo(url.toLocalFile()).fileName();
+
     debug(QString("Starting download of cid: %1, filename: %2, total: %3 bytes")
               .arg(cid, filename)
               .arg(totalBytes));
+
+    m_downloadPath = url.toLocalFile();
+    m_cancelledCid.clear();
+
     emit downloadStarted(cid, filename, totalBytes);
 
     LogosResult result = m_logos->storage_module.downloadToUrl(cid, url.toLocalFile(), false, DEFAULT_CHUNK_SIZE, isPrivate, !isPrivate);
 
     if (!result.success) {
+        emit downloadFailed(cid, result.getError());
         reportError("Failed to download file:" + result.getError());
         return;
     }
@@ -496,6 +521,20 @@ void StorageBackend::downloadFile(QString cid, QUrl url, qint64 totalBytes, bool
     QString sessionId = result.value.value<QString>();
 
     qDebug() << "StorageBackend: downloadFile result =" << sessionId;
+}
+
+void StorageBackend::cancelDownload(QString cid) {
+    qDebug() << "StorageBackend::cancelDownload called with cid=" << cid;
+
+    // Set before the call: storageDownloadDone can arrive while it runs.
+    m_cancelledCid = cid;
+
+    LogosResult result = m_logos->storage_module.downloadCancel(cid);
+
+    if (!result.success) {
+        m_cancelledCid.clear();
+        reportError("Failed to cancel the download: " + result.getError());
+    }
 }
 
 void StorageBackend::exists(QString cid) {

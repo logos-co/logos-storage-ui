@@ -84,8 +84,13 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // Emit downloadStarted(cid, filename, totalBytes) when download begins
     // Emit downloadChunk(len) on each storageDownloadProgress event
     // Emit downloadCompleted(cid) on storageDownloadDone
+    // Emit downloadFailed(cid, error) when the download fails
     // A private download goes over Mix and is not advertised.
     void downloadFile(QString cid, QUrl url, qint64 totalBytes, bool isPrivate) override;
+
+    // Cancel the running download of the cid and remove its partial file
+    // Emit downloadCancelled(cid) on storageDownloadDone
+    void cancelDownload(QString cid) override;
 
     // Emit manifestsUpdated
     // A private fetch goes over Mix and is not advertised.
@@ -141,4 +146,10 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
 
     // The context was created by another consumer (the package downloader).
     bool m_attached = false;
+
+    // Destination of the running download.
+    QString m_downloadPath;
+
+    // Cid of the cancelled download, until its storageDownloadDone arrives.
+    QString m_cancelledCid;
 };
