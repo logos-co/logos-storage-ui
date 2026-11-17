@@ -1,7 +1,7 @@
 #pragma once
 #include "logos_api.h"
 #include "logos_sdk.h"
-#include "logos_ui_plugin_context.h"
+#include "logos_module_context.h"
 #include "rep_StorageBackend_source.h"
 #include <QDir>
 #include <QFile>
@@ -25,7 +25,7 @@ static const QString DEFAULT_NAT_SCHEDULE_INTERVAL = "60s";
 
 static const QString DEFAULT_NETWORK = "logos.test";
 
-class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginContext {
+class StorageBackend : public StorageBackendSimpleSource, public LogosModuleContext {
     Q_OBJECT
   public:
     explicit StorageBackend(QObject* parent = nullptr);

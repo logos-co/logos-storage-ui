@@ -9,7 +9,6 @@
 #include <QJsonObject>
 #include <QLocale>
 #include <QNetworkProxyFactory>
-#include <QSettings>
 #include <QSslSocket>
 
 #ifndef STORAGE_UI_VERSION
@@ -719,9 +718,8 @@ void StorageBackend::logVersion() {
 void StorageBackend::restartOnboarding() {
     qDebug() << "StorageBackend::restartOnboarding called";
 
-    QSettings settings;
-    settings.setValue("Storage/onboardingCompleted", false);
-    settings.sync();
+    // The view owns onboardingCompleted (its QML Settings, in the host's
+    // process); it clears it on this signal.
     emit onboardingRestarted();
 }
 
