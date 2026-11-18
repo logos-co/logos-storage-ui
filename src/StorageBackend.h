@@ -1,7 +1,7 @@
 #pragma once
 #include "logos_api.h"
 #include "logos_sdk.h"
-#include "logos_ui_plugin_context.h"
+#include "logos_module_context.h"
 #include "rep_StorageBackend_source.h"
 #include <QDir>
 #include <QFile>
@@ -24,7 +24,7 @@ static const int DEFAULT_CHUNK_SIZE = 1024 * 64;
 // takes several rounds: too slow for a user watching the dashboard.
 static const QString DEFAULT_NAT_SCHEDULE_INTERVAL = "60s";
 
-class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginContext {
+class StorageBackend : public StorageBackendSimpleSource, public LogosModuleContext {
     Q_OBJECT
   public:
     explicit StorageBackend(QObject* parent = nullptr);

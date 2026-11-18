@@ -16,6 +16,7 @@ import Logos.StorageBackend 1.0
 //   2. Advanced : the user reviews the node configuration first.
 Item {
     id: root
+    objectName: "storageRoot"
     implicitWidth: 800
     implicitHeight: 600
     Layout.fillWidth: true
@@ -57,6 +58,7 @@ Item {
         }
 
         function onOnboardingRestarted() {
+            settings.onboardingCompleted = false
             d.awaitingOnboardingRestart = true
             d.backend.stop()
         }
