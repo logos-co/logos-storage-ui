@@ -48,6 +48,10 @@ class StorageBackend
     SLOT(void updateUserConfig(QString configJson))
     SLOT(QString getUserConfig())
 
+    // The config the node was created with, network presets resolved.
+    // Empty when there is no context yet.
+    SLOT(QString getNodeConfig())
+
     // Onboarding
     SLOT(void restartOnboarding())
 

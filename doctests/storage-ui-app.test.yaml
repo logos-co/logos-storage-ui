@@ -299,10 +299,14 @@ sections:
           echo "config written by onboarding:"
           jq . "$cfg"
 
-          test "$(jq '."config-version"' "$cfg")" = "3"
+          test "$(jq '."config-version"' "$cfg")" = "4"
           test "$(jq '."listen-port"' "$cfg")" = "8500"
           test "$(jq '."mix-enabled"' "$cfg")" = "true"
           test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "60s"
+
+          # The module has no default network: without it the node gets no
+          # bootstrap nodes.
+          test "$(jq -r '.network' "$cfg")" = "logos.test"
 
           # No nat key: the node decides its reachability on its own.
           test "$(jq 'has("nat")' "$cfg")" = "false"
@@ -476,13 +480,14 @@ sections:
 
           test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "30s"
 
+          # No preset was picked: the default network stays, and the module
+          # takes its bootstrap nodes and Mix configuration at init.
+          test "$(jq -r '.network' "$cfg")" = "logos.test"
           test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
-          test "$(jq '."dht-mix-proxy" | length > 0' "$cfg")" = "true"
-          test "$(jq -r '."mix-pool-json"' "$cfg" | jq '.relays | length > 0')" = "true"
+          test "$(jq 'has("dht-mix-proxy")' "$cfg")" = "false"
+          test "$(jq 'has("mix-pool-json")' "$cfg")" = "false"
 
-          # No preset was picked, and "auto" carries no key: not every module
-          # version accepts it spelled out.
-          test "$(jq 'has("network")' "$cfg")" = "false"
+          # "auto" carries no key: not every module version accepts it spelled out.
           test "$(jq 'has("nat")' "$cfg")" = "false"
 
           echo "advanced OK: the edited ports landed, the presets were kept"

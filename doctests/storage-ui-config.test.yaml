@@ -8,8 +8,8 @@ intro: |
 
   This test starts the app on a config from an older build and asserts what
   comes back:
-    1. the legacy `bootstrap-node` list is gone, without a `network` field added
-    2. the Mix configuration is filled
+    1. the legacy `bootstrap-node` list is gone, replaced by the default `logos.test` network
+    2. Mix is enabled, with the configuration of the network
     3. the obsolete `nat` value is dropped
     4. the retired `disc-port` is dropped
     5. the config is stamped with the current version
@@ -132,10 +132,10 @@ sections:
           jq . "$cfg"
 
           test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
-          test "$(jq 'has("network")' "$cfg")" = "false"
-          test "$(jq '."config-version"' "$cfg")" = "3"
+          test "$(jq -r '.network' "$cfg")" = "logos.test"
+          test "$(jq '."config-version"' "$cfg")" = "4"
 
-          echo "refresh OK: retired bootstrap-node removed, no network preset added, config-version stamped"
+          echo "refresh OK: retired bootstrap-node removed, default network added, config-version stamped"
 
       - title: "The AutoNAT interval was filled in"
         run: |
@@ -167,16 +167,18 @@ sections:
 
           echo "disc-port OK: retired key removed"
 
-      - title: "The Mix configuration is present"
+      - title: "Mix is enabled and its configuration comes from the network"
         run: |
           set -e
           cfg="$HOME/.logos_storage/config.json"
 
+          # The module takes the Mix configuration from the network preset at
+          # init: it is not written to the file.
           test "$(jq '."mix-enabled"' "$cfg")" = "true"
-          test "$(jq '."dht-mix-proxy" | length > 0' "$cfg")" = "true"
-          test "$(jq '."mix-pool-json" | length > 0' "$cfg")" = "true"
+          test "$(jq 'has("dht-mix-proxy")' "$cfg")" = "false"
+          test "$(jq 'has("mix-pool-json")' "$cfg")" = "false"
 
-          echo "Mix config OK: mix-enabled, dht-mix-proxy, mix-pool-json"
+          echo "Mix config OK: mix-enabled, the preset is not copied to the file"
 
       - title: "The values were read from the file"
         run: |
@@ -245,9 +247,9 @@ sections:
           before="$(cat /tmp/storage-ui-config-hash)"
 
           test "$after" = "$before"
-          test "$(jq 'has("network")' "$cfg")" = "false"
+          test "$(jq -r '.network' "$cfg")" = "logos.test"
           test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
-          test "$(jq '."config-version"' "$cfg")" = "3"
+          test "$(jq '."config-version"' "$cfg")" = "4"
 
           echo "idempotent OK: config unchanged on restart"
 
@@ -292,7 +294,7 @@ sections:
           jq . "$cfg"
 
           test "$(jq -r '."data-dir"' "$cfg")" = "$HOME/.logos_storage/data"
-          test "$(jq '."config-version"' "$cfg")" = "3"
+          test "$(jq '."config-version"' "$cfg")" = "4"
 
           echo "defaults OK: data-dir filled in, config versioned"
 

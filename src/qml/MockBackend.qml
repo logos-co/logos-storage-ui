@@ -14,7 +14,8 @@ QtObject {
                                                           "data-dir": "/home/user/.logos_storage/data",
                                                           "listen-port": 8500,
                                                           "nat-schedule-interval": "60s",
-                                                          "mix-enabled": true
+                                                          "mix-enabled": true,
+                                                          "network": "logos.test"
                                                       })
 
     signal ready
@@ -109,6 +110,14 @@ QtObject {
                                   "listen-port": 8500,
                                   "mix-enabled": true,
                                   "dht-mix-proxy": ["spr:mock"],
+                                  "mix-pool-json": "{\"version\":1,\"relays\":[]}"
+                              })
+    }
+    function getNodeConfig() {
+        return JSON.stringify({
+                                  "network": "logos.test",
+                                  "bootstrap-node": ["spr:mock-bootstrap"],
+                                  "dht-mix-proxy": ["spr:mock-proxy"],
                                   "mix-pool-json": "{\"version\":1,\"relays\":[]}"
                               })
     }
