@@ -687,7 +687,8 @@ ScrollView {
                     editable: root.hasCustomBootstrap
                     fieldObjectName: "mixProxiesField"
                     onEdited: function (text) {
-                        root.vMixProxies = text
+                        if (root.hasCustomBootstrap)
+                            root.vMixProxies = text
                     }
                 }
 
@@ -701,7 +702,8 @@ ScrollView {
                     editable: root.hasCustomBootstrap
                     fieldObjectName: "mixPoolField"
                     onEdited: function (text) {
-                        root.vMixPool = text
+                        if (root.hasCustomBootstrap)
+                            root.vMixPool = text
                     }
                 }
             }
