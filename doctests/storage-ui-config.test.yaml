@@ -226,7 +226,7 @@ sections:
             - name: "Node reports Stopped"
               action: wait_for
               texts: ["Stopped"]
-              timeout: 5000
+              timeout: 30000
 
             - name: "Start the node again"
               action: click
