@@ -116,6 +116,12 @@ ScrollView {
     readonly property bool hasCustomBootstrap: root.vBootstrap.trim().length > 0
                                                && root.vBootstrap.trim() !== "[]"
 
+    property var nodeConfig: ({})
+
+    readonly property bool presetShown: !root.hasCustomBootstrap
+                                        && root.vNetwork !== ""
+                                        && root.nodeConfig["network"] === root.vNetwork
+
     // Keys the node only reads when it starts.
     readonly property var restartKeys: ["storage-quota", "listen-port", "nat",
                                         "network", "bootstrap-node", "dht-mix-proxy",
@@ -138,14 +144,21 @@ ScrollView {
     function load() {
         if (!root.backend)
             return
+        root.nodeConfig = {}
         // Onboarding writes the very first config: there is no user file yet.
         if (root.onboarding) {
             root.applyConfig(root.backend.defaultConfigJson || "{}")
             return
         }
         if (root.backend.isMock) {
+            root.nodeConfig = root.asJson(root.backend.getNodeConfig() || "{}", {})
             root.applyConfig(root.backend.getUserConfig() || "{}")
         } else if (typeof logos !== "undefined" && logos) {
+            logos.watch(root.backend.getNodeConfig(), function (text) {
+                root.nodeConfig = root.asJson(text || "{}", {})
+            }, function (err) {
+                console.warn("getNodeConfig:", err)
+            })
             // Reopening: hold the previous values back until the file answers.
             root.loadedOnce = false
             logos.watch(root.backend.getUserConfig(), function (text) {
@@ -372,6 +385,7 @@ ScrollView {
         property string title: ""
         property string summary: ""
         property string body: ""
+        property string placeholder: ""
         property bool expanded: false
         property bool editable: false
         property string fieldObjectName: ""
@@ -434,6 +448,7 @@ ScrollView {
                 objectName: blob.fieldObjectName
                 readOnly: !blob.editable
                 text: blob.body
+                placeholderText: blob.placeholder
                 onTextChanged: {
                     if (blob.editable)
                         blob.edited(text)
@@ -634,6 +649,8 @@ ScrollView {
                     title: "Bootstrap nodes"
                     summary: "Peer records the node dials first. Empty lets the network preset decide."
                     body: root.vBootstrap
+                    placeholder: root.presetShown
+                                 ? root.toJsonText(root.nodeConfig["bootstrap-node"]) : ""
                     editable: true
                     fieldObjectName: "bootstrapField"
                     onEdited: function (text) {
@@ -665,11 +682,13 @@ ScrollView {
                     summary: root.hasCustomBootstrap
                              ? "Peer records used as proxy destinations."
                              : "Peer records used as proxy destinations, set by the network preset."
-                    body: root.vMixProxies
+                    body: root.presetShown
+                          ? root.toJsonText(root.nodeConfig["dht-mix-proxy"]) : root.vMixProxies
                     editable: root.hasCustomBootstrap
                     fieldObjectName: "mixProxiesField"
                     onEdited: function (text) {
-                        root.vMixProxies = text
+                        if (root.hasCustomBootstrap)
+                            root.vMixProxies = text
                     }
                 }
 
@@ -678,11 +697,13 @@ ScrollView {
                     summary: root.hasCustomBootstrap
                              ? "The relay pool the node mixes through."
                              : "The relay pool the node mixes through, set by the network preset."
-                    body: root.vMixPool
+                    body: root.presetShown
+                          ? (root.nodeConfig["mix-pool-json"] || "") : root.vMixPool
                     editable: root.hasCustomBootstrap
                     fieldObjectName: "mixPoolField"
                     onEdited: function (text) {
-                        root.vMixPool = text
+                        if (root.hasCustomBootstrap)
+                            root.vMixPool = text
                     }
                 }
             }

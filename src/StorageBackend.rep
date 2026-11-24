@@ -48,6 +48,8 @@ class StorageBackend
     SLOT(void updateUserConfig(QString configJson))
     SLOT(QString getUserConfig())
 
+    SLOT(QString getNodeConfig())
+
     // Onboarding
     SLOT(void restartOnboarding())
 

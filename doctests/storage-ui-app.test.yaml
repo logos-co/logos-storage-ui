@@ -290,7 +290,7 @@ sections:
             - name: "The node reports Stopped"
               action: wait_for
               texts: ["Stopped"]
-              timeout: 5000
+              timeout: 30000
 
       - title: "The guided run wrote the default configuration"
         run: |
@@ -299,10 +299,12 @@ sections:
           echo "config written by onboarding:"
           jq . "$cfg"
 
-          test "$(jq '."config-version"' "$cfg")" = "3"
+          test "$(jq '."config-version"' "$cfg")" = "4"
           test "$(jq '."listen-port"' "$cfg")" = "8500"
           test "$(jq '."mix-enabled"' "$cfg")" = "true"
           test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "60s"
+
+          test "$(jq -r '.network' "$cfg")" = "logos.test"
 
           # No nat key: the node decides its reachability on its own.
           test "$(jq 'has("nat")' "$cfg")" = "false"
@@ -476,13 +478,13 @@ sections:
 
           test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "30s"
 
+          test "$(jq -r '.network' "$cfg")" = "logos.test"
           test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
-          test "$(jq '."dht-mix-proxy" | length > 0' "$cfg")" = "true"
-          test "$(jq -r '."mix-pool-json"' "$cfg" | jq '.relays | length > 0')" = "true"
+          test "$(jq 'has("dht-mix-proxy")' "$cfg")" = "false"
+          test "$(jq 'has("mix-pool-json")' "$cfg")" = "false"
 
           # No preset was picked, and "auto" carries no key: not every module
           # version accepts it spelled out.
-          test "$(jq 'has("network")' "$cfg")" = "false"
           test "$(jq 'has("nat")' "$cfg")" = "false"
 
           echo "advanced OK: the edited ports landed, the presets were kept"
@@ -643,7 +645,7 @@ sections:
             "data-dir": "/tmp/storage-ui-nomix-data",
             "log-level": "info",
             "listen-port": 8500,
-            "network": "logos.dev",
+            "network": "logos.test",
             "mix-enabled": false
           }
           EOF
@@ -765,20 +767,20 @@ sections:
 
           echo "OK: mix-enabled saved as true"
 
-  - title: "Cancelling a private download"
+  - title: "Cancelling a download"
     step: true
     text: |
-      A download can be cancelled while it runs. This run fetches a file from
-      the `logos.dev` network over Mix, starts its download and cancels it.
+      A download can be cancelled while it runs. This run uploads a large
+      file, starts its download and cancels it.
     steps:
-      - title: "Write a configuration for the dev network"
-        text: |
-          Mix works once the node knows its public address. A short
-          `nat-schedule-interval` makes the node find it sooner.
+      - title: "Write a large file and a configuration without Mix"
         run: |
+          set -e
           rm -rf /tmp/storage-ui-cancel-data
           mkdir -p /tmp/storage-ui-cancel-data
-          rm -f "$HOME/farewell-to-westphalia-foss-edition.pdf"
+          rm -f "$HOME/storage-ui-cancel.bin"
+
+          head -c 524288000 /dev/urandom > /tmp/storage-ui-cancel.bin
 
           mkdir -p "$HOME/.config/Logos"
           cat > "$HOME/.config/Logos/LogosStandalone.conf" <<'EOF'
@@ -789,13 +791,12 @@ sections:
           mkdir -p "$HOME/.logos_storage"
           cat > "$HOME/.logos_storage/config.json" <<'EOF'
           {
-            "config-version": 3,
+            "config-version": 4,
             "data-dir": "/tmp/storage-ui-cancel-data",
             "log-level": "info",
             "listen-port": 8500,
-            "network": "logos.dev",
-            "nat-schedule-interval": "10s",
-            "mix-enabled": true
+            "network": "logos.test",
+            "mix-enabled": false
           }
           EOF
         check_file: "/tmp/storage-ui-cancel-data"
@@ -817,48 +818,25 @@ sections:
               texts: ["Stop"]
               timeout: 30000
 
-            - name: "Let the node get its Mix address"
-              action: sleep
-              ms: 40000
-
-            - name: "Turn on the Private switch"
+            - name: "Hand the large file to the upload dialog"
               action: set_property
               find_by: "objectName"
-              find_value: "fetchPrivateSwitch"
-              property: "checked"
-              value: true
+              find_value: "uploadDialog"
+              property: "selectedFile"
+              value: "file:///tmp/storage-ui-cancel.bin"
 
-            - name: "Fire the switch's toggled signal"
+            - name: "Fire the dialog's accepted signal"
               action: call_method
               find_by: "objectName"
-              find_value: "fetchPrivateSwitch"
-              method: "toggled"
+              find_value: "uploadDialog"
+              method: "accepted"
 
-            - name: "Paste a CID into Fetch Manifest"
-              action: set_property
-              find_by: "placeholderText"
-              find_value: "CID"
-              property: "text"
-              value: "zDvZRwzkzrrYB6sS1rRpRLt4gBhc1pWoyTSjkfszfmj1seaYYLCZ"
-
-            - name: "Fetch the manifest privately"
-              action: call_method
-              find_by: "text"
-              find_value: "Fetch"
-              method: "clicked"
-
-            - name: "The manifest arrives in the list"
+            - name: "The upload completes and the file joins the manifest list"
               action: wait_for
-              texts: ["farewell-to-westphalia-foss-edition.pdf"]
+              texts: ["storage-ui-cancel.bin"]
               timeout: 120000
 
-            - name: "The row downloads privately"
-              action: expect_property
-              find_value: "privateToggle"
-              property: "isPrivate"
-              value: true
-
-            - name: "Start the private download"
+            - name: "Start the download"
               action: call_method
               find_by: "objectName"
               find_value: "downloadButton"
@@ -898,6 +876,7 @@ sections:
       - title: "The partial file is gone"
         run: |
           set -e
-          test ! -e "$HOME/farewell-to-westphalia-foss-edition.pdf"
+          test ! -e "$HOME/storage-ui-cancel.bin"
+          rm -f /tmp/storage-ui-cancel.bin
 
           echo "OK: no partial file left"

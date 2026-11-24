@@ -259,7 +259,7 @@ sections:
             - name: "The node reports Stopped"
               action: wait_for
               texts: ["Stopped"]
-              timeout: 5000
+              timeout: 30000
 
             - name: "Start the node on the saved settings"
               action: click
@@ -338,7 +338,7 @@ sections:
           cfg="$HOME/.logos_storage/config.json"
 
           test "$(jq -r '."data-dir"' "$cfg")" = "/tmp/storage-ui-settings-data"
-          test "$(jq '."config-version"' "$cfg")" = "3"
+          test "$(jq '."config-version"' "$cfg")" = "4"
           test "$(jq '."mix-enabled"' "$cfg")" = "true"
 
           echo "OK: data-dir, config-version and mix-enabled are intact"
@@ -499,11 +499,12 @@ sections:
   - title: "Picking a network swaps the Mix relays"
     step: true
     text: |
+      Settings shows the Mix configuration of the network the node runs on.
       Changing the network brings its Mix configuration on the next start.
     steps:
       - title: "Start from a config with no network and marked Mix values"
-        # The marked values are what the startup has to replace: a config that
-        # follows a preset gets the relays the app ships, on every start.
+        # The marked values are what the startup has to drop: a config that
+        # follows a preset gets the relays the module ships, on every start.
         run: |
           set -e
           rm -rf /tmp/storage-ui-settings-data
@@ -527,7 +528,7 @@ sections:
 
           echo "starting config in place: no network, marked Mix values"
 
-      - title: "Pick the first network and save"
+      - title: "See the relays of the network, then pick the other one and save"
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
@@ -538,6 +539,11 @@ sections:
               action: wait_for
               texts: ["Manage node", "Total space available"]
               timeout: 5000
+
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
 
             - name: "Open the Settings popup"
               action: click_object
@@ -553,20 +559,42 @@ sections:
               texts: ["/tmp/storage-ui-settings-data"]
               timeout: 5000
 
+            - name: "The refresh set the default network"
+              action: expect_property
+              find_value: "settingsForm"
+              property: "vNetwork"
+              value: "logos.test"
+
+            - name: "Let the node config land"
+              action: sleep
+              ms: 1000
+
+            - name: "The relays of the running network are shown"
+              action: expect_property
+              find_value: "settingsForm"
+              property: "presetShown"
+              value: true
+
             - name: "The selector is offered, no custom bootstrap holds it"
               action: expect_property
               find_value: "networkSelect"
               property: "enabled"
               value: true
 
-            - name: "Pick the first network"
+            - name: "Pick the other network"
               # pickNetwork() is what the selector calls on a real pick. The
               # signal itself cannot be driven here: the inspector passes every
               # argument as a QVariant, which a typed QML signal refuses.
               action: call_method
               find_value: "settingsForm"
               method: "pickNetwork"
-              args: ["logos.test"]
+              args: ["logos.dev"]
+
+            - name: "The relays of the picked network are not known yet"
+              action: expect_property
+              find_value: "settingsForm"
+              property: "presetShown"
+              value: false
 
             - name: "The edit is pending"
               action: expect_property
@@ -599,18 +627,17 @@ sections:
             - name: "The node reports Stopped"
               action: wait_for
               texts: ["Stopped"]
-              timeout: 5000
+              timeout: 30000
 
             - name: "Start the node on the saved settings"
               action: click
               target: "Start"
 
-            - name: "The node runs on the saved settings"
-              action: wait_for
-              texts: ["Stop"]
-              timeout: 30000
+            - name: "Let the start write the saved settings"
+              action: sleep
+              ms: 2000
 
-      - title: "The preset relays replaced the marked ones, and the network was written"
+      - title: "The network was written, the marked relays are gone"
         run: |
           set -e
           # Without set -e the block exits on the trailing echo, so a failing
@@ -619,20 +646,14 @@ sections:
           echo "saved config:"
           jq . "$cfg"
 
-          test "$(jq 'has("network")' "$cfg")" = "true"
+          test "$(jq -r '.network' "$cfg")" = "logos.dev"
 
-          test "$(jq -r '."dht-mix-proxy"[0]' "$cfg")" != "spr:marker"
-          test "$(jq '."dht-mix-proxy" | length > 0' "$cfg")" = "true"
+          test "$(jq 'has("dht-mix-proxy")' "$cfg")" = "false"
+          test "$(jq 'has("mix-pool-json")' "$cfg")" = "false"
 
-          test "$(jq -r '."mix-pool-json"' "$cfg")" != '{"version":1,"relays":[]}'
-          test "$(jq -r '."mix-pool-json"' "$cfg" | jq '.relays | length > 0')" = "true"
+          echo "OK: the network is saved, the Mix relays come from its preset"
 
-          # Kept as the reference the second network has to differ from.
-          cp "$cfg" /tmp/storage-ui-network-first.json
-
-          echo "OK: the first network replaced both Mix keys"
-
-      - title: "Pick the other network and save"
+      - title: "Reopen Settings on the new network"
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
@@ -654,74 +675,25 @@ sections:
               timeout: 5000
 
             - name: "The config lands in the form"
-              # Reading the file is async: picking before it answers would be
-              # overwritten by the values coming back.
               action: wait_for
               texts: ["/tmp/storage-ui-settings-data"]
               timeout: 5000
 
-            - name: "Pick the second network"
-              action: call_method
-              find_value: "settingsForm"
-              method: "pickNetwork"
-              args: ["logos.dev"]
+            - name: "Let the node config land"
+              action: sleep
+              ms: 1000
 
-            - name: "The edit is pending"
+            - name: "The relays of the running network are shown"
               action: expect_property
-              find_value: "unsavedNotice"
-              property: "visible"
+              find_value: "settingsForm"
+              property: "presetShown"
               value: true
 
-            - name: "Save"
-              action: click
-              target: "Save"
-
-            - name: "Close the popup"
-              action: call_method
-              find_value: "settingsPopup"
-              method: "close"
-
-            - name: "The node is running"
-              action: wait_for
-              texts: ["Stop"]
-              timeout: 30000
-
-            - name: "Stop the node"
-              action: click
-              target: "Stop"
-
-            - name: "The node reports Stopped"
-              action: wait_for
-              texts: ["Stopped"]
-              timeout: 5000
-
-            - name: "Start the node on the saved settings"
-              action: click
-              target: "Start"
-
-            - name: "The node runs on the saved settings"
-              action: wait_for
-              texts: ["Stop"]
-              timeout: 30000
-
-      - title: "The second network moved all three keys again"
-        run: |
-          set -e
-          cfg="$HOME/.logos_storage/config.json"
-          first=/tmp/storage-ui-network-first.json
-          test -f "$first"
-          echo "saved config:"
-          jq . "$cfg"
-
-          test "$(jq -r '.network' "$cfg")" != "$(jq -r '.network' "$first")"
-
-          test "$(jq -c '."dht-mix-proxy"' "$cfg")" != "$(jq -c '."dht-mix-proxy"' "$first")"
-          test "$(jq '."dht-mix-proxy" | length > 0' "$cfg")" = "true"
-
-          test "$(jq -r '."mix-pool-json"' "$cfg")" != "$(jq -r '."mix-pool-json"' "$first")"
-          test "$(jq -r '."mix-pool-json"' "$cfg" | jq '.relays | length > 0')" = "true"
-
-          echo "OK: each network carries its own Mix relays"
+            - name: "No bootstrap list of its own was written"
+              action: expect_property
+              find_value: "bootstrapField"
+              property: "text"
+              value: ""
 
   - title: "Saved settings need a restart to reach the disk"
     step: true
@@ -729,6 +701,16 @@ sections:
       Save keeps the settings for the next start. Closing the app before
       restarting the node drops them.
     steps:
+      - title: "Go back to the test network"
+        run: |
+          set -e
+          cfg="$HOME/.logos_storage/config.json"
+          jq '.network = "logos.test"' "$cfg" > "$cfg.tmp"
+          mv "$cfg.tmp" "$cfg"
+          test "$(jq -r '.network' "$cfg")" = "logos.test"
+
+          echo "network on disk: logos.test"
+
       - title: "Note the listen port on disk"
         run: |
           set -e

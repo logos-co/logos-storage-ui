@@ -24,6 +24,8 @@ static const int DEFAULT_CHUNK_SIZE = 1024 * 64;
 // takes several rounds: too slow for a user watching the dashboard.
 static const QString DEFAULT_NAT_SCHEDULE_INTERVAL = "60s";
 
+static const QString DEFAULT_NETWORK = "logos.test";
+
 class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginContext {
     Q_OBJECT
   public:
@@ -110,6 +112,8 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
 
     // Get the content of the user config file
     QString getUserConfig() override;
+
+    QString getNodeConfig() override;
 
     // Fetch multiple data for the widgets: manifests, debug..
     void fetchWidgetsData() override;

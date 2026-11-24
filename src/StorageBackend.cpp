@@ -716,6 +716,7 @@ QJsonDocument StorageBackend::defaultConfig() {
     obj["listen-port"] = DEFAULT_LISTEN_PORT;
     obj["nat-schedule-interval"] = DEFAULT_NAT_SCHEDULE_INTERVAL;
     obj["mix-enabled"] = true;
+    obj["network"] = DEFAULT_NETWORK;
 
     return QJsonDocument(obj);
 }
@@ -745,4 +746,27 @@ QString StorageBackend::getUserConfig() {
     qDebug() << "StorageBackend::getUserConfig called.";
 
     return userConfig();
+}
+
+QString StorageBackend::getNodeConfig() {
+    qDebug() << "StorageBackend::getNodeConfig called.";
+
+    LogosResult result = m_logos->storage_module.nodeConfig();
+
+    if (!result.success) {
+        qDebug() << "StorageBackend::getNodeConfig no node config:" << result.getError();
+        return QString();
+    }
+
+    LogosResult network = m_logos->storage_module.network();
+
+    if (!network.success) {
+        qDebug() << "StorageBackend::getNodeConfig no network:" << network.getError();
+        return QString();
+    }
+
+    QJsonObject config = QJsonDocument::fromJson(result.getString().toUtf8()).object();
+    config["network"] = network.getString();
+
+    return QString::fromUtf8(QJsonDocument(config).toJson(QJsonDocument::Compact));
 }
