@@ -682,9 +682,15 @@ sections:
               method: "clicked"
 
             - name: "The download completes"
+              # The idle upload widget shows "Complete" too. Only the download widget reaches 100% here.
               action: wait_for
-              texts: ["Complete"]
+              texts: ["100%"]
               timeout: 60000
+
+            - name: "Let the app write the file"
+              # The app is killed at the end of the step.
+              action: sleep
+              ms: 2000
 
       - title: "The app got B's file from its name"
         text: "The default download folder is the home directory."
