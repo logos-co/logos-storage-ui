@@ -446,7 +446,7 @@ sections:
       #       - name: "Paste a CID into Fetch Manifest"
       #         action: set_property
       #         find_by: "placeholderText"
-      #         find_value: "CID"
+      #         find_value: "CID or name key"
       #         property: "text"
       #         value: "zDvZRwzkzrrYB6sS1rRpRLt4gBhc1pWoyTSjkfszfmj1seaYYLCZ"
       #         text: |
@@ -472,13 +472,19 @@ sections:
       #         method: "clicked"
       #
       #       - name: "The download widget reports it complete"
+      #         # The idle upload widget shows "Complete" too. Only the download widget reaches 100% here.
       #         action: wait_for
-      #         texts: ["Complete"]
+      #         texts: ["100%"]
       #         timeout: 60000
       #         screenshot: "storage-ui-downloaded.png"
       #         text: |
       #           The download icon turns green once a copy sits in the download
       #           folder. It stays clickable: the user can download it again.
+      #
+      #       - name: "Let the app write the file"
+      #         # The app is killed at the end of the step.
+      #         action: sleep
+      #         ms: 2000
       #
       #       - title: "The downloaded file exists on disk"
       #         text: |
