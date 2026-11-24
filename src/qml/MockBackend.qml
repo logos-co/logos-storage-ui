@@ -38,6 +38,13 @@ QtObject {
     signal manifestFetchFailed(string cid, string error)
     signal removeStarted(string cid)
     signal removeFailed(string cid, string error)
+    signal namePublishStarted(string label, string cid)
+    signal namePublished(string label, string cid, string nameKey)
+    signal namePublishFailed(string label, string cid, string error)
+    signal nameUnpublished(string label)
+    signal nameResolveStarted(string nameKey)
+    signal nameResolved(string nameKey, string cid)
+    signal nameResolveFailed(string nameKey, string error)
     signal stopCompleted
     signal onboardingRestarted
 
@@ -64,6 +71,24 @@ QtObject {
     function downloadManifests() {}
     function remove(cid) {
         removeStarted(cid)
+    }
+    function publishName(label, cid) {
+        namePublishStarted(label, cid)
+        namePublished(label, cid, "zMockNameKey" + label)
+    }
+    function unpublishName(label) {
+        nameUnpublished(label)
+    }
+    // In the mock, a name key is any key that starts with "zMockNameKey".
+    function fetchManifestOrName(key, isPrivate) {
+        key = key.trim()
+        if (key.indexOf("zMockNameKey") !== 0) {
+            downloadManifest(key, isPrivate)
+            return
+        }
+        nameResolveStarted(key)
+        nameResolved(key, "zDvZRwzmMockResolvedCid")
+        downloadManifest("zDvZRwzmMockResolvedCid", isPrivate)
     }
     function logDebugInfo() {
         debugInfoUpdated({

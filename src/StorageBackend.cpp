@@ -162,6 +162,8 @@ void StorageBackend::init(QString configJson) {
                 reportError("Failed to stop Storage module:" + message);
             } else {
                 debug("Storage module stopped.");
+                failPendingResolves("The node stopped.");
+
                 QTimer::singleShot(0, this, [this]() {
                     LogosResult destroyResult = m_logos->storage_module.destroy();
                     if (!destroyResult.success) {
@@ -302,6 +304,59 @@ void StorageBackend::init(QString configJson) {
         qWarning() << "StorageWidget: failed to subscribe to storageRemoveDone events";
     }
 
+    if (!m_logos->storage_module.on("storageNamePublishDone", [this](const QVariantList& data) {
+            QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
+            bool success = payload["success"].toBool();
+            QString label = payload["label"].toString();
+            QString cid = payload["cid"].toString();
+
+            if (!success) {
+                QString message = payload["error"].toString();
+                emit namePublishFailed(label, cid, message);
+                reportError("Failed to publish the name " + label + ": " + message);
+            } else {
+                QString nameKey = payload["nameKey"].toString();
+                debug("Name " + label + " published for cid " + cid + ", name key " + nameKey);
+                emit namePublished(label, cid, nameKey);
+            }
+        })) {
+        qWarning() << "StorageWidget: failed to subscribe to storageNamePublishDone events";
+    }
+
+    if (!m_logos->storage_module.on("storageNameResolveDone", [this](const QVariantList& data) {
+            QJsonObject payload = QJsonDocument::fromJson(data[0].toString().toUtf8()).object();
+            bool success = payload["success"].toBool();
+            QString nameKey = payload["nameKey"].toString();
+
+            if (!m_pendingResolves.contains(nameKey)) {
+                qWarning() << "StorageBackend: no fetch waits for the name key" << nameKey;
+                return;
+            }
+            const bool isPrivate = m_pendingResolves.take(nameKey);
+
+            if (!success) {
+                QString message = payload["error"].toString();
+                emit nameResolveFailed(nameKey, message);
+                reportError("Failed to resolve the name key " + nameKey + ": " + message);
+                return;
+            }
+
+            QString cid = payload["cid"].toString();
+            if (cid.isEmpty()) {
+                const QString message = "No dataset is published under this name key.";
+                emit nameResolveFailed(nameKey, message);
+                reportError(message + " Name key: " + nameKey);
+                return;
+            }
+
+            debug("Name key " + nameKey + " resolved to cid " + cid);
+            emit nameResolved(nameKey, cid);
+            QMetaObject::invokeMethod(
+                this, [this, cid, isPrivate]() { downloadManifest(cid, isPrivate); }, Qt::QueuedConnection);
+        })) {
+        qWarning() << "StorageWidget: failed to subscribe to storageNameResolveDone events";
+    }
+
     debug("new config is: " + configJson);
     m_eventsSubscribed = true;
 
@@ -344,6 +399,7 @@ void StorageBackend::start() {
             return;
         }
 
+        failPendingResolves("The node was destroyed.");
         setStatus(Destroyed);
     }
 
@@ -420,6 +476,7 @@ void StorageBackend::destroy() {
         return;
     }
 
+    failPendingResolves("The node was destroyed.");
     setStatus(Destroyed);
     qDebug() << "StorageBackend: Storage module destroyed.";
 }
@@ -568,6 +625,77 @@ void StorageBackend::fetch(QString cid) {
     }
 
     debug("Cid " + cid + " fetched.");
+}
+
+void StorageBackend::publishName(QString label, QString cid) {
+    qDebug() << "StorageBackend::publishName called with label=" << label << "cid=" << cid;
+
+    // No seqnum: the node uses the current time.
+    LogosResult result = m_logos->storage_module.namePublish(label, cid, std::nullopt);
+    if (!result.success) {
+        emit namePublishFailed(label, cid, result.getError());
+        reportError("Failed to publish the name " + label + ": " + result.getError());
+        return;
+    }
+
+    // The publish runs in the background: the outcome arrives later via the
+    // "storageNamePublishDone" event.
+    emit namePublishStarted(label, cid);
+}
+
+void StorageBackend::unpublishName(QString label) {
+    qDebug() << "StorageBackend::unpublishName called with label=" << label;
+
+    LogosResult result = m_logos->storage_module.nameUnpublish(label);
+    if (!result.success) {
+        reportError("Failed to unpublish the name " + label + ": " + result.getError());
+        return;
+    }
+
+    debug("Name " + label + " unpublished.");
+    emit nameUnpublished(label);
+}
+
+void StorageBackend::failPendingResolves(const QString& reason) {
+    // A destroyed context sends no storageNameResolveDone.
+    for (const QString& nameKey : m_pendingResolves.keys()) {
+        emit nameResolveFailed(nameKey, reason);
+    }
+    m_pendingResolves.clear();
+}
+
+void StorageBackend::fetchManifestOrName(QString key, bool isPrivate) {
+    qDebug() << "StorageBackend::fetchManifestOrName called with key=" << key << "isPrivate=" << isPrivate;
+
+    key = key.trimmed();
+
+    LogosResult isNameKey = m_logos->storage_module.isNameKey(key);
+    if (!isNameKey.success) {
+        reportError("Failed to check the key " + key + ": " + isNameKey.getError());
+        return;
+    }
+
+    if (!isNameKey.getValue<bool>()) {
+        downloadManifest(key, isPrivate);
+        return;
+    }
+
+    if (m_pendingResolves.contains(key)) {
+        debug("The name key " + key + " is already being resolved.");
+        return;
+    }
+
+    m_pendingResolves.insert(key, isPrivate);
+
+    LogosResult result = m_logos->storage_module.nameResolve(key);
+    if (!result.success) {
+        m_pendingResolves.remove(key);
+        emit nameResolveFailed(key, result.getError());
+        reportError("Failed to resolve the name key " + key + ": " + result.getError());
+        return;
+    }
+
+    emit nameResolveStarted(key);
 }
 
 void StorageBackend::logVersion() {

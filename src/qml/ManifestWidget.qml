@@ -17,6 +17,35 @@ LogosFrame {
     property bool running: false
     property bool enabled: true
     property bool isPrivate: false
+    // Name keys the node is resolving in the DHT.
+    property var resolving: ({})
+
+    function setResolving(nameKey, on) {
+        var r = Object.assign({}, root.resolving)
+        if (on) {
+            r[nameKey] = true
+        } else {
+            delete r[nameKey]
+        }
+        root.resolving = r
+    }
+
+    Connections {
+        target: root.backend
+        ignoreUnknownSignals: true
+
+        function onNameResolveStarted(nameKey) {
+            root.setResolving(nameKey, true)
+        }
+
+        function onNameResolved(nameKey, cid) {
+            root.setResolving(nameKey, false)
+        }
+
+        function onNameResolveFailed(nameKey, error) {
+            root.setResolving(nameKey, false)
+        }
+    }
 
     RowLayout {
         anchors.top: parent.top
@@ -30,7 +59,7 @@ LogosFrame {
             id: cidInput
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignTop
-            placeholderText: "CID"
+            placeholderText: "CID or name key"
             enabled: root.running
             background: CardFieldBackground {}
         }
@@ -43,9 +72,11 @@ LogosFrame {
             variant: LogosButton.Variant.Secondary
             background: CardButtonBackground {}
             Layout.alignment: Qt.AlignTop
+            // The table shows the name keys being resolved: only the same key waits.
             enabled: cidInput.text.length > 0 && root.running && root.enabled
+                     && !root.resolving[cidInput.text.trim()]
             onClicked: {
-                root.backend.downloadManifest(cidInput.text, root.isPrivate && root.backend.mixRunning)
+                root.backend.fetchManifestOrName(cidInput.text, root.isPrivate && root.backend.mixRunning)
                 cidInput.text = ""
             }
         }

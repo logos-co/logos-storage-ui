@@ -263,7 +263,7 @@ sections:
             - name: "Paste a CID into Fetch Manifest"
               action: set_property
               find_by: "placeholderText"
-              find_value: "CID"
+              find_value: "CID or name key"
               property: "text"
               value: "zDvZRwzkzrrYB6sS1rRpRLt4gBhc1pWoyTSjkfszfmj1seaYYLCZ"
 
