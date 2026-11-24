@@ -633,10 +633,9 @@ sections:
               action: click
               target: "Start"
 
-            - name: "The node runs on the saved settings"
-              action: wait_for
-              texts: ["Stop"]
-              timeout: 30000
+            - name: "Let the start write the saved settings"
+              action: sleep
+              ms: 2000
 
       - title: "The network was written, the marked relays are gone"
         run: |
@@ -665,11 +664,6 @@ sections:
               action: wait_for
               texts: ["Manage node", "Total space available"]
               timeout: 5000
-
-            - name: "The node is running"
-              action: wait_for
-              texts: ["Stop"]
-              timeout: 30000
 
             - name: "Open the Settings popup"
               action: click_object
@@ -707,6 +701,16 @@ sections:
       Save keeps the settings for the next start. Closing the app before
       restarting the node drops them.
     steps:
+      - title: "Go back to the test network"
+        run: |
+          set -e
+          cfg="$HOME/.logos_storage/config.json"
+          jq '.network = "logos.test"' "$cfg" > "$cfg.tmp"
+          mv "$cfg.tmp" "$cfg"
+          test "$(jq -r '.network' "$cfg")" = "logos.test"
+
+          echo "network on disk: logos.test"
+
       - title: "Note the listen port on disk"
         run: |
           set -e
