@@ -751,7 +751,6 @@ QString StorageBackend::getUserConfig() {
 QString StorageBackend::getNodeConfig() {
     qDebug() << "StorageBackend::getNodeConfig called.";
 
-    // Fails with no context: onboarding, or before the first start.
     LogosResult result = m_logos->storage_module.nodeConfig();
 
     if (!result.success) {
@@ -766,8 +765,6 @@ QString StorageBackend::getNodeConfig() {
         return QString();
     }
 
-    // The module replaces the network by its presets: put the name back so
-    // the form knows which network the presets belong to.
     QJsonObject config = QJsonDocument::fromJson(result.getString().toUtf8()).object();
     config["network"] = network.getString();
 

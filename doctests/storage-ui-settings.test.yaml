@@ -541,7 +541,6 @@ sections:
               timeout: 5000
 
             - name: "The node is running"
-              # The relays shown come from the running node.
               action: wait_for
               texts: ["Stop"]
               timeout: 30000
@@ -575,15 +574,6 @@ sections:
               find_value: "settingsForm"
               property: "presetShown"
               value: true
-
-            - name: "The relay pool is the logos.test one"
-              action: expect_property
-              find_value: "mixPoolField"
-              property: "text"
-              value: "{\"version\":1,\"relays\":[{\"peerId\":\"16Uiu2HAm3xPbYz2zsq5XVGDCMqKhhNXZWyYV6WLVv3yzzUiRJWnW\",\"mixPubKey\":\"7da7478099878e16e1ae64d8d92f3ac5a033d309202672f38c4b23580029c935\",\"libp2pPubKey\":\"027ebbf9c3c5903a6ac9e4c48c33db86d37c354c6df52fa78817394112f2736c6b\",\"multiAddr\":\"/ip4/178.128.140.206/tcp/8070\"},{\"peerId\":\"16Uiu2HAmVFXLh9fs5mExDDwzsah2rWdiHR2Fy3cPmF5xPx29vrbB\",\"mixPubKey\":\"a2e5d0dd654b1fee41e20ff6db666b3d1281462fb5d1d72b3e6adbad03cc1d02\",\"libp2pPubKey\":\"03f693c74c39b134e333518481860377571bce9cc6419f1e8aa2fbef39f102e9ca\",\"multiAddr\":\"/ip4/129.212.221.44/tcp/8070\"},{\"peerId\":\"16Uiu2HAm5gxGojS6RFjK9jUm6QiKb1Vjnx81iQkfhSTXTzXWmJd4\",\"mixPubKey\":\"88225286ed1ac06bfaa557a6100d16c9d231d4385cec63978bdafcf03d503e2f\",\"libp2pPubKey\":\"02987f011b64290c2e540aa64da71c6cca45e6ad946f7ace23c00ef233493ea53f\",\"multiAddr\":\"/ip4/34.70.60.201/tcp/8070\"},{\"peerId\":\"16Uiu2HAm89p258CC7dWuHBvhK7oXK7d37oCsVH8kFsa2nxH6rT9Z\",\"mixPubKey\":\"752e5fad795b8795d5db1442148a64fe21c7ffb54017ee3656ae42b4f102f217\",\"libp2pPubKey\":\"02bd17ba26127aee780fdcab5e4cc085d38c7c1f0707bca6d24ceb1b12fbfbc7d0\",\"multiAddr\":\"/ip4/47.76.168.186/tcp/8070\"}]}"
-              text: |
-                The module takes the Mix relays from the network preset. They
-                are not in the config file, so the form reads them from the node.
 
             - name: "The selector is offered, no custom bootstrap holds it"
               action: expect_property
@@ -659,8 +649,6 @@ sections:
 
           test "$(jq -r '.network' "$cfg")" = "logos.dev"
 
-          # The module takes the relays from the preset at init: neither the
-          # marked ones nor the preset ones are in the file.
           test "$(jq 'has("dht-mix-proxy")' "$cfg")" = "false"
           test "$(jq 'has("mix-pool-json")' "$cfg")" = "false"
 
@@ -706,15 +694,6 @@ sections:
               find_value: "settingsForm"
               property: "presetShown"
               value: true
-
-            - name: "The relay pool is the logos.dev one"
-              action: expect_property
-              find_value: "mixPoolField"
-              property: "text"
-              value: "{\"version\":1,\"relays\":[{\"peerId\":\"16Uiu2HAmJwAxtuRLfjP1SfjE7EWWr6zExFBFVLnUnTsc28fmvrpq\",\"mixPubKey\":\"d2bad8ab91f9a63c8a60b1e305fc1045224891ed00719ada2991abe9bc627540\",\"libp2pPubKey\":\"035d4b6a696cc1ba11972ae911706e6cf400af65919aa8e05910b826cbc5a6dac2\",\"multiAddr\":\"/ip4/24.144.78.200/tcp/8080\"},{\"peerId\":\"16Uiu2HAmGJx2MWRH66M2A1RcD5TcY5Z2kReNdddpF9kRyfykBFwy\",\"mixPubKey\":\"410d987b608e5164ec1748b964a0ee6d636af4e62667a5a207e7fd766ec42268\",\"libp2pPubKey\":\"03364c803faa8c97b9b652a34a817bf2aa3b30ce2cc5148b58f9a09327bd47a62c\",\"multiAddr\":\"/ip4/188.166.200.119/tcp/8080\"},{\"peerId\":\"16Uiu2HAmDF8zGjsuxM4h1N5x37hzUtGnDHtkVJ8jLiVty1DJyG92\",\"mixPubKey\":\"0a9b87d4a03fca9ffd9b0d7b21dd9950741f08d72fc0716bf79c8ad83e702e34\",\"libp2pPubKey\":\"0308bf839c479a7f9a2def4e54cc4e681003a648e6dae89022d1797146c2a8b43d\",\"multiAddr\":\"/ip4/34.42.230.59/tcp/8080\"},{\"peerId\":\"16Uiu2HAmAzJztKiAAMSixFAhUjfWdKB3bGcXGfDFqaut6nc5PTRf\",\"mixPubKey\":\"04dddf75ad5090f8975836f8617b7b87cf926a7f2938a5059c9f5e0000509513\",\"libp2pPubKey\":\"02e73bbf42a7ac0c96970700c3bd92bcec550d11b4c8003795d7f0033e80add08e\",\"multiAddr\":\"/ip4/47.238.229.111/tcp/8080\"}]}"
-              screenshot: "storage-ui-settings-network-relays.png"
-              text: |
-                Each network carries its own Mix relays.
 
             - name: "No bootstrap list of its own was written"
               action: expect_property

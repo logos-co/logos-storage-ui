@@ -24,8 +24,6 @@ static const int DEFAULT_CHUNK_SIZE = 1024 * 64;
 // takes several rounds: too slow for a user watching the dashboard.
 static const QString DEFAULT_NAT_SCHEDULE_INTERVAL = "60s";
 
-// The module's init has no default network: without one the node gets no
-// bootstrap nodes.
 static const QString DEFAULT_NETWORK = "logos.test";
 
 class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginContext {
@@ -115,9 +113,6 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // Get the content of the user config file
     QString getUserConfig() override;
 
-    // Get the config the node was created with: the bootstrap nodes and the
-    // Mix config of its network, plus the network name.
-    // Empty when there is no context yet.
     QString getNodeConfig() override;
 
     // Fetch multiple data for the widgets: manifests, debug..

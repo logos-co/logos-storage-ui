@@ -116,11 +116,8 @@ ScrollView {
     readonly property bool hasCustomBootstrap: root.vBootstrap.trim().length > 0
                                                && root.vBootstrap.trim() !== "[]"
 
-    // The config the node was created with: the module fills the bootstrap
-    // nodes and the Mix config of its network there, not in the config file.
     property var nodeConfig: ({})
 
-    // The presets are known only for the network the node runs on.
     readonly property bool presetShown: !root.hasCustomBootstrap
                                         && root.vNetwork !== ""
                                         && root.nodeConfig["network"] === root.vNetwork
@@ -388,7 +385,6 @@ ScrollView {
         property string title: ""
         property string summary: ""
         property string body: ""
-        // Shown greyed while the field is empty.
         property string placeholder: ""
         property bool expanded: false
         property bool editable: false
@@ -653,7 +649,6 @@ ScrollView {
                     title: "Bootstrap nodes"
                     summary: "Peer records the node dials first. Empty lets the network preset decide."
                     body: root.vBootstrap
-                    // The preset stays a hint: typed records replace it.
                     placeholder: root.presetShown
                                  ? root.toJsonText(root.nodeConfig["bootstrap-node"]) : ""
                     editable: true

@@ -172,8 +172,6 @@ sections:
           set -e
           cfg="$HOME/.logos_storage/config.json"
 
-          # The module takes the Mix configuration from the network preset at
-          # init: it is not written to the file.
           test "$(jq '."mix-enabled"' "$cfg")" = "true"
           test "$(jq 'has("dht-mix-proxy")' "$cfg")" = "false"
           test "$(jq 'has("mix-pool-json")' "$cfg")" = "false"
