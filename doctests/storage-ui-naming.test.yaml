@@ -356,7 +356,8 @@ sections:
 
       - title: "B starts to resolve and download in the background"
         run: |
-          sh -c './b-resolve-and-download.sh cid.txt /tmp/storage-ui-naming-sample.txt downloaded-by-b.txt > b-resolve-and-download.log 2>&1 &'
+          ./b-resolve-and-download.sh cid.txt /tmp/storage-ui-naming-sample.txt downloaded-by-b.txt > b-resolve-and-download.log 2>&1 &
+          echo $! > resolve-1.pid
           echo "started"
 
       - title: "Launch the app to serve the file"
@@ -498,7 +499,8 @@ sections:
         text: |
           B resolves the same name key until it gets the new dataset CID, then downloads the second file.
         run: |
-          sh -c './b-resolve-and-download.sh cid-2.txt /tmp/storage-ui-naming-sample-2.txt downloaded-2-by-b.txt > b-resolve-and-download-2.log 2>&1 &'
+          ./b-resolve-and-download.sh cid-2.txt /tmp/storage-ui-naming-sample-2.txt downloaded-2-by-b.txt > b-resolve-and-download-2.log 2>&1 &
+          echo $! > resolve-2.pid
           echo "started"
 
       - title: "Launch the app to serve the second file"
@@ -573,7 +575,7 @@ sections:
           The app pastes this value in a later step.
         run: |
           set -eu
-          EXPECTED="REPLACE_WITH_THE_NAME_KEY_OF_B"
+          EXPECTED="zE2PfUh72Qric4pKYPtyikZ7o9uMspBWPZn2R1R9GEk2Xi3gRgnY"
           BEFORE=$(wc -l < events-publish.txt)
           ./logosctl/bin/logosctl --config-dir="$(pwd)/session-b" call storage_module namePublish shared "$(cat cid-b.txt)" \
             | jq -e '.result.success'
@@ -639,7 +641,7 @@ sections:
               find_by: "placeholderText"
               find_value: "CID or name key"
               property: "text"
-              value: "REPLACE_WITH_THE_NAME_KEY_OF_B"
+              value: "zE2PfUh72Qric4pKYPtyikZ7o9uMspBWPZn2R1R9GEk2Xi3gRgnY"
 
             - name: "Fetch"
               action: call_method
@@ -698,10 +700,10 @@ sections:
     steps:
       - title: "Stop the watchers and node B"
         run: |
-          for f in watch-*.pid; do
+          # pkill -f would match this step too: its command line has the script name.
+          for f in watch-*.pid resolve-*.pid; do
             kill "$(cat "$f")" 2>/dev/null || true
           done
-          pkill -f b-resolve-and-download.sh 2>/dev/null || true
           CTL="./logosctl/bin/logosctl --config-dir=$(pwd)/session-b"
           $CTL call storage_module stop || true
           sleep 1
