@@ -9,8 +9,8 @@
 #include <QJsonObject>
 #include <QLocale>
 #include <QNetworkProxyFactory>
-#include <QSslSocket>
 #include <QSettings>
+#include <QSslSocket>
 
 #ifndef STORAGE_UI_VERSION
 #define STORAGE_UI_VERSION "unknown"
@@ -24,8 +24,7 @@
 // - the second one is to use the "debug" helper that logs both in the console and in a
 // QString property that can be displayed in the UI. This is more for users to understand
 // what is happening.
-StorageBackend::StorageBackend(QObject* parent)
-    : StorageBackendSimpleSource(parent), m_logos(nullptr) {
+StorageBackend::StorageBackend(QObject* parent) : StorageBackendSimpleSource(parent), m_logos(nullptr) {
     qDebug() << "Initializing StorageBackend...";
 
     setStatus(Destroyed);
@@ -43,15 +42,9 @@ void StorageBackend::onContextReady() {
     setModuleVersion(m_logos->storage_module.moduleVersion());
 }
 
-LogosShutdown StorageBackend::aboutToUnload()
-{
-    return LogosShutdown::Synchronous;
-}
+LogosShutdown StorageBackend::aboutToUnload() { return LogosShutdown::Synchronous; }
 
-StorageBackend::~StorageBackend()
-{
-    m_logos = nullptr;
-}
+StorageBackend::~StorageBackend() { m_logos = nullptr; }
 
 void StorageBackend::reportError(const QString& message) {
     debug(message, "warning");
@@ -94,8 +87,8 @@ void StorageBackend::init(QString configJson) {
         moduleConfig["data-dir"] = QDir::toNativeSeparators(dataDir);
     }
 
-    const bool contextCreated = m_logos->storage_module.init(
-        QString::fromUtf8(QJsonDocument(moduleConfig).toJson(QJsonDocument::Compact)));
+    const bool contextCreated =
+        m_logos->storage_module.init(QString::fromUtf8(QJsonDocument(moduleConfig).toJson(QJsonDocument::Compact)));
 
     qDebug() << "StorageBackend::initStorage: init";
 
@@ -449,8 +442,7 @@ void StorageBackend::refreshNodeStatus() {
 
     // Polled every minute: a toast per failure would spam the user.
     if (!result.success) {
-        qWarning() << "StorageBackend::refreshNodeStatus Failed to get debug info:"
-                   << result.getError();
+        qWarning() << "StorageBackend::refreshNodeStatus Failed to get debug info:" << result.getError();
         return;
     }
 
@@ -501,16 +493,15 @@ void StorageBackend::downloadFile(QString cid, QUrl url, qint64 totalBytes, bool
 
     QString filename = QFileInfo(url.toLocalFile()).fileName();
 
-    debug(QString("Starting download of cid: %1, filename: %2, total: %3 bytes")
-              .arg(cid, filename)
-              .arg(totalBytes));
+    debug(QString("Starting download of cid: %1, filename: %2, total: %3 bytes").arg(cid, filename).arg(totalBytes));
 
     m_downloadPath = url.toLocalFile();
     m_cancelledCid.clear();
 
     emit downloadStarted(cid, filename, totalBytes);
 
-    LogosResult result = m_logos->storage_module.downloadToUrl(cid, url.toLocalFile(), false, DEFAULT_CHUNK_SIZE, isPrivate, !isPrivate);
+    LogosResult result =
+        m_logos->storage_module.downloadToUrl(cid, url.toLocalFile(), false, DEFAULT_CHUNK_SIZE, isPrivate, !isPrivate);
 
     if (!result.success) {
         emit downloadFailed(cid, result.getError());
@@ -668,8 +659,7 @@ void StorageBackend::downloadManifests() {
     // A refresh, not a user action: the module call times out after a second
     // and a busy node is enough to miss it.
     if (!result.success) {
-        qWarning() << "StorageBackend::downloadManifests Failed to list manifests:"
-                   << result.getError();
+        qWarning() << "StorageBackend::downloadManifests Failed to list manifests:" << result.getError();
         return;
     }
 

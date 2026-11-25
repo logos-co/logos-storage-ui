@@ -114,6 +114,25 @@ Run a spec and produce a browsable HTML report with `docs/preview.sh`:
 Artefacts land in `doctests/preview-outputs/`, the report is
 `doctests/preview-outputs/report.html`.
 
+## Formatting
+
+The code follows `.clang-format`. The CI fails when a file is not formatted.
+
+Install `clang-format`:
+
+| System | Package |
+|---|---|
+| Ubuntu / Debian | `apt install clang-format` |
+| Fedora | `dnf install clang-tools-extra git-clang-format` |
+| macOS | `brew install clang-format` |
+| Any | `pip install clang-format` |
+
+Before a commit, format the lines you changed:
+
+```bash
+git clang-format
+```
+
 ## Guidance 
 
 You can access to the [Storage Module documentation](https://logos-co.github.io/logos-storage-module/latest) to get more context about the Storage Module and its configuration. 
