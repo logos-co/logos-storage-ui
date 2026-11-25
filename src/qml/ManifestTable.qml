@@ -67,23 +67,41 @@ LogosFrame {
         publishedNamesStore.entries = JSON.stringify(n)
     }
 
-    // Cids whose publish runs in the node, with or without the popup open.
-    property var publishingCids: ({})
+    // Names whose publish runs in the node, with the dataset they go to: { label: cid }.
+    property var publishingLabels: ({})
 
-    function setPublishing(cid, on) {
-        var p = Object.assign({}, root.publishingCids)
-        if (on) {
-            p[cid] = true
+    // cid: the dataset the name goes to, or "" once the publish ends.
+    function setPublishingLabel(label, cid) {
+        var p = Object.assign({}, root.publishingLabels)
+        if (cid) {
+            p[label] = cid
         } else {
-            delete p[cid]
+            delete p[label]
         }
-        root.publishingCids = p
+        root.publishingLabels = p
+    }
+
+    // A running publish can't be cancelled: its dataset can't be deleted until it ends.
+    function isPublishingTo(cid) {
+        for (var label in root.publishingLabels) {
+            if (root.publishingLabels[label] === cid)
+                return true
+        }
+        return false
     }
 
     // A publish in flight gets no event once the node stops.
     onRunningChanged: {
         if (!root.running)
-            root.publishingCids = {}
+            root.publishingLabels = {}
+    }
+
+    // The tab shown: "manifests" or "names".
+    property string view: "manifests"
+
+    // Called by the tabs, and by a test: it can't fire a typed signal.
+    function showView(name) {
+        viewTabs.currentIndex = name === "names" ? 1 : 0
     }
 
     // The name the dataset is published under, or null.
@@ -336,12 +354,13 @@ LogosFrame {
     implicitWidth: 1200
     implicitHeight: 400
 
-    PublishNamePopup {
-        id: publishNamePopup
+    NameTargetPopup {
+        id: nameTargetPopup
         backend: root.backend
         running: root.running
+        manifests: root.manifests
         publishedNames: root.publishedNames
-        publishingCids: root.publishingCids
+        publishingLabels: root.publishingLabels
     }
 
     ColumnLayout {
@@ -388,16 +407,16 @@ LogosFrame {
             }
 
             function onNamePublishStarted(label, cid) {
-                root.setPublishing(cid, true)
+                root.setPublishingLabel(label, cid)
             }
 
             function onNamePublished(label, cid, nameKey) {
-                root.setPublishing(cid, false)
+                root.setPublishingLabel(label, "")
                 root.recordPublished(label, cid, nameKey)
             }
 
             function onNamePublishFailed(label, cid, error) {
-                root.setPublishing(cid, false)
+                root.setPublishingLabel(label, "")
             }
 
             function onNameUnpublished(label) {
@@ -448,11 +467,37 @@ LogosFrame {
             Layout.fillWidth: true
             spacing: Theme.spacing.medium
 
-            LogosText {
+            // The Switch Toggle of the Basecamp design.
+            LogosTabBar {
+                id: viewTabs
+                // Sets root.view. A click on a tab and showView both change the current tab.
+                onCurrentIndexChanged: root.view = currentIndex === 1 ? "names" : "manifests"
+
+                LogosTabButton {
+                    objectName: "manifestsTab"
+                    text: "Manifests"
+                }
+
+                LogosTabButton {
+                    objectName: "namesTab"
+                    text: "Names"
+                }
+            }
+
+            Item {
                 Layout.fillWidth: true
-                text: "Manifests"
-                font.pixelSize: Theme.typography.panelTitleText
-                color: Theme.palette.text
+            }
+
+            LogosButton {
+                objectName: "newNameButton"
+                visible: root.view === "names"
+                radius: Theme.spacing.radiusLarge
+                text: "New name"
+                compact: true
+                variant: LogosButton.Variant.Secondary
+                background: CardButtonBackground {}
+                enabled: root.running
+                onClicked: nameTargetPopup.openForNew("")
             }
 
             LogosIcon {
@@ -488,9 +533,23 @@ LogosFrame {
             Layout.fillHeight: true
 
             // ── Vue liste ────────────────────────────────────────────────────
+            NamesList {
+                anchors.fill: parent
+                visible: root.view === "names"
+                backend: root.backend
+                running: root.running
+                publishedNames: root.publishedNames
+                manifests: root.manifests
+                publishingLabels: root.publishingLabels
+                onChangeRequested: function (label, cid) {
+                    nameTargetPopup.openForChange(label, cid)
+                }
+            }
+
             LogosTable {
                 id: manifestList
                 anchors.fill: parent
+                visible: root.view === "manifests"
                 model: rowsModel
                 rowHeight: 72
                 emptyText: "No manifests yet"
@@ -819,8 +878,15 @@ LogosFrame {
                                                 visible: parent.hovered
                                             }
 
-                                            onClicked: publishNamePopup.openFor(rowItem.cid, rowItem.filename,
-                                                                                publishedName)
+                                            // Names live in the Names tab. A dataset without one starts a new name there.
+                                            onClicked: {
+                                                root.showView("names")
+                                                if (publishedName) {
+                                                    nameTargetPopup.openForChange(publishedName.label, rowItem.cid)
+                                                } else {
+                                                    nameTargetPopup.openForNew(rowItem.cid)
+                                                }
+                                            }
                                         }
 
                                         LogosIconButton {
@@ -830,7 +896,7 @@ LogosFrame {
                                             iconSource: Qt.resolvedUrl("assets/delete-bin-2-line.svg")
                                             background: IconButtonBackground {}
                                             enabled: root.running && !actionsCell.rowDeleting
-                                                     && !actionsCell.rowDownloading
+                                                     && !actionsCell.rowDownloading && !root.isPublishingTo(rowItem.cid)
                                             onClicked: {
                                                 if (rowItem.cid.length > 0) {
                                                     root.backend.remove(rowItem.cid)

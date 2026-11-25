@@ -199,18 +199,20 @@ sections:
               texts: ["storage-ui-naming-sample.txt"]
               timeout: 10000
 
-            - name: "Open the publish popup from the row"
+            - name: "Click the globe of the row"
               action: call_method
               find_by: "objectName"
               find_value: "publishNameButton_storage-ui-naming-sample.txt"
               method: "clicked"
 
-            - name: "The popup opens"
+            - name: "The publish popup opens"
               # The tooltip of the row button has the popup title too: check the popup itself.
               action: expect_property
-              find_value: "publishNamePopup"
+              find_value: "nameTargetPopup"
               property: "visible"
               value: true
+              text: |
+                The app opens the Names tab and the publish popup, with the file already picked.
 
             - name: "Type the label"
               action: set_property
@@ -222,33 +224,31 @@ sections:
             - name: "Publish"
               action: call_method
               find_by: "objectName"
-              find_value: "publishNameConfirmButton"
+              find_value: "nameTargetConfirmButton"
               method: "clicked"
 
-            - name: "The popup shows the name key"
+            - name: "The Names tab shows the name"
               action: wait_for
-              texts: ["Published as catalog"]
+              texts: ["catalog points to storage-ui-naming-sample.txt"]
               timeout: 45000
               screenshot: "storage-ui-name-published.png"
               text: |
-                The popup shows the name key to share, with a copy button.
-                The row in the table shows `catalog` next to the filename.
+                The Names tab shows `catalog`, its name key with a copy button, and the file it points to.
 
-            - name: "Type another label"
-              action: set_property
+            - name: "Click the globe of the named row again"
+              action: call_method
               find_by: "objectName"
+              find_value: "publishNameButton_storage-ui-naming-sample.txt"
+              method: "clicked"
+
+            - name: "A named dataset opens the popup with its name"
+              action: expect_property
               find_value: "nameLabelInput"
               property: "text"
-              value: "other"
-
-            - name: "A second name is refused"
-              action: expect_property
-              find_value: "publishNameConfirmButton"
-              property: "enabled"
-              value: false
-              screenshot: "storage-ui-name-second-label.png"
+              value: "catalog"
               text: |
-                A dataset has one name. The user unpublishes it first to use another label.
+                A dataset has one name.
+                The globe of a named dataset opens the same popup, with `catalog` and this file already picked.
 
             - name: "Let the app save its settings"
               # The QML Settings write to disk after a short delay, and the app is killed at the end of the step.
@@ -258,7 +258,7 @@ sections:
       - title: "Read the name key the app kept"
         text: |
           The app shows the name next to the manifest.
-          The globe button of the row opens the name key to share.
+          The Names tab shows the name key to share.
           The test can't copy a value from the screen.
           It reads the name key and the dataset CID of `catalog` from the settings file of the app.
         run: |
@@ -438,40 +438,40 @@ sections:
               texts: ["storage-ui-naming-sample-2.txt"]
               timeout: 10000
 
-            - name: "Open the publish popup from the row of the second file"
+            - name: "Click the globe of the second file"
               action: call_method
               find_by: "objectName"
               find_value: "publishNameButton_storage-ui-naming-sample-2.txt"
               method: "clicked"
 
-            - name: "Type the label catalog"
-              action: set_property
+            - name: "Pick the existing name catalog"
+              action: call_method
               find_by: "objectName"
-              find_value: "nameLabelInput"
-              property: "text"
-              value: "catalog"
+              find_value: "existingNameButton_catalog"
+              method: "clicked"
 
             - name: "The popup offers to move the name"
               action: expect_property
-              find_value: "publishNameConfirmButton"
+              find_value: "nameTargetConfirmButton"
               property: "text"
               value: "Move"
               screenshot: "storage-ui-name-move.png"
               text: |
                 `catalog` points to the first file.
-                The popup warns that Move points it to this file.
+                The popup warns that Move points it to the second file.
 
             - name: "Move"
               action: call_method
               find_by: "objectName"
-              find_value: "publishNameConfirmButton"
+              find_value: "nameTargetConfirmButton"
               method: "clicked"
 
-            - name: "The popup shows the same name"
+            - name: "The Names tab shows catalog on the second file"
               action: wait_for
-              texts: ["Published as catalog"]
+              texts: ["catalog points to storage-ui-naming-sample-2.txt"]
               timeout: 45000
               text: |
+                The name key of `catalog` stays the same.
                 The table shows `catalog` next to the second file only.
 
             - name: "Let the app save its settings"
