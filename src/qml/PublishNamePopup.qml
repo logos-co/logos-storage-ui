@@ -157,7 +157,7 @@ Popup {
 
             LogosText {
                 Layout.fillWidth: true
-                text: "Others fetch this dataset with the name key. A dataset has one name, and a name points to one dataset."
+                text: "Share this file under a name. When you update it, publish the new version under the same name. The people you shared it with get the update, and you don't send them anything new."
                 font.pixelSize: Theme.typography.secondaryText
                 color: Theme.palette.textSecondary
                 wrapMode: Text.WordWrap
@@ -187,6 +187,39 @@ Popup {
                         root.error = ""
                         root.requested = true
                         root.backend.publishName(labelInput.text, root.cid)
+                    }
+                }
+            }
+
+            // Picking one of the node's names moves it to this dataset.
+            ColumnLayout {
+                Layout.fillWidth: true
+                visible: !root.hasName && Object.keys(root.publishedNames).length > 0
+                spacing: Theme.spacing.small
+
+                LogosText {
+                    text: "Or use one of your names:"
+                    font.pixelSize: Theme.typography.secondaryText
+                    color: Theme.palette.textSecondary
+                }
+
+                Flow {
+                    Layout.fillWidth: true
+                    spacing: Theme.spacing.small
+
+                    Repeater {
+                        model: Object.keys(root.publishedNames).sort()
+
+                        LogosButton {
+                            required property string modelData
+                            objectName: "existingNameButton_" + modelData
+                            radius: Theme.spacing.radiusLarge
+                            text: modelData
+                            implicitHeight: 32
+                            variant: LogosButton.Variant.Secondary
+                            enabled: root.running && !root.publishing
+                            onClicked: labelInput.text = modelData
+                        }
                     }
                 }
             }
