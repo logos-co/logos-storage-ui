@@ -44,8 +44,6 @@ ScrollView {
     readonly property bool valid: (root.vNatMode !== "extip" || root.natExtIpValid)
                                  && root.natIntervalValid
                                  && root.isJson(root.vBootstrap)
-                                 && root.isJson(root.vMixProxies)
-                                 && root.isJson(root.vMixPool)
 
     // A pending edit the node will only pick up on its next start.
     readonly property bool restartRequired: root.loadedOnce
@@ -63,8 +61,6 @@ ScrollView {
     property string vNetwork: ""
     // JSON edited as it sits in the config, not split into records.
     property string vBootstrap: ""
-    property string vMixProxies: ""
-    property string vMixPool: ""
 
     // Read-only values.
     property string vDataDir: ""
@@ -199,8 +195,6 @@ ScrollView {
 
         root.vDataDir = cfg["data-dir"] || ""
         root.vMixEnabled = !!cfg["mix-enabled"]
-        root.vMixProxies = root.toJsonText(cfg["dht-mix-proxy"])
-        root.vMixPool = cfg["mix-pool-json"] || ""
         root.vConfigVersion = cfg["config-version"] !== undefined ? String(cfg["config-version"]) : "0"
 
         // Normalise so an untouched form compares equal to what a save writes.
@@ -266,8 +260,6 @@ ScrollView {
         put("network", root.vNetwork)
 
         putJson("bootstrap-node", root.vBootstrap)
-        putJson("dht-mix-proxy", root.vMixProxies)
-        put("mix-pool-json", root.vMixPool)
         putInt("listen-port", root.vListenPort)
 
         // Written only when the user flips it: an absent key stays absent.
@@ -377,7 +369,7 @@ ScrollView {
         }
     }
 
-    // A long value shown on demand: peer records, relay pool. An editable one
+    // A long value shown on demand: peer records. An editable one
     // reports every keystroke through edited(); the field holds no state.
     component Blob: ColumnLayout {
         id: blob
@@ -674,28 +666,6 @@ ScrollView {
                         objectName: "mixEnabledSwitch"
                         checked: root.vMixEnabled
                         onToggled: root.vMixEnabled = checked
-                    }
-                }
-
-                Blob {
-                    title: "DHT mix proxies"
-                    summary: "Peer records used as proxy destinations, added to the ones the node finds."
-                    body: root.vMixProxies
-                    editable: true
-                    fieldObjectName: "mixProxiesField"
-                    onEdited: function (text) {
-                        root.vMixProxies = text
-                    }
-                }
-
-                Blob {
-                    title: "Mix relay pool"
-                    summary: "Relays the node mixes through, added to the ones the node finds."
-                    body: root.vMixPool
-                    editable: true
-                    fieldObjectName: "mixPoolField"
-                    onEdited: function (text) {
-                        root.vMixPool = text
                     }
                 }
             }

@@ -125,6 +125,14 @@ Popup {
 
         root.addAll("Listen address", info.addrs)
 
+        // Providers found by service discovery, keyed by protocol id.
+        const services = info.serviceProviders || {}
+        for (const serviceId in services) {
+            const providers = services[serviceId] || []
+            root.addRow("Providers " + serviceId, providers.length + " found")
+            root.addAll("Provider " + serviceId, providers.map(provider => provider.peerId))
+        }
+
         // Absent from the payload when the node has no such record or no mix.
         const identifiers = [["SPR", info.spr], ["libp2p public key", info.libp2pPubKey],
                              ["Mix public key", info.mixPubKey]]

@@ -118,7 +118,14 @@ QtObject {
                              },
                              "connections": [{
                                      "direct": true
-                                 }]
+                                 }],
+                             "serviceProviders": {
+                                 "/logos-storage/1.0.0": [{
+                                         "peerId": "16Uiu2HAmMockPeerA",
+                                         "addresses": ["/ip4/127.0.0.1/tcp/8501"],
+                                         "lastSeen": 1789131887
+                                     }]
+                             }
                          })
     }
     function logPeerId() {}

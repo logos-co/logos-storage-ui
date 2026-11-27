@@ -204,18 +204,6 @@ sections:
               property: "vBootstrap"
               value: "[\"spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE\", \"spr:CiUIAhIhAn67-cPFkDpqyeTEjDPbhtN8NUxt9S-niBc5QRLyc2xrEgIDARpJCicAJQgCEiECfrv5w8WQOmrJ5MSMM9uG03w1TG31L6eIFzlBEvJzbGsQ3LWT0gYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDX2BuLjlWusHeQC-bI50ynRHSXfchFSSFfup2NFHB3dwIgLEUpNwVgcaP7Rj_GkClm3pmQ1KSqB1GeaKDbipsZJ3o\"]"
 
-            - name: "Replace the DHT mix proxies"
-              action: set_property
-              find_value: "settingsForm"
-              property: "vMixProxies"
-              value: "[\"spr:CiUIAhIhApIj9p6zJDRbw2NoCo-tj98Y760YbppRiEpGIE1yGaMzEgIDARpJCicAJQgCEiECkiP2nrMkNFvDY2gKj62P3xjvrRhumlGISkYgTXIZozMQvcz8wQYaCwoJBAWhF3WRAnVEGgsKCQQFoRd1kQJ1RCpGMEQCIFZB84O_nzPNuViqEGRL1vJTjHBJ-i5ZDgFL5XZxm4HAAiB8rbLHkUdFfWdiOmlencYVn0noSMRHzn4lJYoShuVzlw\"]"
-
-            - name: "Replace the Mix relay pool with one logos.test relay"
-              action: set_property
-              find_value: "settingsForm"
-              property: "vMixPool"
-              value: "{\"version\":1,\"relays\":[{\"peerId\":\"16Uiu2HAm3xPbYz2zsq5XVGDCMqKhhNXZWyYV6WLVv3yzzUiRJWnW\",\"mixPubKey\":\"7da7478099878e16e1ae64d8d92f3ac5a033d309202672f38c4b23580029c935\",\"libp2pPubKey\":\"027ebbf9c3c5903a6ac9e4c48c33db86d37c354c6df52fa78817394112f2736c6b\",\"multiAddr\":\"/ip4/178.128.140.206/tcp/8070\"}]}"
-
             - name: "The network preset is locked by the custom bootstrap"
               action: expect_property
               find_value: "networkSelect"
@@ -358,21 +346,6 @@ sections:
 
           echo "OK: data-dir, config-version and mix-enabled are intact"
 
-      - title: "The Mix JSON fields are written back parsed"
-        run: |
-          set -e
-          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
-          cfg="$base/doctest/config.json"
-
-          test "$(jq '."dht-mix-proxy" | length' "$cfg")" = "1"
-          test "$(jq -r '."dht-mix-proxy"[0]' "$cfg")" = "spr:CiUIAhIhApIj9p6zJDRbw2NoCo-tj98Y760YbppRiEpGIE1yGaMzEgIDARpJCicAJQgCEiECkiP2nrMkNFvDY2gKj62P3xjvrRhumlGISkYgTXIZozMQvcz8wQYaCwoJBAWhF3WRAnVEGgsKCQQFoRd1kQJ1RCpGMEQCIFZB84O_nzPNuViqEGRL1vJTjHBJ-i5ZDgFL5XZxm4HAAiB8rbLHkUdFfWdiOmlencYVn0noSMRHzn4lJYoShuVzlw"
-          test "$(jq '."dht-mix-proxy" | type' "$cfg")" = '"array"'
-
-          test "$(jq -r '."mix-pool-json"' "$cfg")" = '{"version":1,"relays":[{"peerId":"16Uiu2HAm3xPbYz2zsq5XVGDCMqKhhNXZWyYV6WLVv3yzzUiRJWnW","mixPubKey":"7da7478099878e16e1ae64d8d92f3ac5a033d309202672f38c4b23580029c935","libp2pPubKey":"027ebbf9c3c5903a6ac9e4c48c33db86d37c354c6df52fa78817394112f2736c6b","multiAddr":"/ip4/178.128.140.206/tcp/8070"}]}'
-          test "$(jq '."mix-pool-json" | type' "$cfg")" = '"string"'
-
-          echo "OK: the proxy list is an array, the relay pool stays a string"
-
   - title: "Reopening the popup shows the saved values"
     step: true
     text: |
@@ -480,18 +453,6 @@ sections:
               property: "text"
               value: "[\n  \"spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE\",\n  \"spr:CiUIAhIhAn67-cPFkDpqyeTEjDPbhtN8NUxt9S-niBc5QRLyc2xrEgIDARpJCicAJQgCEiECfrv5w8WQOmrJ5MSMM9uG03w1TG31L6eIFzlBEvJzbGsQ3LWT0gYaCwoJBLKAjM6RAiOCGgsKCQSygIzOkQIjgipHMEUCIQDX2BuLjlWusHeQC-bI50ynRHSXfchFSSFfup2NFHB3dwIgLEUpNwVgcaP7Rj_GkClm3pmQ1KSqB1GeaKDbipsZJ3o\"\n]"
 
-            - name: "The mix proxies are shown back as indented JSON"
-              action: expect_property
-              find_value: "mixProxiesField"
-              property: "text"
-              value: "[\n  \"spr:CiUIAhIhApIj9p6zJDRbw2NoCo-tj98Y760YbppRiEpGIE1yGaMzEgIDARpJCicAJQgCEiECkiP2nrMkNFvDY2gKj62P3xjvrRhumlGISkYgTXIZozMQvcz8wQYaCwoJBAWhF3WRAnVEGgsKCQQFoRd1kQJ1RCpGMEQCIFZB84O_nzPNuViqEGRL1vJTjHBJ-i5ZDgFL5XZxm4HAAiB8rbLHkUdFfWdiOmlencYVn0noSMRHzn4lJYoShuVzlw\"\n]"
-
-            - name: "The relay pool is shown back as the raw string"
-              action: expect_property
-              find_value: "mixPoolField"
-              property: "text"
-              value: "{\"version\":1,\"relays\":[{\"peerId\":\"16Uiu2HAm3xPbYz2zsq5XVGDCMqKhhNXZWyYV6WLVv3yzzUiRJWnW\",\"mixPubKey\":\"7da7478099878e16e1ae64d8d92f3ac5a033d309202672f38c4b23580029c935\",\"libp2pPubKey\":\"027ebbf9c3c5903a6ac9e4c48c33db86d37c354c6df52fa78817394112f2736c6b\",\"multiAddr\":\"/ip4/178.128.140.206/tcp/8070\"}]}"
-
             - name: "Nothing is pending, so Save is disabled"
               action: expect_property
               find_value: "saveButton"
@@ -509,7 +470,6 @@ sections:
           test "$(jq -r '.nat' "$cfg")" = "extip:203.0.113.7"
           test "$(jq -r '.network' "$cfg")" = "logos.dev"
           test "$(jq '."bootstrap-node" | length' "$cfg")" = "2"
-          test "$(jq -r '."mix-pool-json"' "$cfg")" = '{"version":1,"relays":[{"peerId":"16Uiu2HAm3xPbYz2zsq5XVGDCMqKhhNXZWyYV6WLVv3yzzUiRJWnW","mixPubKey":"7da7478099878e16e1ae64d8d92f3ac5a033d309202672f38c4b23580029c935","libp2pPubKey":"027ebbf9c3c5903a6ac9e4c48c33db86d37c354c6df52fa78817394112f2736c6b","multiAddr":"/ip4/178.128.140.206/tcp/8070"}]}'
 
           echo "round trip OK: the popup reloads what it saved"
 
