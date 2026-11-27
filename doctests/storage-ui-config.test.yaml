@@ -13,6 +13,7 @@ intro: |
     3. the obsolete `nat` value is dropped
     4. the retired `disc-port` is dropped
     5. the config is stamped with the current version
+    6. the config and the data move from `~/.logos_storage` to the module's folder
 
 what_you_build: "Storage UI started on a config from an older build, refreshed by the module."
 
@@ -52,11 +53,19 @@ sections:
 
     steps:
       - title: "Reset state and write the legacy config"
+        # The host gives the module the first folder it finds under
+        # module_data/storage_module: creating "doctest" fixes the path.
         run: |
           set -e
-          # Fresh data dir for this run.
-          rm -rf /tmp/storage-ui-config-data
-          mkdir -p /tmp/storage-ui-config-data
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          rm -rf "$base"
+          mkdir -p "$base/doctest"
+
+          # Fresh data dir for this run, where an older build kept it.
+          # The marker shows the data were moved, not created again.
+          rm -rf "$HOME/.logos_storage/data"
+          mkdir -p "$HOME/.logos_storage/data"
+          printf 'moved by the module\n' > "$HOME/.logos_storage/data/storage-ui-config-marker"
 
           # Mark onboarding complete so the app loads the existing config
           # instead of showing the onboarding screens.
@@ -67,10 +76,9 @@ sections:
           EOF
 
           # Write the legacy user config: no "network", legacy "bootstrap-node".
-          mkdir -p "$HOME/.logos_storage"
-          cat > "$HOME/.logos_storage/config.json" <<'EOF'
+          cat > "$HOME/.logos_storage/config.json" <<EOF
           {
-            "data-dir": "/tmp/storage-ui-config-data",
+            "data-dir": "$HOME/.logos_storage/data",
             "log-level": "DEBUG",
             "listen-port": 8500,
             "disc-port": 8090,
@@ -82,7 +90,7 @@ sections:
             ]
           }
           EOF
-        check_file: "/tmp/storage-ui-config-data"
+          test -f "$HOME/.logos_storage/data/storage-ui-config-marker"
 
       - title: "Confirm the configuration exists in the config file"
         run: |
@@ -127,20 +135,22 @@ sections:
       - title: "The legacy bootstrap nodes were removed and the config is versioned"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
           echo "refreshed config:"
           jq . "$cfg"
 
           test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
           test "$(jq -r '.network' "$cfg")" = "logos.test"
-          test "$(jq '."config-version"' "$cfg")" = "4"
+          test "$(jq '."config-version"' "$cfg")" = "5"
 
           echo "refresh OK: retired bootstrap-node removed, default network added, config-version stamped"
 
       - title: "The AutoNAT interval was filled in"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
 
           test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "60s"
 
@@ -149,7 +159,8 @@ sections:
       - title: "The obsolete nat value was dropped"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
 
           # The node only accepts "auto" or "extip:<IP>": the seeded "none" is gone
           # and the node runs on its own default.
@@ -160,7 +171,8 @@ sections:
       - title: "The disc-port was dropped"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
 
           # Discovery moved to the libp2p DHT: there is no UDP port left.
           test "$(jq 'has("disc-port")' "$cfg")" = "false"
@@ -170,7 +182,8 @@ sections:
       - title: "Mix is enabled and the node finds its relays"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
 
           test "$(jq '."mix-enabled"' "$cfg")" = "true"
           test "$(jq 'has("dht-mix-proxy")' "$cfg")" = "false"
@@ -181,13 +194,32 @@ sections:
       - title: "The values were read from the file"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
 
-          # Both differ from the defaults: the startup started from the file.
-          test "$(jq -r '."data-dir"' "$cfg")" = "/tmp/storage-ui-config-data"
+          # It differs from the default: the startup started from the file.
           test "$(jq -r '."log-level"' "$cfg")" = "DEBUG"
 
-          echo "values OK: data-dir and log-level kept"
+          echo "values OK: log-level kept"
+
+      - title: "The config and the data moved to the module's folder"
+        run: |
+          set -e
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
+
+          # The old file is not read any more.
+          test ! -e "$HOME/.logos_storage/config.json"
+
+          test "$(jq -r '."data-dir"' "$cfg")" = "$base/doctest/data"
+          test -f "$base/doctest/data/storage-ui-config-marker"
+          test ! -e "$HOME/.logos_storage/data"
+
+          # The node log goes to a file in the module's folder.
+          test "$(jq -r '."log-file"' "$cfg")" = "$base/doctest/storage.log"
+          test "$(jq -r '."log-format"' "$cfg")" = "none"
+
+          echo "move OK: config, data and log in the module's folder"
 
   - title: "Restarting on the refreshed config is a no-op"
     step: true
@@ -198,7 +230,8 @@ sections:
       - title: "Snapshot the refreshed config"
         run: |
           set -e
-          sha256sum "$HOME/.logos_storage/config.json" | awk '{print $1}' \
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          sha256sum "$base/doctest/config.json" | awk '{print $1}' \
             > /tmp/storage-ui-config-hash
           echo "snapshot: $(cat /tmp/storage-ui-config-hash)"
 
@@ -240,14 +273,15 @@ sections:
       - title: "The config file is unchanged"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
           after="$(sha256sum "$cfg" | awk '{print $1}')"
           before="$(cat /tmp/storage-ui-config-hash)"
 
           test "$after" = "$before"
           test "$(jq -r '.network' "$cfg")" = "logos.test"
           test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
-          test "$(jq '."config-version"' "$cfg")" = "4"
+          test "$(jq '."config-version"' "$cfg")" = "5"
 
           echo "idempotent OK: config unchanged on restart"
 
@@ -260,8 +294,9 @@ sections:
       - title: "Remove the config file"
         run: |
           set -e
-          rm -f "$HOME/.logos_storage/config.json"
-          rm -rf "$HOME/.logos_storage/data"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          rm -f "$base/doctest/config.json"
+          rm -rf "$base/doctest/data"
 
           test "$(grep -c 'onboardingCompleted=true' "$HOME/.config/Logos/LogosStandalone.conf")" = "1"
 
@@ -287,12 +322,13 @@ sections:
       - title: "The defaults were written"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
           echo "written config:"
           jq . "$cfg"
 
-          test "$(jq -r '."data-dir"' "$cfg")" = "$HOME/.logos_storage/data"
-          test "$(jq '."config-version"' "$cfg")" = "4"
+          test "$(jq -r '."data-dir"' "$cfg")" = "$base/doctest/data"
+          test "$(jq '."config-version"' "$cfg")" = "5"
 
           echo "defaults OK: data-dir filled in, config versioned"
 
@@ -305,8 +341,9 @@ sections:
       - title: "Write a corrupt config file"
         run: |
           set -e
-          printf '{ "data-dir": ' > "$HOME/.logos_storage/config.json"
-          cp "$HOME/.logos_storage/config.json" /tmp/storage-ui-config-corrupt.json
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          printf '{ "data-dir": ' > "$base/doctest/config.json"
+          cp "$base/doctest/config.json" /tmp/storage-ui-config-corrupt.json
 
           echo "corrupt config in place"
 
@@ -336,6 +373,7 @@ sections:
       - title: "The corrupt file was left untouched"
         run: |
           set -e
-          cmp "$HOME/.logos_storage/config.json" /tmp/storage-ui-config-corrupt.json
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cmp "$base/doctest/config.json" /tmp/storage-ui-config-corrupt.json
 
           echo "corrupt OK: the file was not overwritten"

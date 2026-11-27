@@ -158,7 +158,7 @@ If you are running this UI inside the Basecamp application, the location of the 
 | macOS   | `~/Library/Preferences/com.logos.LogosBasecamp.plist` |
 
 
-The settings are saved to the preferences file to preserve the onboarding defaults, but the active configuration is stored in `${HOME}/.logos_storage/config.json`. You can tweak the values there directly. Note that running the onboarding again will override any onboarding-related values.
+The settings are saved to the preferences file to preserve the onboarding defaults, but the active configuration is stored in the Storage Module's folder, `<session dir>/module_data/storage_module/<id>/config.json`, next to the node data (`data/`) and its log (`storage.log`). With the standalone app on Linux, the session dir is `~/.local/share/Logos/LogosStandalone`. You can tweak the values there directly. Note that running the onboarding again will override any onboarding-related values.
 
 To restart the onboarding process, simply delete the preferences file and relaunch the application or use the debug panel (ctrl + d) to reset the onboarding state.
 

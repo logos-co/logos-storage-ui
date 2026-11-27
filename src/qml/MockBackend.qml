@@ -11,7 +11,7 @@ QtObject {
     property string uiVersion: "0.0.0"
     property string moduleVersion: "0.0.0"
     property string defaultConfigJson: JSON.stringify({
-                                                          "data-dir": "/home/user/.logos_storage/data",
+                                                          "data-dir": "/home/user/.local/share/Logos/LogosStandalone/module_data/storage_module/0123456789ab/data",
                                                           "listen-port": 8500,
                                                           "nat-schedule-interval": "60s",
                                                           "mix-enabled": true,
@@ -105,7 +105,7 @@ QtObject {
     function getUserConfig() {
         return JSON.stringify({
                                   "config-version": 3,
-                                  "data-dir": "/home/user/.logos_storage/data",
+                                  "data-dir": "/home/user/.local/share/Logos/LogosStandalone/module_data/storage_module/0123456789ab/data",
                                   "log-level": "info",
                                   "listen-port": 8500,
                                   "mix-enabled": true,

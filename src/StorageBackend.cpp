@@ -29,7 +29,6 @@ StorageBackend::StorageBackend(QObject* parent) : StorageBackendSimpleSource(par
 
     setStatus(Destroyed);
     setNatReachability("Unknown");
-    setDefaultConfigJson(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
     setUiVersion(STORAGE_UI_VERSION);
 
     // Disable system proxy detection — it crashes in Nix/some Linux environments
@@ -40,6 +39,8 @@ void StorageBackend::onContextReady() {
     // ~StorageBackend still calls storage_module after modules() is destroyed.
     m_logos = new LogosModules(modules().api);
     setModuleVersion(m_logos->storage_module.moduleVersion());
+    // The default data dir is in the module's folder: only the module knows it.
+    setDefaultConfigJson(QString::fromUtf8(defaultConfig().toJson(QJsonDocument::Indented)));
 }
 
 LogosShutdown StorageBackend::aboutToUnload() { return LogosShutdown::Synchronous; }
@@ -700,7 +701,15 @@ QJsonDocument StorageBackend::defaultConfig() {
     QJsonDocument doc = QJsonDocument();
     QJsonObject obj = doc.object();
 
-    obj["data-dir"] = DEFAULT_DATA_DIR;
+    const LogosResult result = m_logos->storage_module.loadConfigOrDefault();
+
+    if (result.success) {
+        const QJsonObject saved = QJsonDocument::fromJson(result.getString().toUtf8()).object();
+        obj["data-dir"] = saved.value("data-dir");
+    } else {
+        // Without data-dir, the module puts the data in its folder on init.
+        reportError("Failed to load the default data dir: " + result.getError());
+    }
 
     // Define defaults here to make it visible on the UI
     obj["listen-port"] = DEFAULT_LISTEN_PORT;
