@@ -407,6 +407,20 @@ sections:
               texts: ["Stop"]
               timeout: 30000
 
+            # The app writes its Settings to disk after a short delay, and the
+            # node starts in a few ms: without this, the app is killed before
+            # the onboarding is saved, and the next launch shows it again.
+            - name: "Let the onboarding state reach the disk"
+              action: sleep
+              ms: 2000
+
+      - title: "The onboarding is saved as completed"
+        run: |
+          set -e
+          grep -q 'onboardingCompleted=true' "$HOME/.config/Logos/LogosStandalone.conf"
+
+          echo "OK: onboarding completed"
+
       # Disabled: the CID below is only served by the node this test itself
       # started, and that node is shut down as soon as the run ends. The
       # provider records left in the DHT are stale, so the fetch times out.
@@ -562,6 +576,17 @@ sections:
               action: wait_for
               texts: ["Stop"]
               timeout: 30000
+
+            - name: "Let the onboarding state reach the disk"
+              action: sleep
+              ms: 2000
+
+      - title: "The second onboarding is saved as completed"
+        run: |
+          set -e
+          grep -q 'onboardingCompleted=true' "$HOME/.config/Logos/LogosStandalone.conf"
+
+          echo "OK: onboarding completed"
 
       - title: "The guided run replaced the advanced config"
         run: |
