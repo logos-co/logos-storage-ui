@@ -11,6 +11,7 @@ name: storage-ui Doc-Tests
 #   storage-ui-config.test.yaml: Verify a config from an older build is refreshed by the Storage Module on startup.
 #   storage-ui-settings.test.yaml: Verify every Settings field is written to its config.json key on the next start, and that the read-only keys survive.
 #   storage-ui-app.test.yaml: Walk both onboarding paths, then upload from the dashboard.
+#   storage-ui-naming.test.yaml: Publish a name from the app, move it to a second file, and a second node resolves it each time and downloads the file.
 
 on:
   pull_request:
@@ -33,6 +34,7 @@ jobs:
           - storage-ui-config
           - storage-ui-settings
           - storage-ui-app
+          - storage-ui-naming
 
     # ATTIC_TOKEN_PUBLIC only exists in the public-cache environment; master
     # jobs must opt into it to publish to the public cache. Push only: the

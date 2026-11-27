@@ -1,0 +1,725 @@
+name: "Sharing a File Under a Name From the Storage UI"
+output: storage-ui-naming.md
+release: ""
+
+intro: |
+  The app can share a dataset under a name.
+  The user gets a name key.
+  Another node finds the dataset with this name key.
+
+  This doc-test runs two nodes on the same machine:
+  - Node B runs with `logosctl` and runs its DHT in server mode.
+  - The app runs headless and uses B as its bootstrap node.
+
+  First, the app uploads a file and publishes it under the name `catalog`.
+  B resolves the name key to the dataset CID and downloads the file from the app.
+
+  Then the app moves `catalog` to a second file.
+  The name key stays the same.
+  B resolves it again, gets the new dataset CID and downloads the second file.
+
+  Last, B publishes a file under the name `shared`.
+  The app pastes the name key in the Fetch field, gets the manifest and downloads the file.
+
+  The app is driven through the QML inspector via [`logos-qt-mcp`](https://github.com/logos-co/logos-qt-mcp).
+
+what_you_learn:
+  - How to publish a dataset under a name from the manifest table
+  - Where the app shows the name key to share
+  - How another node resolves the name key and downloads the file
+  - How to point a name to another dataset and keep its name key
+  - How the app fetches a file from a name key pasted in the CID field
+
+prerequisites:
+  - |
+    **Nix** with flakes enabled. Install from [nixos.org](https://nixos.org/download.html), then enable flakes:
+
+    ```bash
+    mkdir -p ~/.config/nix
+    echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
+    ```
+
+    Verify: `nix flake --help >/dev/null 2>&1 && echo "Flakes enabled"`
+  - "**`jq`** on your `PATH`. Verify: `jq --version`"
+  - "**A Linux machine.** The app runs headless via `QT_QPA_PLATFORM=offscreen`. Its settings are in the QSettings ini file `~/.config/Logos/LogosStandalone.conf`."
+
+sections:
+  - title: "Build the tools"
+    step: true
+    steps:
+      - title: "Build logos-qt-mcp"
+        run: "nix build 'github:logos-co/logos-qt-mcp' -o result-mcp"
+        check_file: "result-mcp"
+
+      - title: "Build logosctl"
+        run: "nix build 'github:logos-co/logos-logoscore-cli?ref=0.3.2#ctl' --out-link ./logosctl"
+        check_file: "logosctl/bin/logosctl"
+
+      - title: "Build lgpm"
+        run: "nix build 'github:logos-co/logos-package-manager?ref=0.3.0#cli' -o lgpm"
+        check_file: "lgpm/bin/lgpm"
+
+      - title: "Build the storage module for node B"
+        run: "nix build 'github:logos-co/logos-storage-module?ref=refs/tags/v3.1.0-rc1#lgx' -o storage-lgx"
+        check_file: "storage-lgx"
+
+      - title: "Install the module for node B"
+        run: |
+          set -eu
+          ./lgpm/bin/lgpm --modules-dir ./session-b/modules --allow-unsigned install --file storage-lgx/*.lgx
+        expect_contains:
+          - "Installed to:"
+
+  - title: "Launch node B"
+    step: true
+    text: |
+      B is reachable on `127.0.0.1` and runs its DHT in server mode.
+      Its configuration has no `network`: B doesn't join the public network.
+    steps:
+      - title: "Write node B's configuration"
+        # The host gives the module the first folder it finds under
+        # data/storage_module: creating "doctest" fixes the path.
+        run: |
+          set -eu
+          rm -rf "$(pwd)/storage-data/node-b" session-b/data/storage_module
+          mkdir -p "$(pwd)/storage-data/node-b" home-b session-b/data/storage_module/doctest
+          cat > session-b/data/storage_module/doctest/config.json <<EOF
+          {
+              "config-version": 5,
+              "log-level": "DEBUG",
+              "data-dir": "$(pwd)/storage-data/node-b",
+              "log-file": "$(pwd)/storage-data/node-b/storage.log",
+              "listen-port": 8091,
+              "nat": "extip:127.0.0.1"
+          }
+          EOF
+          jq . session-b/data/storage_module/doctest/config.json
+
+      - title: "Give node B a fixed key"
+        text: |
+          A name key is generated using the key of the node that publishes and the label.
+          B uses a fixed test key.
+          Its name key is then the same on every run.
+        run: |
+          set -eu
+          echo "CAISIH8hXnW6keis9wt6NdSGhUJr3mqAJ2H1psMMTaGDlit8" | base64 -d > storage-data/node-b/key
+          chmod 600 storage-data/node-b/key
+          echo "key written"
+
+      - title: "Start node B's daemon"
+        run: |
+          sh -c 'HOME="$PWD/home-b" ./logosctl/bin/logosctl --config-dir="$PWD/session-b" -D > logs-b.txt 2>&1 &'
+
+      - run: "sleep 3"
+
+      - title: "Load the module and capture the SPR of B"
+        run: |
+          set -eu
+          CTL="./logosctl/bin/logosctl --config-dir=$(pwd)/session-b"
+          $CTL module load storage_module
+          sleep 5
+          $CTL module show storage_module | grep -q namePublish
+          $CTL call storage_module debug | jq -er '.result.value.spr' > spr-b.txt
+          cat spr-b.txt
+
+  - title: "Prepare the app"
+    step: true
+    text: |
+      The app skips the onboarding and starts with B as its bootstrap node.
+      It is reachable on `127.0.0.1` too and runs without Mix.
+    steps:
+      - title: "Write the file to share"
+        run: 'printf "catalog shared by name from the storage UI\n" > /tmp/storage-ui-naming-sample.txt'
+        check_file: "/tmp/storage-ui-naming-sample.txt"
+
+      - title: "Write the app's configuration"
+        run: |
+          set -eu
+          SPR_B=$(cat spr-b.txt)
+          rm -rf /tmp/storage-ui-naming-data
+          mkdir -p /tmp/storage-ui-naming-data
+
+          mkdir -p "$HOME/.config/Logos"
+          cat > "$HOME/.config/Logos/LogosStandalone.conf" <<'EOF'
+          [Storage]
+          onboardingCompleted=true
+          EOF
+
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          rm -rf "$base"
+          mkdir -p "$base/doctest"
+          cat > "$base/doctest/config.json" <<EOF
+          {
+            "config-version": 5,
+            "data-dir": "/tmp/storage-ui-naming-data",
+            "log-level": "info",
+            "listen-port": 8500,
+            "nat": "extip:127.0.0.1",
+            "mix-enabled": false,
+            "bootstrap-node": ["$SPR_B"]
+          }
+          EOF
+          jq . "$base/doctest/config.json"
+
+  - title: "Publish a name from the app"
+    step: true
+    steps:
+      - title: "Upload and publish"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "The dashboard opens"
+              action: wait_for
+              texts: ["Manage node", "Total space available"]
+              timeout: 5000
+
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Let the app find B in the DHT"
+              action: sleep
+              ms: 10000
+
+            - name: "Hand the file to the upload dialog"
+              action: set_property
+              find_by: "objectName"
+              find_value: "uploadDialog"
+              property: "selectedFile"
+              value: "file:///tmp/storage-ui-naming-sample.txt"
+
+            - name: "Fire the dialog's accepted signal"
+              action: call_method
+              find_by: "objectName"
+              find_value: "uploadDialog"
+              method: "accepted"
+
+            - name: "The file joins the manifest list"
+              action: wait_for
+              texts: ["storage-ui-naming-sample.txt"]
+              timeout: 10000
+
+            - name: "Click the globe of the row"
+              action: call_method
+              find_by: "objectName"
+              find_value: "publishNameButton_storage-ui-naming-sample.txt"
+              method: "clicked"
+
+            - name: "The publish popup opens"
+              # The tooltip of the row button has the popup title too: check the popup itself.
+              action: expect_property
+              find_value: "nameTargetPopup"
+              property: "visible"
+              value: true
+              text: |
+                The app opens the Names tab and the publish popup, with the file already picked.
+
+            - name: "Type the label"
+              action: set_property
+              find_by: "objectName"
+              find_value: "nameLabelInput"
+              property: "text"
+              value: "catalog"
+
+            - name: "Publish"
+              action: call_method
+              find_by: "objectName"
+              find_value: "nameTargetConfirmButton"
+              method: "clicked"
+
+            - name: "The Names tab shows the name"
+              action: wait_for
+              texts: ["catalog points to storage-ui-naming-sample.txt"]
+              timeout: 45000
+              screenshot: "storage-ui-name-published.png"
+              text: |
+                The Names tab shows `catalog`, its name key with a copy button, and the file it points to.
+
+            - name: "Click the globe of the named row again"
+              action: call_method
+              find_by: "objectName"
+              find_value: "publishNameButton_storage-ui-naming-sample.txt"
+              method: "clicked"
+
+            - name: "A named dataset opens the popup with its name"
+              action: expect_property
+              find_value: "nameLabelInput"
+              property: "text"
+              value: "catalog"
+              text: |
+                A dataset has one name.
+                The globe of a named dataset opens the same popup, with `catalog` and this file already picked.
+
+            - name: "Let the app save its settings"
+              # The QML Settings write to disk after a short delay, and the app is killed at the end of the step.
+              action: sleep
+              ms: 2000
+
+      - title: "Read the name key the app kept"
+        text: |
+          The app shows the name next to the manifest.
+          The Names tab shows the name key to share.
+          The test can't copy a value from the screen.
+          It reads the name key and the dataset CID of `catalog` from the settings file of the app.
+        run: |
+          set -eu
+          CONF="$HOME/.config/Logos/LogosStandalone.conf"
+          awk '/^\[PublishedNames\]/ { s = 1; next } /^\[/ { s = 0 } s && /^entries=/ { sub(/^entries=/, ""); print }' "$CONF" \
+            | sed 's/^"//; s/"$//; s/\\"/"/g' > published-names.json
+          jq . published-names.json
+          jq -er '.catalog.nameKey' published-names.json > name-key.txt
+          jq -er '.catalog.cid' published-names.json > cid.txt
+          echo "name key: $(cat name-key.txt)"
+          echo "dataset CID: $(cat cid.txt)"
+
+      - title: "B checks with isNameKey which key is a name key"
+        text: |
+          `isNameKey` returns `true` for the name key and `false` for the dataset CID.
+        run: |
+          set -eu
+          CTL="./logosctl/bin/logosctl --config-dir=$(pwd)/session-b"
+          $CTL call storage_module isNameKey "$(cat name-key.txt)" | jq -e '.result.success and .result.value == true' > /dev/null
+          $CTL call storage_module isNameKey "$(cat cid.txt)" | jq -e '.result.success and .result.value == false' > /dev/null
+          echo "OK: isNameKey is true for the name key and false for the dataset CID"
+        expect_contains:
+          - "OK: isNameKey is true for the name key and false for the dataset CID"
+
+  - title: "B resolves the name and downloads the file"
+    step: true
+    text: |
+      In the background, B waits for the app to connect, resolves the name key with `nameResolve` and downloads the dataset CID it gets.
+      Meanwhile the app starts again to serve the file.
+    steps:
+      - title: "Watch the resolve events of B"
+        run: |
+          set -eu
+          ./logosctl/bin/logosctl --config-dir="$(pwd)/session-b" watch storage_module --event storageNameResolveDone --json > events-resolve.txt 2> watch-resolve.err &
+          echo $! > watch-resolve.pid
+          sleep 2
+          kill -0 "$(cat watch-resolve.pid)"
+          echo "the watcher is running"
+        expect_contains:
+          - "the watcher is running"
+
+      - title: "Write the resolve and the download of B"
+        run: |
+          set -eu
+          cat > b-resolve-and-download.sh <<'EOF'
+          #!/bin/sh
+          # $1: the file with the expected dataset CID. $2: the file the app shares. $3: where B downloads it.
+          # It writes the resolved CID in $3.cid, and $3.done once the download matches $2.
+          CTL="./logosctl/bin/logosctl --config-dir=$(pwd)/session-b"
+          NAME_KEY=$(cat name-key.txt)
+          EXPECTED=$(cat "$1")
+          SOURCE="$2"
+          OUT="$3"
+          rm -f "$OUT" "$OUT.cid" "$OUT.done"
+
+          # Wait for the app to connect to B.
+          for second in $(seq 1 60); do
+            CONNECTED=$($CTL call storage_module debug | jq '(.result.value.connections // []) | length > 0')
+            [ "$CONNECTED" = "true" ] && break
+            sleep 1
+          done
+          echo "connected: $CONNECTED"
+
+          # The first resolves can come back empty, or with the CID the name had before.
+          for attempt in $(seq 1 10); do
+            BEFORE=$(wc -l < events-resolve.txt)
+            $CTL call storage_module nameResolve "$NAME_KEY" > /dev/null
+            for second in $(seq 1 10); do
+              [ "$(wc -l < events-resolve.txt)" -gt "$BEFORE" ] && break
+              sleep 1
+            done
+            CID=$(sed -n "$((BEFORE + 1))p" events-resolve.txt | jq -r '.data.arg0 | fromjson | .cid // ""')
+            echo "resolve $attempt: '$CID'"
+            if [ "$CID" = "$EXPECTED" ]; then
+              echo "$CID" > "$OUT.cid"
+              break
+            fi
+            sleep 1
+          done
+          [ -f "$OUT.cid" ] || exit 1
+
+          $CTL call storage_module downloadToUrl "$(cat "$OUT.cid")" "$(pwd)/$OUT" false 65536 false false
+          for second in $(seq 1 40); do
+            if cmp -s "$SOURCE" "$OUT"; then
+              echo "downloaded" > "$OUT.done"
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+          EOF
+          chmod +x b-resolve-and-download.sh
+          echo "the resolve and the download of B are written"
+
+      - title: "B starts to resolve and download in the background"
+        run: |
+          ./b-resolve-and-download.sh cid.txt /tmp/storage-ui-naming-sample.txt downloaded-by-b.txt > b-resolve-and-download.log 2>&1 &
+          echo $! > resolve-1.pid
+          echo "started"
+
+      - title: "Launch the app to serve the file"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "The row shows its name"
+              action: wait_for
+              texts: ["· catalog"]
+              timeout: 5000
+              screenshot: "storage-ui-name-in-table.png"
+
+            - name: "Serve the file while B resolves and downloads it"
+              action: sleep
+              ms: 80000
+
+      - title: "B got the file from its name"
+        run: |
+          set -e
+          cat b-resolve-and-download.log
+          test "$(cat downloaded-by-b.txt.cid)" = "$(cat cid.txt)"
+          test -f downloaded-by-b.txt.done
+          cmp /tmp/storage-ui-naming-sample.txt downloaded-by-b.txt
+          echo "OK: B resolved catalog and downloaded the file from the app"
+        expect_contains:
+          - "OK: B resolved catalog and downloaded the file from the app"
+
+  - title: "Point the name to another file"
+    step: true
+    text: |
+      A name can point to another dataset.
+      The name key stays the same.
+      Those who have the name key get the new dataset.
+    steps:
+      - title: "Write a second file"
+        run: 'printf "the second catalog, under the same name\n" > /tmp/storage-ui-naming-sample-2.txt'
+        check_file: "/tmp/storage-ui-naming-sample-2.txt"
+
+      - title: "Upload the second file and move the name to it"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Let the app find B in the DHT"
+              action: sleep
+              ms: 10000
+
+            - name: "Hand the second file to the upload dialog"
+              action: set_property
+              find_by: "objectName"
+              find_value: "uploadDialog"
+              property: "selectedFile"
+              value: "file:///tmp/storage-ui-naming-sample-2.txt"
+
+            - name: "Fire the dialog's accepted signal"
+              action: call_method
+              find_by: "objectName"
+              find_value: "uploadDialog"
+              method: "accepted"
+
+            - name: "The second file joins the manifest list"
+              action: wait_for
+              texts: ["storage-ui-naming-sample-2.txt"]
+              timeout: 10000
+
+            - name: "Click the globe of the second file"
+              action: call_method
+              find_by: "objectName"
+              find_value: "publishNameButton_storage-ui-naming-sample-2.txt"
+              method: "clicked"
+
+            - name: "Pick the existing name catalog"
+              action: call_method
+              find_by: "objectName"
+              find_value: "existingNameButton_catalog"
+              method: "clicked"
+
+            - name: "The popup offers to move the name"
+              action: expect_property
+              find_value: "nameTargetConfirmButton"
+              property: "text"
+              value: "Move"
+              screenshot: "storage-ui-name-move.png"
+              text: |
+                `catalog` points to the first file.
+                The popup warns that Move points it to the second file.
+
+            - name: "Move"
+              action: call_method
+              find_by: "objectName"
+              find_value: "nameTargetConfirmButton"
+              method: "clicked"
+
+            - name: "The Names tab shows catalog on the second file"
+              action: wait_for
+              texts: ["catalog points to storage-ui-naming-sample-2.txt"]
+              timeout: 45000
+              text: |
+                The name key of `catalog` stays the same.
+                The table shows `catalog` next to the second file only.
+
+            - name: "Let the app save its settings"
+              # The QML Settings write to disk after a short delay, and the app is killed at the end of the step.
+              action: sleep
+              ms: 2000
+
+      - title: "Read the new dataset CID of catalog"
+        text: |
+          The settings of the app have the new dataset CID for `catalog`, with the same name key.
+        run: |
+          set -eu
+          CONF="$HOME/.config/Logos/LogosStandalone.conf"
+          awk '/^\[PublishedNames\]/ { s = 1; next } /^\[/ { s = 0 } s && /^entries=/ { sub(/^entries=/, ""); print }' "$CONF" \
+            | sed 's/^"//; s/"$//; s/\\"/"/g' > published-names-2.json
+          jq . published-names-2.json
+          jq -er '.catalog.cid' published-names-2.json > cid-2.txt
+          test "$(jq -er '.catalog.nameKey' published-names-2.json)" = "$(cat name-key.txt)"
+          test "$(cat cid-2.txt)" != "$(cat cid.txt)"
+          echo "OK: catalog has a new dataset CID and the same name key"
+        expect_contains:
+          - "OK: catalog has a new dataset CID and the same name key"
+
+      - title: "B starts to resolve the name again in the background"
+        text: |
+          B resolves the same name key until it gets the new dataset CID, then downloads the second file.
+        run: |
+          ./b-resolve-and-download.sh cid-2.txt /tmp/storage-ui-naming-sample-2.txt downloaded-2-by-b.txt > b-resolve-and-download-2.log 2>&1 &
+          echo $! > resolve-2.pid
+          echo "started"
+
+      - title: "Launch the app to serve the second file"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Serve the second file while B resolves and downloads it"
+              action: sleep
+              ms: 80000
+
+      - title: "B got the second file from the same name"
+        run: |
+          set -e
+          cat b-resolve-and-download-2.log
+          test "$(cat downloaded-2-by-b.txt.cid)" = "$(cat cid-2.txt)"
+          test -f downloaded-2-by-b.txt.done
+          cmp /tmp/storage-ui-naming-sample-2.txt downloaded-2-by-b.txt
+          echo "OK: B resolved catalog to the second file and downloaded it"
+        expect_contains:
+          - "OK: B resolved catalog to the second file and downloaded it"
+
+  - title: "B publishes a name, the app fetches it"
+    step: true
+    text: |
+      B publishes a file under the name `shared`.
+      The user pastes the name key of `shared` in the Fetch field.
+      This field takes a dataset CID or a name key.
+      The app checks with `isNameKey` which one it got.
+      For a name key, the app first resolves it to the dataset CID, then fetches the manifest and the file.
+    steps:
+      - title: "Watch the upload and publish events of B"
+        run: |
+          set -eu
+          CTL=./logosctl/bin/logosctl
+          $CTL --config-dir="$(pwd)/session-b" watch storage_module --event storageUploadDone --json > events-upload.txt 2> watch-upload.err &
+          echo $! > watch-upload.pid
+          $CTL --config-dir="$(pwd)/session-b" watch storage_module --event storageNamePublishDone --json > events-publish.txt 2> watch-publish.err &
+          echo $! > watch-publish.pid
+          sleep 2
+          kill -0 "$(cat watch-upload.pid)"
+          kill -0 "$(cat watch-publish.pid)"
+          echo "the watchers are running"
+        expect_contains:
+          - "the watchers are running"
+
+      - title: "B uploads a file"
+        run: |
+          set -eu
+          printf "shared by node B under a name\n" > shared-by-b.txt
+          BEFORE=$(wc -l < events-upload.txt)
+          ./logosctl/bin/logosctl --config-dir="$(pwd)/session-b" call storage_module uploadUrl "$(pwd)/shared-by-b.txt" 65536 true \
+            | jq -e '.result.success'
+          for second in $(seq 1 60); do
+            [ "$(wc -l < events-upload.txt)" -gt "$BEFORE" ] && break
+            sleep 1
+          done
+          sed -n "$((BEFORE + 1))p" events-upload.txt \
+            | jq -er '.data.arg0 | fromjson | select(.success == true) | .cid' > cid-b.txt
+          cat cid-b.txt
+
+      - title: "B publishes the name shared"
+        text: |
+          B has a fixed key and always gets the same name key for `shared`.
+          The app pastes this value in a later step.
+        run: |
+          set -eu
+          EXPECTED="zE2PfUh72Qric4pKYPtyikZ7o9uMspBWPZn2R1R9GEk2Xi3gRgnY"
+          BEFORE=$(wc -l < events-publish.txt)
+          ./logosctl/bin/logosctl --config-dir="$(pwd)/session-b" call storage_module namePublish shared "$(cat cid-b.txt)" \
+            | jq -e '.result.success'
+          for second in $(seq 1 150); do
+            [ "$(wc -l < events-publish.txt)" -gt "$BEFORE" ] && break
+            sleep 1
+          done
+          sed -n "$((BEFORE + 1))p" events-publish.txt | jq '.data.arg0 | fromjson' > publish-b.json
+          cat publish-b.json
+          jq -er 'select(.success == true and .label == "shared") | .nameKey' publish-b.json > name-key-b.txt
+          echo "name key of B for shared: $(cat name-key-b.txt)"
+          test "$(cat name-key-b.txt)" = "$EXPECTED"
+          echo "OK: B publishes shared under the expected name key"
+        expect_contains:
+          - "OK: B publishes shared under the expected name key"
+
+      - title: "Reset the app on a new data dir"
+        text: |
+          The app starts with an empty manifest list, so the fetched file is the only row.
+        run: |
+          set -eu
+          SPR_B=$(cat spr-b.txt)
+          rm -rf /tmp/storage-ui-naming-data-2
+          mkdir -p /tmp/storage-ui-naming-data-2
+          rm -f "$HOME/shared-by-b.txt"
+
+          cat > "$HOME/.config/Logos/LogosStandalone.conf" <<'EOF'
+          [Storage]
+          onboardingCompleted=true
+          EOF
+
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          rm -rf "$base"
+          mkdir -p "$base/doctest"
+          cat > "$base/doctest/config.json" <<EOF
+          {
+            "config-version": 5,
+            "data-dir": "/tmp/storage-ui-naming-data-2",
+            "log-level": "info",
+            "listen-port": 8500,
+            "nat": "extip:127.0.0.1",
+            "mix-enabled": false,
+            "bootstrap-node": ["$SPR_B"]
+          }
+          EOF
+          echo "app reset"
+
+      - title: "Fetch the manifest from the name key"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "Let the app find B in the DHT"
+              action: sleep
+              ms: 10000
+
+            - name: "Paste the name key into Fetch Manifest"
+              action: set_property
+              find_by: "placeholderText"
+              find_value: "CID or name key"
+              property: "text"
+              value: "zE2PfUh72Qric4pKYPtyikZ7o9uMspBWPZn2R1R9GEk2Xi3gRgnY"
+
+            - name: "Fetch"
+              action: call_method
+              find_by: "text"
+              find_value: "Fetch"
+              method: "clicked"
+
+            - name: "The manifest of B's file arrives"
+              action: wait_for
+              texts: ["shared-by-b.txt"]
+              timeout: 60000
+              screenshot: "storage-ui-name-fetched.png"
+              text: |
+                The app resolves the name key to the dataset CID of B and fetches its manifest.
+                The table shows a `Resolving name...` row while the name resolves.
+
+      - title: "Download the file"
+        ui_test:
+          launch: "nix run github:logos-co/logos-storage-ui{release}"
+          qt_mcp: "result-mcp"
+          build_timeout: 7200
+          launch_timeout: 1800
+          tests:
+            - name: "The node is running"
+              action: wait_for
+              texts: ["Stop"]
+              timeout: 30000
+
+            - name: "The fetched manifest is still listed"
+              action: wait_for
+              texts: ["shared-by-b.txt"]
+              timeout: 5000
+
+            - name: "Download the file"
+              action: call_method
+              find_by: "objectName"
+              find_value: "downloadButton"
+              method: "clicked"
+
+            - name: "The download completes"
+              # The idle upload widget shows "Complete" too. Only the download widget reaches 100% here.
+              action: wait_for
+              texts: ["100%"]
+              timeout: 60000
+
+            - name: "Let the app write the file"
+              # The app is killed at the end of the step.
+              action: sleep
+              ms: 2000
+
+      - title: "The app got B's file from its name"
+        text: "The default download folder is the home directory."
+        run: |
+          set -e
+          cmp shared-by-b.txt "$HOME/shared-by-b.txt"
+          echo "OK: the app downloaded the file B shared under a name"
+        expect_contains:
+          - "OK: the app downloaded the file B shared under a name"
+
+  - title: "Shut node B down"
+    step: true
+    steps:
+      - title: "Stop the watchers and node B"
+        run: |
+          # pkill -f would match this step too: its command line has the script name.
+          for f in watch-*.pid resolve-*.pid; do
+            kill "$(cat "$f")" 2>/dev/null || true
+          done
+          CTL="./logosctl/bin/logosctl --config-dir=$(pwd)/session-b"
+          $CTL call storage_module stop || true
+          sleep 1
+          $CTL call storage_module destroy || true
+          $CTL stop || true
+          echo "node B stopped"

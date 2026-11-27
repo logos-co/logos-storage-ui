@@ -27,8 +27,99 @@ LogosFrame {
     // Cids whose download goes over Mix, not advertised. Every other one is direct.
     property var privateDownloads: ({})
 
-    // Three 40px icon buttons, the gaps between them and the pill's own padding.
-    readonly property int actionsColumnWidth: 40 * 3 + Theme.spacing.medium * 4
+    // Four 40px icon buttons, the gaps between them and the pill's own padding.
+    readonly property int actionsColumnWidth: 40 * 4 + Theme.spacing.medium * 5
+
+    // The names this node publishes, by label: { label: { cid, nameKey } }.
+    // The module can't list them, so the UI keeps them.
+    property var publishedNames: ({})
+
+    Settings {
+        id: publishedNamesStore
+        category: "PublishedNames"
+        property string entries: "{}"
+    }
+
+    function loadPublishedNames() {
+        try {
+            root.publishedNames = JSON.parse(publishedNamesStore.entries)
+        } catch (e) {
+            root.publishedNames = {}
+        }
+    }
+
+    function recordPublished(label, cid, nameKey) {
+        var n = Object.assign({}, root.publishedNames)
+        n[label] = {
+            "cid": cid,
+            "nameKey": nameKey
+        }
+        root.publishedNames = n
+        publishedNamesStore.entries = JSON.stringify(n)
+    }
+
+    function forgetPublished(label) {
+        if (!root.publishedNames[label])
+            return
+        var n = Object.assign({}, root.publishedNames)
+        delete n[label]
+        root.publishedNames = n
+        publishedNamesStore.entries = JSON.stringify(n)
+    }
+
+    // Names whose publish runs in the node, with the dataset they go to: { label: cid }.
+    property var publishingLabels: ({})
+
+    // cid: the dataset the name goes to, or "" once the publish ends.
+    function setPublishingLabel(label, cid) {
+        var p = Object.assign({}, root.publishingLabels)
+        if (cid) {
+            p[label] = cid
+        } else {
+            delete p[label]
+        }
+        root.publishingLabels = p
+    }
+
+    // A running publish can't be cancelled: its dataset can't be deleted until it ends.
+    function isPublishingTo(cid) {
+        for (var label in root.publishingLabels) {
+            if (root.publishingLabels[label] === cid)
+                return true
+            // A move in flight: the name still points to the old dataset.
+            var entry = root.publishedNames[label]
+            if (entry && entry.cid === cid)
+                return true
+        }
+        return false
+    }
+
+    // A publish in flight gets no event once the node stops.
+    onRunningChanged: {
+        if (!root.running)
+            root.publishingLabels = {}
+    }
+
+    // The tab shown: "manifests" or "names".
+    property string view: "manifests"
+
+    // Called by the tabs, and by a test: it can't fire a typed signal.
+    function showView(name) {
+        viewTabs.currentIndex = name === "names" ? 1 : 0
+    }
+
+    // The name the dataset is published under, or null.
+    function publishedNameOf(cid) {
+        for (var label in root.publishedNames) {
+            if (root.publishedNames[label].cid === cid) {
+                return {
+                    "label": label,
+                    "nameKey": root.publishedNames[label].nameKey
+                }
+            }
+        }
+        return null
+    }
 
     property var addedDates: ({})
 
@@ -135,7 +226,8 @@ LogosFrame {
     signal downloadRequested
 
     // Background manifest fetches in progress / failed. Each entry:
-    // { cid, status: "fetching" | "error", error }. Shown as rows above the
+    // { cid, status: "resolving" | "fetching" | "error", error }. A "resolving"
+    // entry holds a name key in cid, until the node gives its dataset cid. Shown as rows above the
     // real manifests until the fetch resolves (success refreshes the list and
     // prunes the row; failure switches it to "error" until dismissed).
     property var pending: []
@@ -188,17 +280,18 @@ LogosFrame {
 
     Component.onCompleted: {
         root.loadAddedDates()
+        root.loadPublishedNames()
         root.rebuildRows()
     }
 
-    function addPending(cid) {
+    function addPending(cid, status) {
         for (var i = 0; i < root.pending.length; i++)
             if (root.pending[i].cid === cid)
                 return
         var p = root.pending.slice()
         p.unshift({
             "cid": cid,
-            "status": "fetching",
+            "status": status,
             "error": ""
         })
         root.pending = p
@@ -265,6 +358,15 @@ LogosFrame {
     implicitWidth: 1200
     implicitHeight: 400
 
+    NameTargetPopup {
+        id: nameTargetPopup
+        backend: root.backend
+        running: root.running
+        manifests: root.manifests
+        publishedNames: root.publishedNames
+        publishingLabels: root.publishingLabels
+    }
+
     ColumnLayout {
         anchors.fill: parent
         spacing: Theme.spacing.small
@@ -281,6 +383,11 @@ LogosFrame {
             function onRemoveStarted(cid) {
                 root.markDeleting(cid)
                 root.forgetAdded(cid)
+                // A name must not point to a dataset the node deletes.
+                var published = root.publishedNameOf(cid)
+                if (published) {
+                    root.backend.unpublishName(published.label)
+                }
                 if (root.privateDownloads[cid]) {
                     root.togglePrivateDownload(cid)
                 }
@@ -291,7 +398,7 @@ LogosFrame {
             }
 
             function onManifestFetchStarted(cid, isPrivate) {
-                root.addPending(cid)
+                root.addPending(cid, "fetching")
                 root.recordAdded(cid)
                 // The download follows the mode of the fetch.
                 if (isPrivate !== !!root.privateDownloads[cid]) {
@@ -301,6 +408,36 @@ LogosFrame {
 
             function onUploadCompleted(cid) {
                 root.recordAdded(cid)
+            }
+
+            function onNamePublishStarted(label, cid) {
+                root.setPublishingLabel(label, cid)
+            }
+
+            function onNamePublished(label, cid, nameKey) {
+                root.setPublishingLabel(label, "")
+                root.recordPublished(label, cid, nameKey)
+            }
+
+            function onNamePublishFailed(label, cid, error) {
+                root.setPublishingLabel(label, "")
+            }
+
+            function onNameUnpublished(label) {
+                root.forgetPublished(label)
+            }
+
+            function onNameResolveStarted(nameKey) {
+                root.addPending(nameKey, "resolving")
+            }
+
+            // The manifest fetch of the dataset cid takes over with its own row.
+            function onNameResolved(nameKey, cid) {
+                root.dismissPending(nameKey)
+            }
+
+            function onNameResolveFailed(nameKey, error) {
+                root.failPending(nameKey, error)
             }
 
             function onManifestFetchFailed(cid, error) {
@@ -334,11 +471,37 @@ LogosFrame {
             Layout.fillWidth: true
             spacing: Theme.spacing.medium
 
-            LogosText {
+            // The Switch Toggle of the Basecamp design.
+            LogosTabBar {
+                id: viewTabs
+                // Sets root.view. A click on a tab and showView both change the current tab.
+                onCurrentIndexChanged: root.view = currentIndex === 1 ? "names" : "manifests"
+
+                LogosTabButton {
+                    objectName: "manifestsTab"
+                    text: "Manifests"
+                }
+
+                LogosTabButton {
+                    objectName: "namesTab"
+                    text: "Names"
+                }
+            }
+
+            Item {
                 Layout.fillWidth: true
-                text: "Manifests"
-                font.pixelSize: Theme.typography.panelTitleText
-                color: Theme.palette.text
+            }
+
+            LogosButton {
+                objectName: "newNameButton"
+                visible: root.view === "names"
+                radius: Theme.spacing.radiusLarge
+                text: "New name"
+                compact: true
+                variant: LogosButton.Variant.Secondary
+                background: CardButtonBackground {}
+                enabled: root.running
+                onClicked: nameTargetPopup.openForNew("")
             }
 
             LogosIcon {
@@ -374,9 +537,23 @@ LogosFrame {
             Layout.fillHeight: true
 
             // ── Vue liste ────────────────────────────────────────────────────
+            NamesList {
+                anchors.fill: parent
+                visible: root.view === "names"
+                backend: root.backend
+                running: root.running
+                publishedNames: root.publishedNames
+                manifests: root.manifests
+                publishingLabels: root.publishingLabels
+                onChangeRequested: function (label, cid) {
+                    nameTargetPopup.openForChange(label, cid)
+                }
+            }
+
             LogosTable {
                 id: manifestList
                 anchors.fill: parent
+                visible: root.view === "manifests"
                 model: rowsModel
                 rowHeight: 72
                 emptyText: "No manifests yet"
@@ -436,7 +613,7 @@ LogosFrame {
                                     anchors.verticalCenter: parent.verticalCenter
                                     width: 32
                                     height: 32
-                                    running: rowItem && rowItem.status === "fetching"
+                                    running: rowItem && (rowItem.status === "fetching" || rowItem.status === "resolving")
                                     visible: running
                                 }
 
@@ -461,31 +638,52 @@ LogosFrame {
                                     anchors.verticalCenter: parent.verticalCenter
                                     spacing: 2
 
-                                    LogosText {
+                                    Row {
                                         width: parent.width
-                                        text: {
-                                            if (!rowItem)
-                                                return ""
-                                            if (rowItem.status === "fetching")
-                                                return "Fetching..."
-                                            if (rowItem.status === "error")
-                                                return rowItem.error || "Failed"
-                                            return manifestCell.rowDeleting ? "Deleting..."
-                                                                            : (rowItem.filename || "Untitled")
-                                        }
-                                        color: rowItem && rowItem.status === "error" ? Theme.palette.error
-                                                                                     : Theme.palette.text
-                                        font.pixelSize: Theme.typography.primaryText
-                                        font.weight: Theme.typography.weightBold
-                                        elide: Text.ElideRight
+                                        spacing: Theme.spacing.small
 
-                                        HoverHandler {
-                                            id: statusHover
+                                        LogosText {
+                                            // Elides first: the name stays readable.
+                                            width: Math.min(implicitWidth, parent.width
+                                                            - (nameText.visible ? nameText.width + parent.spacing : 0))
+                                            text: {
+                                                if (!rowItem)
+                                                    return ""
+                                                if (rowItem.status === "fetching")
+                                                    return "Fetching..."
+                                                if (rowItem.status === "resolving")
+                                                    return "Resolving name..."
+                                                if (rowItem.status === "error")
+                                                    return rowItem.error || "Failed"
+                                                return manifestCell.rowDeleting ? "Deleting..."
+                                                                                : (rowItem.filename || "Untitled")
+                                            }
+                                            color: rowItem && rowItem.status === "error" ? Theme.palette.error
+                                                                                         : Theme.palette.text
+                                            font.pixelSize: Theme.typography.primaryText
+                                            font.weight: Theme.typography.weightBold
+                                            elide: Text.ElideRight
+
+                                            HoverHandler {
+                                                id: statusHover
+                                            }
+
+                                            LogosToolTip {
+                                                text: rowItem ? (rowItem.error || "") : ""
+                                                visible: rowItem && rowItem.status === "error" && statusHover.hovered
+                                            }
                                         }
 
-                                        LogosToolTip {
-                                            text: rowItem ? (rowItem.error || "") : ""
-                                            visible: rowItem && rowItem.status === "error" && statusHover.hovered
+                                        // The name the dataset is published under, orange like the globe.
+                                        LogosText {
+                                            id: nameText
+                                            readonly property var publishedName: rowItem && !rowItem.status
+                                                                                 ? root.publishedNameOf(rowItem.cid) : null
+                                            visible: !!publishedName && !manifestCell.rowDeleting
+                                            text: publishedName ? "· " + publishedName.label : ""
+                                            color: Theme.palette.accentOrange
+                                            font.pixelSize: Theme.typography.primaryText
+                                            font.weight: Theme.typography.weightBold
                                         }
                                     }
 
@@ -666,13 +864,43 @@ LogosFrame {
                                         }
 
                                         LogosIconButton {
+                                            // One per row, so a test can pick the row by its filename.
+                                            objectName: "publishNameButton_" + (rowItem ? rowItem.filename : "")
+                                            readonly property var publishedName: rowItem ? root.publishedNameOf(rowItem.cid) : null
+                                            iconSource: Qt.resolvedUrl("assets/global-line-white.svg")
+                                            // Orange while the dataset is published under a name.
+                                            iconColor: publishedName ? Theme.palette.accentOrange
+                                                                     : Theme.palette.textTertiary
+                                            background: IconButtonBackground {
+                                                highlighted: !!parent.publishedName
+                                            }
+                                            enabled: root.running && !actionsCell.rowDeleting
+
+                                            LogosToolTip {
+                                                text: parent.publishedName ? "Published as " + parent.publishedName.label
+                                                                           : "Publish under a name"
+                                                visible: parent.hovered
+                                            }
+
+                                            // Names live in the Names tab. A dataset without one starts a new name there.
+                                            onClicked: {
+                                                root.showView("names")
+                                                if (publishedName) {
+                                                    nameTargetPopup.openForChange(publishedName.label, rowItem.cid)
+                                                } else {
+                                                    nameTargetPopup.openForNew(rowItem.cid)
+                                                }
+                                            }
+                                        }
+
+                                        LogosIconButton {
                                             objectName: "deleteButton"
                                             // Installed modules may still need the package.
                                             visible: !root.isLgx(rowItem)
                                             iconSource: Qt.resolvedUrl("assets/delete-bin-2-line.svg")
                                             background: IconButtonBackground {}
                                             enabled: root.running && !actionsCell.rowDeleting
-                                                     && !actionsCell.rowDownloading
+                                                     && !actionsCell.rowDownloading && !root.isPublishingTo(rowItem.cid)
                                             onClicked: {
                                                 if (rowItem.cid.length > 0) {
                                                     root.backend.remove(rowItem.cid)
@@ -684,7 +912,7 @@ LogosFrame {
 
                                 LogosText {
                                     anchors.centerIn: parent
-                                    visible: rowItem && rowItem.status === "fetching"
+                                    visible: rowItem && (rowItem.status === "fetching" || rowItem.status === "resolving")
                                     text: "-"
                                     color: Theme.palette.text
                                     font.pixelSize: Theme.typography.secondaryText

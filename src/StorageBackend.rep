@@ -41,6 +41,12 @@ class StorageBackend
     SLOT(void remove(QString cid))
     SLOT(void fetch(QString cid))
 
+    // Names
+    SLOT(void publishName(QString label, QString cid))
+    SLOT(void unpublishName(QString label))
+    // Fetch the manifest of a dataset cid, or of the dataset a name key points to.
+    SLOT(void fetchManifestOrName(QString key, bool isPrivate))
+
     // Space
     SLOT(void refreshSpace())
 
@@ -94,6 +100,15 @@ class StorageBackend
     // Remove
     SIGNAL(removeStarted(QString cid))
     SIGNAL(removeFailed(QString cid, QString error))
+
+    // Names
+    SIGNAL(namePublishStarted(QString label, QString cid))
+    SIGNAL(namePublished(QString label, QString cid, QString nameKey))
+    SIGNAL(namePublishFailed(QString label, QString cid, QString error))
+    SIGNAL(nameUnpublished(QString label))
+    SIGNAL(nameResolveStarted(QString nameKey))
+    SIGNAL(nameResolved(QString nameKey, QString cid))
+    SIGNAL(nameResolveFailed(QString nameKey, QString error))
 
     // Network / Onboarding
     SIGNAL(onboardingRestarted())

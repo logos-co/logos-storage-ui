@@ -5,6 +5,7 @@
 #include "rep_StorageBackend_source.h"
 #include <QDir>
 #include <QFile>
+#include <QHash>
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QObject>
@@ -74,6 +75,21 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // Fetch a cid in background
     void fetch(QString cid) override;
 
+    // Share the dataset cid under the label.
+    // Emit namePublishStarted, then namePublished or namePublishFailed
+    // on storageNamePublishDone.
+    void publishName(QString label, QString cid) override;
+
+    // Stop advertising the name of the label.
+    // Emit nameUnpublished on success.
+    void unpublishName(QString label) override;
+
+    // The key is a name key or a dataset cid.
+    // A dataset cid is fetched at once. A name key is resolved first:
+    // emit nameResolveStarted, then nameResolved and manifestFetchStarted,
+    // or nameResolveFailed.
+    void fetchManifestOrName(QString key, bool isPrivate) override;
+
     // Upload a file from the url
     // Emit uploadStarted(totalBytes) when the upload begins
     // Emit uploadChunk(len) on each storageUploadProgress event
@@ -139,6 +155,9 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
     // Emit error(message)
     void reportError(const QString& message);
 
+    // Emit nameResolveFailed for every name key still resolving, then forget them.
+    void failPendingResolves(const QString& reason);
+
     LogosModules* m_logos;
 
     bool m_eventsSubscribed = false;
@@ -154,4 +173,7 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
 
     // Cid of the cancelled download, until its storageDownloadDone arrives.
     QString m_cancelledCid;
+
+    // Keys waiting for storageNameResolveDone, with the isPrivate of their fetch.
+    QHash<QString, bool> m_pendingResolves;
 };
