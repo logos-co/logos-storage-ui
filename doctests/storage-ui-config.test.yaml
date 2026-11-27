@@ -9,7 +9,7 @@ intro: |
   This test starts the app on a config from an older build and asserts what
   comes back:
     1. the legacy `bootstrap-node` list is gone, replaced by the default `logos.test` network
-    2. Mix is enabled, with the configuration of the network
+    2. Mix is enabled, and the node finds its relays through service discovery
     3. the obsolete `nat` value is dropped
     4. the retired `disc-port` is dropped
     5. the config is stamped with the current version
@@ -167,7 +167,7 @@ sections:
 
           echo "disc-port OK: retired key removed"
 
-      - title: "Mix is enabled and its configuration comes from the network"
+      - title: "Mix is enabled and the node finds its relays"
         run: |
           set -e
           cfg="$HOME/.logos_storage/config.json"
@@ -176,7 +176,7 @@ sections:
           test "$(jq 'has("dht-mix-proxy")' "$cfg")" = "false"
           test "$(jq 'has("mix-pool-json")' "$cfg")" = "false"
 
-          echo "Mix config OK: mix-enabled, the preset is not copied to the file"
+          echo "Mix config OK: mix-enabled, no Mix relay in the file"
 
       - title: "The values were read from the file"
         run: |

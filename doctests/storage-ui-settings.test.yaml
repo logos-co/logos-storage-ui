@@ -496,15 +496,16 @@ sections:
 
           echo "round trip OK: the popup reloads what it saved"
 
-  - title: "Picking a network swaps the Mix relays"
+  - title: "Picking a network swaps the bootstrap nodes"
     step: true
     text: |
-      Settings shows the Mix configuration of the network the node runs on.
-      Changing the network brings its Mix configuration on the next start.
+      Settings shows the bootstrap nodes of the network the node runs on.
+      Changing the network brings its bootstrap nodes on the next start.
+      The node finds the Mix relays through service discovery.
     steps:
       - title: "Start from a config with no network and marked Mix values"
         # The marked values are what the startup has to drop: a config that
-        # follows a preset gets the relays the module ships, on every start.
+        # follows a network gets no Mix relays from the module.
         run: |
           set -e
           rm -rf /tmp/storage-ui-settings-data
@@ -528,7 +529,7 @@ sections:
 
           echo "starting config in place: no network, marked Mix values"
 
-      - title: "See the relays of the network, then pick the other one and save"
+      - title: "See the bootstrap nodes of the network, then pick the other one and save"
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
@@ -569,7 +570,7 @@ sections:
               action: sleep
               ms: 1000
 
-            - name: "The relays of the running network are shown"
+            - name: "The bootstrap nodes of the running network are shown"
               action: expect_property
               find_value: "settingsForm"
               property: "presetShown"
@@ -590,7 +591,7 @@ sections:
               method: "pickNetwork"
               args: ["logos.dev"]
 
-            - name: "The relays of the picked network are not known yet"
+            - name: "The bootstrap nodes of the picked network are not known yet"
               action: expect_property
               find_value: "settingsForm"
               property: "presetShown"
@@ -603,8 +604,8 @@ sections:
               value: true
               screenshot: "storage-ui-settings-network-picked.png"
               text: |
-                Picking a network is an edit to save. Its Mix relays come with
-                the next start.
+                Picking a network is an edit to save. Its bootstrap nodes come
+                with the next start.
 
             - name: "Save"
               action: click
@@ -651,7 +652,7 @@ sections:
           test "$(jq 'has("dht-mix-proxy")' "$cfg")" = "false"
           test "$(jq 'has("mix-pool-json")' "$cfg")" = "false"
 
-          echo "OK: the network is saved, the Mix relays come from its preset"
+          echo "OK: the network is saved, the marked Mix relays are gone"
 
       - title: "Reopen Settings on the new network"
         ui_test:
@@ -683,7 +684,7 @@ sections:
               action: sleep
               ms: 1000
 
-            - name: "The relays of the running network are shown"
+            - name: "The bootstrap nodes of the running network are shown"
               action: expect_property
               find_value: "settingsForm"
               property: "presetShown"

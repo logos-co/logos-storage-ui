@@ -116,9 +116,7 @@ QtObject {
     function getNodeConfig() {
         return JSON.stringify({
                                   "network": "logos.test",
-                                  "bootstrap-node": ["spr:mock-bootstrap"],
-                                  "dht-mix-proxy": ["spr:mock-proxy"],
-                                  "mix-pool-json": "{\"version\":1,\"relays\":[]}"
+                                  "bootstrap-node": ["spr:mock-bootstrap"]
                               })
     }
 }

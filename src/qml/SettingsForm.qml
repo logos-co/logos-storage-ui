@@ -679,31 +679,23 @@ ScrollView {
 
                 Blob {
                     title: "DHT mix proxies"
-                    summary: root.hasCustomBootstrap
-                             ? "Peer records used as proxy destinations."
-                             : "Peer records used as proxy destinations, set by the network preset."
-                    body: root.presetShown
-                          ? root.toJsonText(root.nodeConfig["dht-mix-proxy"]) : root.vMixProxies
-                    editable: root.hasCustomBootstrap
+                    summary: "Peer records used as proxy destinations, added to the ones the node finds."
+                    body: root.vMixProxies
+                    editable: true
                     fieldObjectName: "mixProxiesField"
                     onEdited: function (text) {
-                        if (root.hasCustomBootstrap)
-                            root.vMixProxies = text
+                        root.vMixProxies = text
                     }
                 }
 
                 Blob {
                     title: "Mix relay pool"
-                    summary: root.hasCustomBootstrap
-                             ? "The relay pool the node mixes through."
-                             : "The relay pool the node mixes through, set by the network preset."
-                    body: root.presetShown
-                          ? (root.nodeConfig["mix-pool-json"] || "") : root.vMixPool
-                    editable: root.hasCustomBootstrap
+                    summary: "Relays the node mixes through, added to the ones the node finds."
+                    body: root.vMixPool
+                    editable: true
                     fieldObjectName: "mixPoolField"
                     onEdited: function (text) {
-                        if (root.hasCustomBootstrap)
-                            root.vMixPool = text
+                        root.vMixPool = text
                     }
                 }
             }
