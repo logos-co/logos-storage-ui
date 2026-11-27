@@ -60,7 +60,7 @@ sections:
         check_file: "lgpm/bin/lgpm"
 
       - title: "Build the storage module for node B"
-        run: "nix build 'github:logos-co/logos-storage-module?ref=refs/tags/v3.1.0-rc1#lgx' -o storage-lgx"
+        run: "nix build 'github:logos-co/logos-storage-module?ref=feat/naming-service#lgx' -o storage-lgx"
         check_file: "storage-lgx"
 
       - title: "Install the module for node B"

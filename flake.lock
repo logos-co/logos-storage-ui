@@ -2298,11 +2298,11 @@
         "rust-overlay": "rust-overlay_4"
       },
       "locked": {
-        "lastModified": 1795544936,
-        "narHash": "sha256-zK3WzqtUDQD28JaGKVwm5hM7qjeUklGj2SI7VYZomRw=",
+        "lastModified": 1793356946,
+        "narHash": "sha256-0nuBIk4ygsOpoSNheH2bVTjeezDHZnPzX0NEP6N24CM=",
         "owner": "logos-co",
         "repo": "logos-module-builder",
-        "rev": "c1572d8fab858151e2547c752a856dc96215c290",
+        "rev": "5f74cdb3cecacde054c68d72fcc0d2cfe2195900",
         "type": "github"
       },
       "original": {
@@ -7295,16 +7295,15 @@
         "nixpkgs-windows": "nixpkgs-windows_94"
       },
       "locked": {
-        "lastModified": 1795738486,
-        "narHash": "sha256-41Su2Q/pa5l2Vmc3jSWfLvBBwsL1/DhWuRddenXlXZA=",
-        "ref": "refs/tags/v0.6.0-rc1",
-        "rev": "d75811d8facde584653620878191df7812d80928",
-        "revCount": 1022,
+        "lastModified": 1795445055,
+        "narHash": "sha256-sK0n1mRVNiVHVJ5wiST0JZ/qV16soI2CGL2EmgeJv2s=",
+        "ref": "feat/naming-service",
+        "rev": "1cb89867e4b866f236a38dce24b54db9d7e21ef5",
+        "revCount": 1088,
         "type": "git",
         "url": "https://github.com/logos-storage/logos-storage-nim"
       },
       "original": {
-        "ref": "refs/tags/v0.6.0-rc1",
         "type": "git",
         "url": "https://github.com/logos-storage/logos-storage-nim"
       }
@@ -7681,11 +7680,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795537770,
-        "narHash": "sha256-DBpNucma2++hZy0EDaLvu5ISkk/tpwQnbhkIBTjy3qc=",
+        "lastModified": 1793354688,
+        "narHash": "sha256-lG+xOGqnbqOB4ACDHcggPaHGWf5vVLBBhgRMIILYjDE=",
         "owner": "logos-co",
         "repo": "logos-view-module",
-        "rev": "d71c09b6c9f2a484f0d6810251444e304712715c",
+        "rev": "4b5c41f591a22373d14b730f646aee6748c37cf2",
         "type": "github"
       },
       "original": {
@@ -12172,16 +12171,16 @@
         "logos-storage": "logos-storage"
       },
       "locked": {
-        "lastModified": 1795739993,
-        "narHash": "sha256-Xd/tL6w42VHD9zvRFat2nckaOkDyuINpgKiSHjpMkPo=",
+        "lastModified": 1795447890,
+        "narHash": "sha256-IGs+GOdN01y4/1vPr02P63R5cFA9kcVIu0qryWUQSVQ=",
         "owner": "logos-co",
         "repo": "logos-storage-module",
-        "rev": "0108ad3785b0382b3f551b3edb8118c375fb60de",
+        "rev": "ff4a87b52f6a43e022ef874ecf741cc8119582d0",
         "type": "github"
       },
       "original": {
         "owner": "logos-co",
-        "ref": "refs/tags/v3.1.0-rc1",
+        "ref": "feat/naming-service",
         "repo": "logos-storage-module",
         "type": "github"
       }
