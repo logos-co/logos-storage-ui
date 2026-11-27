@@ -86,6 +86,10 @@ LogosFrame {
         for (var label in root.publishingLabels) {
             if (root.publishingLabels[label] === cid)
                 return true
+            // A move in flight: the name still points to the old dataset.
+            var entry = root.publishedNames[label]
+            if (entry && entry.cid === cid)
+                return true
         }
         return false
     }
