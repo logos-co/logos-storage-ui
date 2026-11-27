@@ -8,8 +8,11 @@ else()
 endif()
 
 # The plugin entry point is generated from metadata.json.
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/metadata.json" METADATA_JSON)
+string(JSON MODULE_NAME GET ${METADATA_JSON} name)
+
 logos_module(
-    NAME storage_ui
+    NAME ${MODULE_NAME}
     REP_FILE src/StorageBackend.rep
     SOURCES
         src/StorageBackend.h
@@ -23,7 +26,6 @@ logos_module(
 )
 
 # Expose the UI version (from metadata.json) to StorageBackend at compile time.
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/metadata.json" _ui_metadata)
-string(REGEX MATCH "\"version\"[ \t]*:[ \t]*\"([^\"]+)\"" _ "${_ui_metadata}")
-target_compile_definitions(storage_ui_module_plugin PRIVATE STORAGE_UI_VERSION="${CMAKE_MATCH_1}")
+string(REGEX MATCH "\"version\"[ \t]*:[ \t]*\"([^\"]+)\"" _ "${METADATA_JSON}")
+target_compile_definitions(${MODULE_NAME}_module_plugin PRIVATE STORAGE_UI_VERSION="${CMAKE_MATCH_1}")
 
