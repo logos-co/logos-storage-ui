@@ -708,7 +708,8 @@ QJsonDocument StorageBackend::defaultConfig() {
         obj["data-dir"] = saved.value("data-dir");
     } else {
         // Without data-dir, the module puts the data in its folder on init.
-        reportError("Failed to load the default data dir: " + result.getError());
+        // The start reports the same error to the user.
+        debug("Failed to load the default data dir: " + result.getError(), "warning");
     }
 
     // Define defaults here to make it visible on the UI
