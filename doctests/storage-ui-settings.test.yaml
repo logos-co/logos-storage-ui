@@ -4,7 +4,9 @@ release: ""
 
 intro: |
   The Settings popup edits the node config field by field. The next node start
-  writes it to `~/.logos_storage/config.json`.
+  writes it to `config.json` in the Storage Module's folder. With the standalone
+  app on Linux, it is
+  `~/.local/share/Logos/LogosStandalone/module_data/storage_module/<id>/config.json`.
 
   This test drives the popup through the QML inspector and asserts, for every
   editable setting, that the value lands on the right key with the right type,
@@ -49,7 +51,15 @@ sections:
       config file and confirm its values before we start editing.
     steps:
       - title: "Reset state and write the starting config"
+        # The host gives the module the first folder it finds under
+        # module_data/storage_module: creating "doctest" fixes the path.
+        # The config is at the current version: an older one gets the
+        # module's data-dir.
         run: |
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          rm -rf "$base"
+          mkdir -p "$base/doctest"
+
           rm -rf /tmp/storage-ui-settings-data
           mkdir -p /tmp/storage-ui-settings-data
 
@@ -59,18 +69,14 @@ sections:
           onboardingCompleted=true
           EOF
 
-          mkdir -p "$HOME/.logos_storage"
-          cat > "$HOME/.logos_storage/config.json" <<'EOF'
+          cat > "$base/doctest/config.json" <<'EOF'
           {
-            "config-version": 3,
+            "config-version": 5,
             "data-dir": "/tmp/storage-ui-settings-data",
             "log-level": "info",
             "listen-port": 8500,
-            "mix-enabled": true,
-            "dht-mix-proxy": [
-              "spr:CiUIAhIhA11LamlswboRlyrpEXBubPQAr2WRmqjgWRC4JsvFptrCEgIDARpHCicAJQgCEiEDXUtqaWzBuhGXKukRcG5s9ACvZZGaqOBZELgmy8Wm2sIQnO-N0gYaCgoIBBiQTsgGH5AaCgoIBBiQTsgGH5AqRjBEAiAjgWii--TgYd2tPwyekCu4H3yDw-qngLo1SfbmDcL7SAIgE2o_HdzRO3MXyn3MtMMmPJtUdnhBS3uMJrxGy6sf6xY"
-            ],
-            "mix-pool-json": "{\"version\":1,\"relays\":[]}"
+            "network": "logos.test",
+            "mix-enabled": true
           }
           EOF
         check_file: "/tmp/storage-ui-settings-data"
@@ -78,14 +84,17 @@ sections:
       - title: "Confirm the starting values"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
 
           test "$(jq -r '."log-level"' "$cfg")" = "info"
           test "$(jq '."listen-port"' "$cfg")" = "8500"
           test "$(jq 'has("nat")' "$cfg")" = "false"
           test "$(jq 'has("storage-quota")' "$cfg")" = "false"
-          test "$(jq 'has("network")' "$cfg")" = "false"
+          test "$(jq -r '.network' "$cfg")" = "logos.test"
           test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
+          test "$(jq 'has("dht-mix-proxy")' "$cfg")" = "false"
+          test "$(jq 'has("mix-pool-json")' "$cfg")" = "false"
 
           echo "starting config in place"
 
@@ -283,7 +292,8 @@ sections:
       - title: "Log level, ports and network"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
           echo "saved config:"
           jq . "$cfg"
 
@@ -296,7 +306,8 @@ sections:
       - title: "The storage quota is written in bytes"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
 
           test "$(jq '."storage-quota"' "$cfg")" = "8589934592"
           test "$(jq '."storage-quota" | type' "$cfg")" = '"number"'
@@ -306,7 +317,8 @@ sections:
       - title: "The bootstrap records are written as a list"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
 
           test "$(jq '."bootstrap-node" | length' "$cfg")" = "2"
           test "$(jq -r '."bootstrap-node"[0]' "$cfg")" = "spr:CiUIAhIhA-VlcoiRm02KyIzrcTP-ljFpzTljfBRRKTIvhMIwqBqWEgIDARpJCicAJQgCEiED5WVyiJGbTYrIjOtxM_6WMWnNOWN8FFEpMi-EwjCoGpYQs8n8wQYaCwoJBHTKubmRAnU6GgsKCQR0yrm5kQJ1OipHMEUCIQDwUNsfReB4ty7JFS5WVQ6n1fcko89qVAOfQEHixa03rgIgan2-uFNDT-r4s9TOkLe9YBkCbsRWYCHGGVJ25rLj0QE"
@@ -317,7 +329,8 @@ sections:
       - title: "The AutoNAT interval is written as typed"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
 
           test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "5m"
 
@@ -326,7 +339,8 @@ sections:
       - title: "The NAT mode and the external IP are joined into one value"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
 
           test "$(jq -r '.nat' "$cfg")" = "extip:203.0.113.7"
 
@@ -335,10 +349,11 @@ sections:
       - title: "The keys left alone survived the save"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
 
           test "$(jq -r '."data-dir"' "$cfg")" = "/tmp/storage-ui-settings-data"
-          test "$(jq '."config-version"' "$cfg")" = "4"
+          test "$(jq '."config-version"' "$cfg")" = "5"
           test "$(jq '."mix-enabled"' "$cfg")" = "true"
 
           echo "OK: data-dir, config-version and mix-enabled are intact"
@@ -346,7 +361,8 @@ sections:
       - title: "The Mix JSON fields are written back parsed"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
 
           test "$(jq '."dht-mix-proxy" | length' "$cfg")" = "1"
           test "$(jq -r '."dht-mix-proxy"[0]' "$cfg")" = "spr:CiUIAhIhApIj9p6zJDRbw2NoCo-tj98Y760YbppRiEpGIE1yGaMzEgIDARpJCicAJQgCEiECkiP2nrMkNFvDY2gKj62P3xjvrRhumlGISkYgTXIZozMQvcz8wQYaCwoJBAWhF3WRAnVEGgsKCQQFoRd1kQJ1RCpGMEQCIFZB84O_nzPNuViqEGRL1vJTjHBJ-i5ZDgFL5XZxm4HAAiB8rbLHkUdFfWdiOmlencYVn0noSMRHzn4lJYoShuVzlw"
@@ -485,7 +501,8 @@ sections:
       - title: "The config is unchanged by reopening"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
 
           test "$(jq -r '."log-level"' "$cfg")" = "trace"
           test "$(jq '."storage-quota"' "$cfg")" = "8589934592"
@@ -496,25 +513,26 @@ sections:
 
           echo "round trip OK: the popup reloads what it saved"
 
-  - title: "Picking a network swaps the Mix relays"
+  - title: "Picking a network swaps the bootstrap nodes"
     step: true
     text: |
-      Settings shows the Mix configuration of the network the node runs on.
-      Changing the network brings its Mix configuration on the next start.
+      Settings shows the bootstrap nodes of the network the node runs on.
+      Changing the network brings its bootstrap nodes on the next start.
+      The node finds the Mix relays through service discovery.
     steps:
       - title: "Start from a config with no network and marked Mix values"
         # The marked values are what the startup has to drop: a config that
-        # follows a preset gets the relays the module ships, on every start.
+        # follows a network gets no Mix relays from the module.
+        # No data-dir: the refresh puts the data in the module's folder.
         run: |
           set -e
-          rm -rf /tmp/storage-ui-settings-data
-          mkdir -p /tmp/storage-ui-settings-data
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
+          rm -rf "$base/doctest/data"
 
-          mkdir -p "$HOME/.logos_storage"
-          cat > "$HOME/.logos_storage/config.json" <<'EOF'
+          cat > "$cfg" <<'EOF'
           {
             "config-version": 3,
-            "data-dir": "/tmp/storage-ui-settings-data",
             "log-level": "info",
             "mix-enabled": true,
             "dht-mix-proxy": ["spr:marker"],
@@ -523,12 +541,12 @@ sections:
           EOF
 
           # No bootstrap list of its own: a custom one disables the selector.
-          test "$(jq 'has("bootstrap-node")' "$HOME/.logos_storage/config.json")" = "false"
-          test "$(jq 'has("network")' "$HOME/.logos_storage/config.json")" = "false"
+          test "$(jq 'has("bootstrap-node")' "$cfg")" = "false"
+          test "$(jq 'has("network")' "$cfg")" = "false"
 
           echo "starting config in place: no network, marked Mix values"
 
-      - title: "See the relays of the network, then pick the other one and save"
+      - title: "See the bootstrap nodes of the network, then pick the other one and save"
         ui_test:
           launch: "nix run github:logos-co/logos-storage-ui{release}"
           qt_mcp: "result-mcp"
@@ -554,10 +572,17 @@ sections:
               texts: ["Log level", "Storage quota"]
               timeout: 5000
 
-            - name: "The config lands in the form"
-              action: wait_for
-              texts: ["/tmp/storage-ui-settings-data"]
-              timeout: 5000
+            # The refresh moved data-dir to the module's folder, a path a
+            # literal value cannot name: wait, then check the file answered.
+            - name: "Let the config land in the form"
+              action: sleep
+              ms: 1000
+
+            - name: "The config landed in the form"
+              action: expect_property
+              find_value: "settingsForm"
+              property: "loadedOnce"
+              value: true
 
             - name: "The refresh set the default network"
               action: expect_property
@@ -569,7 +594,7 @@ sections:
               action: sleep
               ms: 1000
 
-            - name: "The relays of the running network are shown"
+            - name: "The bootstrap nodes of the running network are shown"
               action: expect_property
               find_value: "settingsForm"
               property: "presetShown"
@@ -590,7 +615,7 @@ sections:
               method: "pickNetwork"
               args: ["logos.dev"]
 
-            - name: "The relays of the picked network are not known yet"
+            - name: "The bootstrap nodes of the picked network are not known yet"
               action: expect_property
               find_value: "settingsForm"
               property: "presetShown"
@@ -603,8 +628,8 @@ sections:
               value: true
               screenshot: "storage-ui-settings-network-picked.png"
               text: |
-                Picking a network is an edit to save. Its Mix relays come with
-                the next start.
+                Picking a network is an edit to save. Its bootstrap nodes come
+                with the next start.
 
             - name: "Save"
               action: click
@@ -642,7 +667,8 @@ sections:
           set -e
           # Without set -e the block exits on the trailing echo, so a failing
           # test above would pass unnoticed.
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
           echo "saved config:"
           jq . "$cfg"
 
@@ -651,7 +677,9 @@ sections:
           test "$(jq 'has("dht-mix-proxy")' "$cfg")" = "false"
           test "$(jq 'has("mix-pool-json")' "$cfg")" = "false"
 
-          echo "OK: the network is saved, the Mix relays come from its preset"
+          test "$(jq -r '."data-dir"' "$cfg")" = "$base/doctest/data"
+
+          echo "OK: the network is saved, the marked Mix relays are gone, the data are in the module's folder"
 
       - title: "Reopen Settings on the new network"
         ui_test:
@@ -674,16 +702,17 @@ sections:
               texts: ["Log level", "Storage quota"]
               timeout: 5000
 
-            - name: "The config lands in the form"
-              action: wait_for
-              texts: ["/tmp/storage-ui-settings-data"]
-              timeout: 5000
-
-            - name: "Let the node config land"
+            - name: "Let the config and the node config land"
               action: sleep
               ms: 1000
 
-            - name: "The relays of the running network are shown"
+            - name: "The config landed in the form"
+              action: expect_property
+              find_value: "settingsForm"
+              property: "loadedOnce"
+              value: true
+
+            - name: "The bootstrap nodes of the running network are shown"
               action: expect_property
               find_value: "settingsForm"
               property: "presetShown"
@@ -704,7 +733,8 @@ sections:
       - title: "Go back to the test network"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
           jq '.network = "logos.test"' "$cfg" > "$cfg.tmp"
           mv "$cfg.tmp" "$cfg"
           test "$(jq -r '.network' "$cfg")" = "logos.test"
@@ -714,7 +744,8 @@ sections:
       - title: "Note the listen port on disk"
         run: |
           set -e
-          jq '."listen-port"' "$HOME/.logos_storage/config.json" > /tmp/storage-ui-settings-port
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          jq '."listen-port"' "$base/doctest/config.json" > /tmp/storage-ui-settings-port
           test "$(cat /tmp/storage-ui-settings-port)" != "8700"
 
           echo "listen port on disk: $(cat /tmp/storage-ui-settings-port)"
@@ -740,10 +771,15 @@ sections:
               action: click_object
               find_value: "settingsButton"
 
-            - name: "The config lands in the form"
-              action: wait_for
-              texts: ["/tmp/storage-ui-settings-data"]
-              timeout: 5000
+            - name: "Let the config land in the form"
+              action: sleep
+              ms: 1000
+
+            - name: "The config landed in the form"
+              action: expect_property
+              find_value: "settingsForm"
+              property: "loadedOnce"
+              value: true
 
             - name: "Set the listen port"
               action: set_text
@@ -768,7 +804,8 @@ sections:
       - title: "The port on disk did not change"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
 
           test "$(jq '."listen-port"' "$cfg")" = "$(cat /tmp/storage-ui-settings-port)"
 

@@ -14,8 +14,6 @@
 
 static const int RET_OK = 0;
 static const int RET_PROGRESS = 3;
-static const QString APP_HOME = QDir::homePath() + "/.logos_storage";
-static const QString DEFAULT_DATA_DIR = APP_HOME + "/data";
 
 static const int DEFAULT_LISTEN_PORT = 8500;
 static const int DEFAULT_CHUNK_SIZE = 1024 * 64;
@@ -124,7 +122,7 @@ class StorageBackend : public StorageBackendSimpleSource, public LogosUiPluginCo
 
   private:
     // Provide a default config for onboarding
-    static QJsonDocument defaultConfig();
+    QJsonDocument defaultConfig();
 
     // The config set by updateUserConfig, else the one the module persisted,
     // migrated by the module.

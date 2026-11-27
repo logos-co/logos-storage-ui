@@ -67,12 +67,17 @@ sections:
       writes the default configuration and moves straight to the folder step.
     steps:
       - title: "Reset the app state"
+        # The host gives the module the first folder it finds under
+        # module_data/storage_module: creating "doctest" fixes the path.
         run: |
+          set -e
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
           rm -f "$HOME/.config/Logos/LogosStandalone.conf"
           rm -f "$HOME/.logos_storage/config.json"
           rm -rf "$HOME/.logos_storage/data"
+          rm -rf "$base"
+          mkdir -p "$base/doctest"
           rm -f "$HOME/storage-ui-upload.txt"
-          mkdir -p "$HOME/.logos_storage"
           echo "state reset"
 
       - title: "Launch the app"
@@ -295,12 +300,16 @@ sections:
       - title: "The guided run wrote the default configuration"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
           echo "config written by onboarding:"
           jq . "$cfg"
 
-          test "$(jq '."config-version"' "$cfg")" = "4"
+          test "$(jq '."config-version"' "$cfg")" = "5"
           test "$(jq '."listen-port"' "$cfg")" = "8500"
+
+          # The default data dir is in the module's folder.
+          test "$(jq -r '."data-dir"' "$cfg")" = "$base/doctest/data"
           test "$(jq '."mix-enabled"' "$cfg")" = "true"
           test "$(jq -r '."nat-schedule-interval"' "$cfg")" = "60s"
 
@@ -309,7 +318,7 @@ sections:
           # No nat key: the node decides its reachability on its own.
           test "$(jq 'has("nat")' "$cfg")" = "false"
 
-          echo "guided OK: defaults written, no nat key"
+          echo "guided OK: defaults written, data in the module's folder, no nat key"
 
   - title: "Advanced onboarding"
     step: true
@@ -319,9 +328,13 @@ sections:
     steps:
       - title: "Reset the app state"
         run: |
+          set -e
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
           rm -f "$HOME/.config/Logos/LogosStandalone.conf"
           rm -f "$HOME/.logos_storage/config.json"
           rm -rf "$HOME/.logos_storage/data"
+          rm -rf "$base"
+          mkdir -p "$base/doctest"
           rm -f "$HOME/farewell-to-westphalia-foss-edition.pdf"
           echo "state reset"
 
@@ -393,6 +406,20 @@ sections:
               action: wait_for
               texts: ["Stop"]
               timeout: 30000
+
+            # The app writes its Settings to disk after a short delay, and the
+            # node starts in a few ms: without this, the app is killed before
+            # the onboarding is saved, and the next launch shows it again.
+            - name: "Let the onboarding state reach the disk"
+              action: sleep
+              ms: 2000
+
+      - title: "The onboarding is saved as completed"
+        run: |
+          set -e
+          grep -q 'onboardingCompleted=true' "$HOME/.config/Logos/LogosStandalone.conf"
+
+          echo "OK: onboarding completed"
 
       # Disabled: the CID below is only served by the node this test itself
       # started, and that node is shut down as soon as the run ends. The
@@ -472,7 +499,8 @@ sections:
       - title: "The advanced run wrote what the form showed"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
           echo "config written by onboarding:"
           jq . "$cfg"
 
@@ -549,10 +577,22 @@ sections:
               texts: ["Stop"]
               timeout: 30000
 
+            - name: "Let the onboarding state reach the disk"
+              action: sleep
+              ms: 2000
+
+      - title: "The second onboarding is saved as completed"
+        run: |
+          set -e
+          grep -q 'onboardingCompleted=true' "$HOME/.config/Logos/LogosStandalone.conf"
+
+          echo "OK: onboarding completed"
+
       - title: "The guided run replaced the advanced config"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
           echo "config written by the second onboarding:"
           jq . "$cfg"
 
@@ -638,10 +678,13 @@ sections:
           onboardingCompleted=true
           EOF
 
-          mkdir -p "$HOME/.logos_storage"
-          cat > "$HOME/.logos_storage/config.json" <<'EOF'
+          # A config at the current version: an older one gets the module's data-dir.
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          rm -rf "$base"
+          mkdir -p "$base/doctest"
+          cat > "$base/doctest/config.json" <<'EOF'
           {
-            "config-version": 3,
+            "config-version": 5,
             "data-dir": "/tmp/storage-ui-nomix-data",
             "log-level": "info",
             "listen-port": 8500,
@@ -760,7 +803,8 @@ sections:
       - title: "The saved config turns Mix on"
         run: |
           set -e
-          cfg="$HOME/.logos_storage/config.json"
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          cfg="$base/doctest/config.json"
           jq . "$cfg"
 
           test "$(jq '."mix-enabled"' "$cfg")" = "true"
@@ -788,10 +832,12 @@ sections:
           onboardingCompleted=true
           EOF
 
-          mkdir -p "$HOME/.logos_storage"
-          cat > "$HOME/.logos_storage/config.json" <<'EOF'
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          rm -rf "$base"
+          mkdir -p "$base/doctest"
+          cat > "$base/doctest/config.json" <<'EOF'
           {
-            "config-version": 4,
+            "config-version": 5,
             "data-dir": "/tmp/storage-ui-cancel-data",
             "log-level": "info",
             "listen-port": 8500,
