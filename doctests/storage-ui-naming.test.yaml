@@ -60,7 +60,7 @@ sections:
         check_file: "lgpm/bin/lgpm"
 
       - title: "Build the storage module for node B"
-        run: "nix build 'github:logos-co/logos-storage-module?ref=feat/naming-service#lgx' -o storage-lgx"
+        run: "nix build 'github:logos-co/logos-storage-module?ref=refs/tags/v3.1.0-rc1#lgx' -o storage-lgx"
         check_file: "storage-lgx"
 
       - title: "Install the module for node B"
@@ -77,13 +77,15 @@ sections:
       Its configuration has no `network`: B doesn't join the public network.
     steps:
       - title: "Write node B's configuration"
+        # The host gives the module the first folder it finds under
+        # data/storage_module: creating "doctest" fixes the path.
         run: |
           set -eu
-          rm -rf "$(pwd)/storage-data/node-b"
-          mkdir -p "$(pwd)/storage-data/node-b" home-b/.logos_storage
-          cat > home-b/.logos_storage/config.json <<EOF
+          rm -rf "$(pwd)/storage-data/node-b" session-b/data/storage_module
+          mkdir -p "$(pwd)/storage-data/node-b" home-b session-b/data/storage_module/doctest
+          cat > session-b/data/storage_module/doctest/config.json <<EOF
           {
-              "config-version": 4,
+              "config-version": 5,
               "log-level": "DEBUG",
               "data-dir": "$(pwd)/storage-data/node-b",
               "log-file": "$(pwd)/storage-data/node-b/storage.log",
@@ -91,7 +93,7 @@ sections:
               "nat": "extip:127.0.0.1"
           }
           EOF
-          jq . home-b/.logos_storage/config.json
+          jq . session-b/data/storage_module/doctest/config.json
 
       - title: "Give node B a fixed key"
         text: |
@@ -143,10 +145,12 @@ sections:
           onboardingCompleted=true
           EOF
 
-          mkdir -p "$HOME/.logos_storage"
-          cat > "$HOME/.logos_storage/config.json" <<EOF
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          rm -rf "$base"
+          mkdir -p "$base/doctest"
+          cat > "$base/doctest/config.json" <<EOF
           {
-            "config-version": 4,
+            "config-version": 5,
             "data-dir": "/tmp/storage-ui-naming-data",
             "log-level": "info",
             "listen-port": 8500,
@@ -155,7 +159,7 @@ sections:
             "bootstrap-node": ["$SPR_B"]
           }
           EOF
-          jq . "$HOME/.logos_storage/config.json"
+          jq . "$base/doctest/config.json"
 
   - title: "Publish a name from the app"
     step: true
@@ -607,9 +611,12 @@ sections:
           onboardingCompleted=true
           EOF
 
-          cat > "$HOME/.logos_storage/config.json" <<EOF
+          base="${XDG_DATA_HOME:-$HOME/.local/share}/Logos/LogosStandalone/module_data/storage_module"
+          rm -rf "$base"
+          mkdir -p "$base/doctest"
+          cat > "$base/doctest/config.json" <<EOF
           {
-            "config-version": 4,
+            "config-version": 5,
             "data-dir": "/tmp/storage-ui-naming-data-2",
             "log-level": "info",
             "listen-port": 8500,
